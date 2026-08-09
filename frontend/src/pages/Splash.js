@@ -3,7 +3,7 @@ function Splash() {
     <main className="splash-screen">
       <div className="splash-content">
         <div className="splash-logo">
-          Z
+          Zz
         </div>
 
         <h1>ZenvaZapp</h1>

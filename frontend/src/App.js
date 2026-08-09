@@ -1,8 +1,8 @@
-import Splash from "./pages/Splash";
-import "./styles/splash.css";
+import Login from "./pages/Login";
+import "./styles/auth.css";
 
 function App() {
-  return <Splash />;
+  return <Login />;
 }
 
 export default App;
