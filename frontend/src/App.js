@@ -1,14 +1,8 @@
-
-import './App.css';
+import Splash from "./pages/Splash";
+import "./styles/splash.css";
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        
-      </header>
-    </div>
-  );
+  return <Splash />;
 }
 
 export default App;
