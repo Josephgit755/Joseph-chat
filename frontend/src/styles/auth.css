@@ -482,3 +482,87 @@
     font-size: 20px;
   }
 }
+/* Registration */
+
+.register-card {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.register-card::-webkit-scrollbar {
+  width: 5px;
+}
+
+.register-card::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.register-card::-webkit-scrollbar-thumb {
+  background: #303030;
+  border-radius: 10px;
+}
+
+.username-status {
+  margin: 0;
+
+  font-size: 12px;
+}
+
+.username-status.checking {
+  color: #888888;
+}
+
+.username-status.available {
+  color: #9cff00;
+}
+
+.username-status.unavailable {
+  color: #ff5c5c;
+}
+
+.password-rules {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+
+  margin-top: 4px;
+}
+
+.password-rule {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  color: #666666;
+
+  font-size: 11px;
+}
+
+.password-rule.valid {
+  color: #9cff00;
+}
+
+.password-match {
+  margin: 0;
+
+  font-size: 12px;
+}
+
+.password-match.valid {
+  color: #9cff00;
+}
+
+.password-match.invalid {
+  color: #ff5c5c;
+}
+
+@media (max-width: 480px) {
+  .register-card {
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .password-rules {
+    grid-template-columns: 1fr;
+  }
+}

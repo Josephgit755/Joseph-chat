@@ -3,6 +3,8 @@ import "./styles/auth.css";
 
 function App() {
   return <Login />;
+  
+
 }
 
 export default App;

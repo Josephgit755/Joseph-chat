@@ -1,11 +1,14 @@
 import { useState } from "react";
 import OTPVerification from "./OTPVerification";
+import Register from "./Register";
+
 
 function Login() {
   const [method, setMethod] = useState("phone");
   const [showPassword, setShowPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showOTP, setShowOTP] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
 
   const handleSubmit = (event) => {
   event.preventDefault();
@@ -16,6 +19,14 @@ function Login() {
 
   setShowOTP(true);
 };
+if (showRegister) {
+  return (
+    <Register
+      onBack={() => setShowRegister(false)}
+    />
+  );
+}
+
 if (showOTP) {
   return (
     <OTPVerification
@@ -171,9 +182,13 @@ if (showOTP) {
         <div className="register-prompt">
           <span>Don't have an account?</span>
 
-          <button type="button" className="inline-link">
-            Create account
-          </button>
+          <button
+              type="button"
+              className="inline-link"
+               onClick={() => setShowRegister(true)}
+            >
+             Create account
+            </button>
         </div>
       </section>
     </main>
