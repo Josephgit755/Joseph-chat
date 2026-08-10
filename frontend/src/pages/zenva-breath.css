@@ -1,0 +1,440 @@
+/* =========================================
+   ZENVA BREATH
+========================================= */
+
+.zenva-breath-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+
+  box-sizing: border-box;
+
+  padding-bottom: 40px;
+
+  background:
+    radial-gradient(
+      circle at 50% 25%,
+      rgba(197, 138, 58, 0.14),
+      transparent 35%
+    ),
+    #1b120b;
+
+  color: #fff8ed;
+}
+
+
+/* =========================================
+   HEADER
+========================================= */
+
+.zenva-breath-header {
+  display: flex;
+
+  align-items: center;
+
+  gap: 13px;
+
+  padding: 18px 20px;
+
+  border-bottom: 1px solid
+    rgba(224, 181, 106, 0.10);
+}
+
+.zenva-back-button {
+  width: 40px;
+  height: 40px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid
+    rgba(224, 181, 106, 0.12);
+
+  border-radius: 12px;
+
+  background: #24170e;
+
+  color: #e0b56a;
+
+  font-size: 20px;
+
+  cursor: pointer;
+}
+
+.zenva-breath-header h1 {
+  margin: 0;
+
+  font-size: 19px;
+}
+
+.zenva-breath-header p {
+  margin: 4px 0 0;
+
+  color: #756657;
+
+  font-size: 11px;
+}
+
+
+/* =========================================
+   INTRO
+========================================= */
+
+.zenva-breath-intro {
+  max-width: 520px;
+
+  margin: 0 auto;
+
+  padding: 30px 24px 15px;
+
+  text-align: center;
+}
+
+.zenva-breath-icon {
+  width: 58px;
+  height: 58px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  margin: 0 auto 15px;
+
+  border-radius: 18px;
+
+  background:
+    rgba(224, 181, 106, 0.12);
+
+  font-size: 28px;
+}
+
+.zenva-breath-intro h2 {
+  margin: 0;
+
+  font-size: 22px;
+}
+
+.zenva-breath-intro p {
+  max-width: 420px;
+
+  margin: 9px auto 0;
+
+  color: #958372;
+
+  font-size: 12px;
+
+  line-height: 1.6;
+}
+
+
+/* =========================================
+   BREATHING AREA
+========================================= */
+
+.breathing-area {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  padding: 20px;
+}
+
+.breathing-circle {
+  width: 230px;
+  height: 230px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  margin: 15px 0 25px;
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(224, 181, 106, 0.28),
+      rgba(197, 138, 58, 0.08) 60%,
+      transparent 70%
+    );
+
+  border: 1px solid
+    rgba(224, 181, 106, 0.25);
+
+  transition:
+    transform 4s ease,
+    box-shadow 4s ease;
+}
+
+.breathing-circle.breathing-in {
+  transform: scale(1.16);
+
+  box-shadow:
+    0 0 60px
+    rgba(224, 181, 106, 0.18);
+}
+
+.breathing-circle.breathing-hold {
+  transform: scale(1.16);
+
+  box-shadow:
+    0 0 45px
+    rgba(224, 181, 106, 0.14);
+}
+
+.breathing-circle.breathing-out {
+  transform: scale(0.88);
+
+  box-shadow:
+    0 0 25px
+    rgba(224, 181, 106, 0.08);
+}
+
+.breathing-circle-inner {
+  width: 170px;
+  height: 170px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #24170e;
+
+  border: 1px solid
+    rgba(224, 181, 106, 0.14);
+}
+
+.breathing-phase {
+  color: #e0b56a;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.breathing-circle-inner strong {
+  margin-top: 4px;
+
+  font-size: 52px;
+
+  line-height: 1;
+}
+
+.breathing-circle-inner small {
+  margin-top: 5px;
+
+  color: #756657;
+
+  font-size: 10px;
+}
+
+.breathing-area h3 {
+  margin: 0;
+
+  font-size: 15px;
+
+  text-align: center;
+}
+
+.breathing-cycle {
+  margin: 7px 0 0;
+
+  color: #756657;
+
+  font-size: 10px;
+
+  text-align: center;
+}
+
+
+/* =========================================
+   CONTROLS
+========================================= */
+
+.breath-controls {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 5px 24px;
+}
+
+.breath-primary-button {
+  width: min(360px, 100%);
+
+  min-height: 52px;
+
+  border: 0;
+
+  border-radius: 15px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #e0b56a,
+      #c58a3a
+    );
+
+  color: #24170e;
+
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.breath-primary-button:hover {
+  opacity: 0.92;
+}
+
+.breath-primary-button:active {
+  transform: scale(0.98);
+}
+
+.breath-reset-button {
+  border: 0;
+
+  background: transparent;
+
+  color: #958372;
+
+  font-size: 12px;
+
+  cursor: pointer;
+}
+
+
+/* =========================================
+   PROGRESS
+========================================= */
+
+.breath-progress {
+  width: min(360px, calc(100% - 48px));
+
+  margin: 25px auto 0;
+}
+
+.breath-progress-header {
+  display: flex;
+
+  justify-content: space-between;
+
+  margin-bottom: 7px;
+
+  color: #756657;
+
+  font-size: 11px;
+}
+
+.breath-progress-header strong {
+  color: #e0b56a;
+}
+
+.breath-progress-bar {
+  height: 5px;
+
+  overflow: hidden;
+
+  border-radius: 10px;
+
+  background: #302014;
+}
+
+.breath-progress-fill {
+  height: 100%;
+
+  border-radius: inherit;
+
+  background:
+    linear-gradient(
+      90deg,
+      #8a5a20,
+      #e0b56a
+    );
+
+  transition: width 0.4s ease;
+}
+
+
+/* =========================================
+   MESSAGE
+========================================= */
+
+.breath-message {
+  width: min(360px, calc(100% - 48px));
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 10px;
+
+  margin: 25px auto 0;
+
+  padding: 14px;
+
+  border: 1px solid
+    rgba(224, 181, 106, 0.08);
+
+  border-radius: 14px;
+
+  background:
+    rgba(197, 138, 58, 0.05);
+}
+
+.breath-message span {
+  font-size: 16px;
+}
+
+.breath-message p {
+  margin: 0;
+
+  color: #756657;
+
+  font-size: 11px;
+
+  line-height: 1.6;
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 480px) {
+
+  .zenva-breath-intro {
+    padding-top: 24px;
+  }
+
+  .breathing-circle {
+    width: 205px;
+    height: 205px;
+  }
+
+  .breathing-circle-inner {
+    width: 150px;
+    height: 150px;
+  }
+
+  .breathing-circle-inner strong {
+    font-size: 46px;
+  }
+}

@@ -1,0 +1,1280 @@
+/* =========================================
+   STUDENT MODE
+========================================= */
+
+.student-mode-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+
+  box-sizing: border-box;
+
+  padding-bottom: 40px;
+
+  background: #100a06;
+
+  color: #fff8ed;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+}
+
+
+/* =========================================
+   HEADER
+========================================= */
+
+.student-header {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 18px 18px 14px;
+
+  border-bottom: 1px solid
+    rgba(224, 181, 106, 0.08);
+}
+
+.student-back-button {
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid
+    rgba(224, 181, 106, 0.12);
+
+  border-radius: 10px;
+
+  background: #1b120b;
+
+  color: #e0b56a;
+
+  font-size: 18px;
+
+  cursor: pointer;
+}
+
+.student-header-icon {
+  width: 40px;
+  height: 40px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  background:
+    rgba(224, 181, 106, 0.10);
+
+  font-size: 19px;
+}
+
+.student-header-info {
+  min-width: 0;
+}
+
+.student-header-info h1 {
+  margin: 0;
+
+  color: #fff8ed;
+
+  font-size: 17px;
+}
+
+.student-header-info p {
+  margin: 4px 0 0;
+
+  color: #806d5b;
+
+  font-size: 9px;
+}
+
+
+/* =========================================
+   HERO
+========================================= */
+
+.student-hero {
+  display: flex;
+
+  align-items: center;
+
+  gap: 13px;
+
+  margin: 16px;
+
+  padding: 17px;
+
+  border: 1px solid
+    rgba(224, 181, 106, 0.10);
+
+  border-radius: 16px;
+
+  background: #1b120b;
+}
+
+.student-hero-icon {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 14px;
+
+  background:
+    rgba(224, 181, 106, 0.10);
+
+  font-size: 23px;
+}
+
+.student-hero h2 {
+  margin: 0 0 5px;
+
+  font-size: 14px;
+}
+
+.student-hero p {
+  margin: 0;
+
+  color: #806d5b;
+
+  font-size: 9px;
+
+  line-height: 1.5;
+}
+
+
+/* =========================================
+   AI QUICK TOOLS
+========================================= */
+
+.student-ai-tools {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 9px;
+
+  padding: 0 16px;
+
+  margin-bottom: 15px;
+}
+
+.student-ai-card {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  min-width: 0;
+
+  padding: 11px;
+
+  border: 1px solid
+    rgba(224, 181, 106, 0.10);
+
+  border-radius: 13px;
+
+  background: #1b120b;
+
+  color: #fff8ed;
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.student-ai-card-icon {
+  font-size: 17px;
+}
+
+.student-ai-card > span:nth-child(2) {
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.student-ai-card strong {
+  font-size: 9px;
+}
+
+.student-ai-card small {
+  overflow: hidden;
+
+  color: #806d5b;
+
+  font-size: 7px;
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+}
+
+.student-ai-card b {
+  margin-left: auto;
+
+  color: #e0b56a;
+
+  font-size: 12px;
+}
+
+
+/* =========================================
+   SECTION NAVIGATION
+========================================= */
+
+.student-section-navigation {
+  display: flex;
+
+  gap: 6px;
+
+  overflow-x: auto;
+
+  padding: 0 16px 8px;
+
+  scrollbar-width: none;
+}
+
+.student-section-navigation::-webkit-scrollbar {
+  display: none;
+}
+
+.student-section-button {
+  min-width: 64px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  gap: 4px;
+
+  padding: 8px 6px;
+
+  border: 1px solid transparent;
+
+  border-radius: 10px;
+
+  background: transparent;
+
+  color: #806d5b;
+
+  cursor: pointer;
+}
+
+.student-section-button span {
+  font-size: 14px;
+}
+
+.student-section-button small {
+  font-size: 7px;
+}
+
+.student-section-button.active {
+  border-color:
+    rgba(224, 181, 106, 0.14);
+
+  background:
+    rgba(224, 181, 106, 0.08);
+
+  color: #e0b56a;
+}
+
+
+/* =========================================
+   MAIN CONTENT
+========================================= */
+
+.student-content {
+  padding: 8px 16px;
+}
+
+.student-section-header {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 10px;
+
+  margin-bottom: 13px;
+}
+
+.student-section-header h2 {
+  margin: 0 0 4px;
+
+  font-size: 13px;
+}
+
+.student-section-header p {
+  margin: 0;
+
+  color: #806d5b;
+
+  font-size: 8px;
+}
+
+.create-room-button {
+  min-height: 32px;
+
+  padding: 0 11px;
+
+  border: 0;
+
+  border-radius: 9px;
+
+  background: #e0b56a;
+
+  color: #24170e;
+
+  font-size: 8px;
+
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+
+/* =========================================
+   STUDENT ROOMS
+========================================= */
+
+.student-rooms {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 7px;
+}
+
+.student-room-card {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  min-width: 0;
+
+  padding: 11px;
+
+  border: 1px solid
+    rgba(224, 181, 106, 0.08);
+
+  border-radius: 13px;
+
+  background: #1b120b;
+}
+
+.room-avatar {
+  width: 39px;
+  height: 39px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 11px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #c58a3a,
+      #8a5a20
+    );
+
+  color: #fff8ed;
+
+  font-size: 13px;
+
+  font-weight: 800;
+}
+
+.room-information {
+  min-width: 0;
+
+  flex: 1;
+}
+
+.room-information h3 {
+  overflow: hidden;
+
+  margin: 0 0 3px;
+
+  font-size: 10px;
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+}
+
+.room-information p {
+  margin: 0 0 4px;
+
+  color: #a8896b;
+
+  font-size: 8px;
+}
+
+.room-information small {
+  color: #756657;
+
+  font-size: 7px;
+}
+
+
+/* =========================================
+   ROOM ACTIONS
+========================================= */
+
+.room-actions {
+  display: flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+  margin-left: auto;
+}
+
+.room-invite-button,
+.room-link-button {
+  height: 32px;
+
+  flex-shrink: 0;
+
+  border: 1px solid
+    rgba(224, 181, 106, 0.15);
+
+  border-radius: 9px;
+
+  background:
+    rgba(224, 181, 106, 0.08);
+
+  color: #e0b56a;
+
+  cursor: pointer;
+}
+
+.room-invite-button {
+  padding: 0 9px;
+
+  font-size: 8px;
+
+  font-weight: 700;
+}
+
+.room-link-button {
+  width: 32px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  font-size: 11px;
+}
+
+.room-invite-button:hover,
+.room-link-button:hover {
+  background:
+    rgba(224, 181, 106, 0.16);
+}
+
+
+/* =========================================
+   EMPTY STATE
+========================================= */
+
+.student-empty-state {
+  padding: 45px 20px;
+
+  border: 1px dashed
+    rgba(224, 181, 106, 0.10);
+
+  border-radius: 15px;
+
+  text-align: center;
+}
+
+.student-empty-state > div {
+  margin-bottom: 10px;
+
+  font-size: 30px;
+}
+
+.student-empty-state h3 {
+  margin: 0 0 6px;
+
+  font-size: 11px;
+}
+
+.student-empty-state p {
+  max-width: 280px;
+
+  margin: auto;
+
+  color: #756657;
+
+  font-size: 8px;
+
+  line-height: 1.5;
+}
+
+
+/* =========================================
+   FILE ACTIONS
+========================================= */
+
+.student-file-actions {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 8px;
+
+  margin-bottom: 15px;
+}
+
+.student-file-actions button {
+  min-height: 48px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 7px;
+
+  border: 1px solid
+    rgba(224, 181, 106, 0.10);
+
+  border-radius: 11px;
+
+  background: #1b120b;
+
+  color: #e0b56a;
+
+  font-size: 9px;
+
+  cursor: pointer;
+}
+
+
+/* =========================================
+   AI PANEL
+========================================= */
+
+.student-ai-panel {
+  padding: 35px 20px;
+
+  border: 1px solid
+    rgba(224, 181, 106, 0.10);
+
+  border-radius: 16px;
+
+  background: #1b120b;
+
+  text-align: center;
+}
+
+.student-ai-panel-icon {
+  margin-bottom: 10px;
+
+  font-size: 35px;
+}
+
+.student-ai-panel h2 {
+  margin: 0 0 8px;
+
+  font-size: 15px;
+}
+
+.student-ai-panel p {
+  max-width: 320px;
+
+  margin: 0 auto 18px;
+
+  color: #806d5b;
+
+  font-size: 9px;
+
+  line-height: 1.5;
+}
+
+.student-ai-panel button,
+.quiz-actions button {
+  min-height: 38px;
+
+  padding: 0 13px;
+
+  border: 0;
+
+  border-radius: 9px;
+
+  background: #e0b56a;
+
+  color: #24170e;
+
+  font-size: 8px;
+
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+.quiz-actions {
+  display: flex;
+
+  justify-content: center;
+
+  gap: 8px;
+
+  flex-wrap: wrap;
+}
+
+.quiz-actions button:first-child {
+  border: 1px solid
+    rgba(224, 181, 106, 0.15);
+
+  background:
+    rgba(224, 181, 106, 0.08);
+
+  color: #e0b56a;
+}
+
+
+/* =========================================
+   MODAL
+========================================= */
+
+.student-modal-overlay {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 1000;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 16px;
+
+  box-sizing: border-box;
+
+  background:
+    rgba(0, 0, 0, 0.72);
+}
+
+.student-modal {
+  position: relative;
+
+  width: 100%;
+
+  max-width: 390px;
+
+  max-height: 90vh;
+
+  overflow-y: auto;
+
+  box-sizing: border-box;
+
+  padding: 24px 18px;
+
+  border: 1px solid
+    rgba(224, 181, 106, 0.12);
+
+  border-radius: 18px;
+
+  background: #160d08;
+
+  text-align: center;
+}
+
+.student-modal-close {
+  position: absolute;
+
+  top: 10px;
+
+  right: 10px;
+
+  width: 28px;
+  height: 28px;
+
+  border: 0;
+
+  border-radius: 50%;
+
+  background: #25170e;
+
+  color: #a8896b;
+
+  font-size: 17px;
+
+  cursor: pointer;
+}
+
+.student-modal-icon {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  margin: 0 auto 12px;
+
+  border-radius: 14px;
+
+  background:
+    rgba(224, 181, 106, 0.10);
+
+  font-size: 22px;
+}
+
+.student-modal h2 {
+  margin: 0 0 7px;
+
+  font-size: 15px;
+}
+
+.student-modal > p {
+  margin: 0 0 14px;
+
+  color: #806d5b;
+
+  font-size: 9px;
+
+  line-height: 1.5;
+}
+
+.student-modal input {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  min-height: 43px;
+
+  margin-bottom: 10px;
+
+  padding: 0 12px;
+
+  border: 1px solid
+    rgba(224, 181, 106, 0.12);
+
+  border-radius: 10px;
+
+  outline: none;
+
+  background: #1b120b;
+
+  color: #fff8ed;
+
+  font-size: 9px;
+}
+
+.student-modal input:focus {
+  border-color: #e0b56a;
+}
+
+.student-modal input::placeholder {
+  color: #635447;
+}
+
+.create-room-submit {
+  width: 100%;
+
+  min-height: 42px;
+
+  border: 0;
+
+  border-radius: 10px;
+
+  background: #e0b56a;
+
+  color: #24170e;
+
+  font-size: 9px;
+
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+
+/* =========================================
+   ADD STUDENTS
+========================================= */
+
+.invite-students-modal {
+  max-height: 85vh;
+}
+
+.selected-room-name {
+  display: block;
+
+  margin-bottom: 15px;
+
+  color: #e0b56a;
+
+  font-size: 10px;
+}
+
+
+/* =========================================
+   CONTACT SEARCH
+========================================= */
+
+.student-contact-search {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  height: 43px;
+
+  box-sizing: border-box;
+
+  margin-bottom: 10px;
+
+  padding: 0 12px;
+
+  border: 1px solid
+    rgba(224, 181, 106, 0.10);
+
+  border-radius: 11px;
+
+  background: #1b120b;
+}
+
+.student-contact-search span {
+  font-size: 13px;
+}
+
+.student-contact-search input {
+  width: 100%;
+
+  min-height: auto;
+
+  margin: 0;
+
+  padding: 0;
+
+  border: 0;
+
+  outline: none;
+
+  background: transparent;
+
+  color: #fff8ed;
+
+  font-size: 10px;
+}
+
+.student-contact-search input:focus {
+  border: 0;
+}
+
+
+/* =========================================
+   CONTACT LIST
+========================================= */
+
+.student-contact-list {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 5px;
+
+  max-height: 270px;
+
+  overflow-y: auto;
+
+  margin-bottom: 10px;
+}
+
+.student-contact {
+  width: 100%;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  box-sizing: border-box;
+
+  padding: 9px;
+
+  border: 1px solid transparent;
+
+  border-radius: 11px;
+
+  background: #1b120b;
+
+  color: #fff8ed;
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.student-contact:hover {
+  background: #2a1b10;
+}
+
+.student-contact.selected {
+  border-color:
+    rgba(224, 181, 106, 0.20);
+
+  background:
+    rgba(224, 181, 106, 0.08);
+}
+
+.student-contact-avatar {
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background:
+    linear-gradient(
+      135deg,
+      #c58a3a,
+      #8a5a20
+    );
+
+  color: #fff8ed;
+
+  font-size: 12px;
+
+  font-weight: 800;
+}
+
+.student-contact-info {
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.student-contact-info strong {
+  font-size: 10px;
+}
+
+.student-contact-info small {
+  color: #756657;
+
+  font-size: 8px;
+}
+
+.student-check {
+  width: 22px;
+  height: 22px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  margin-left: auto;
+
+  border: 1px solid
+    rgba(224, 181, 106, 0.18);
+
+  border-radius: 50%;
+
+  color: #24170e;
+
+  font-size: 11px;
+
+  font-weight: 800;
+}
+
+.student-check.selected {
+  border-color: #e0b56a;
+
+  background: #e0b56a;
+}
+
+.selected-students-count {
+  margin: 5px 0 8px;
+
+  color: #e0b56a;
+
+  text-align: center;
+
+  font-size: 9px;
+
+  font-weight: 700;
+}
+
+.create-room-submit:disabled {
+  opacity: 0.35;
+
+  cursor: not-allowed;
+}
+
+
+/* =========================================
+   INVITE LINK
+========================================= */
+
+.invite-link-modal {
+  max-width: 400px;
+}
+
+.invite-preview {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  margin: 15px 0;
+
+  padding: 13px;
+
+  border: 1px solid
+    rgba(224, 181, 106, 0.12);
+
+  border-radius: 13px;
+
+  background: #1b120b;
+
+  text-align: left;
+}
+
+.invite-preview-icon {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 12px;
+
+  background:
+    rgba(224, 181, 106, 0.12);
+
+  font-size: 20px;
+}
+
+.invite-preview div:last-child {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 4px;
+}
+
+.invite-preview strong {
+  color: #fff8ed;
+
+  font-size: 10px;
+}
+
+.invite-preview span {
+  color: #756657;
+
+  font-size: 8px;
+}
+
+
+/* =========================================
+   INVITE LINK BOX
+========================================= */
+
+.invite-link-box {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  margin: 10px 0 12px;
+
+  padding: 12px;
+
+  border: 1px solid
+    rgba(224, 181, 106, 0.15);
+
+  border-radius: 10px;
+
+  background: #120c07;
+
+  overflow: hidden;
+
+  text-align: left;
+}
+
+.invite-link-box span {
+  display: block;
+
+  overflow: hidden;
+
+  color: #e0b56a;
+
+  font-size: 8px;
+
+  line-height: 1.5;
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+}
+
+
+/* =========================================
+   INVITE LINK ACTIONS
+========================================= */
+
+.invite-link-actions {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 8px;
+
+  margin-top: 10px;
+}
+
+.invite-link-actions button {
+  min-height: 43px;
+
+  border-radius: 11px;
+
+  font-size: 9px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.invite-copy-button {
+  border: 1px solid
+    rgba(224, 181, 106, 0.18);
+
+  background:
+    rgba(224, 181, 106, 0.08);
+
+  color: #e0b56a;
+}
+
+.invite-share-button {
+  border: 0;
+
+  background: #e0b56a;
+
+  color: #24170e;
+}
+
+.invite-copy-button:hover {
+  background:
+    rgba(224, 181, 106, 0.15);
+}
+
+.invite-share-button:hover {
+  opacity: 0.9;
+}
+
+.invite-link-note {
+  margin-top: 13px !important;
+
+  color: #756657 !important;
+
+  font-size: 8px !important;
+
+  line-height: 1.5 !important;
+
+  text-align: center;
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 480px) {
+
+  .student-ai-tools {
+    grid-template-columns: 1fr;
+  }
+
+  .student-section-navigation {
+    gap: 3px;
+  }
+
+  .student-section-button {
+    min-width: 58px;
+  }
+
+  .room-actions {
+    gap: 4px;
+  }
+
+  .room-invite-button {
+    padding: 0 7px;
+  }
+
+  .room-link-button {
+    width: 30px;
+  }
+
+  .invite-link-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .student-modal {
+    max-height: 92vh;
+
+    padding: 21px 15px;
+  }
+
+  .student-contact-list {
+    max-height: 240px;
+  }
+}

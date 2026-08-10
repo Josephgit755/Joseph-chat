@@ -1,0 +1,531 @@
+/* =========================================
+   ZENVAZAPP CALLS
+   GOLDEN-BROWN THEME
+========================================= */
+
+.calls-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+
+  box-sizing: border-box;
+
+  padding-bottom: 90px;
+
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(197, 138, 58, 0.10),
+      transparent 30%
+    ),
+    #1b120b;
+
+  color: #fff8ed;
+}
+
+
+/* =========================================
+   HEADER
+========================================= */
+
+.calls-header {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  padding: 20px 24px;
+
+  border-bottom: 1px solid
+    rgba(224, 181, 106, 0.10);
+}
+
+.calls-title-area {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+}
+
+.calls-logo {
+  width: 46px;
+  height: 46px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 14px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #e0b56a,
+      #8a5a20
+    );
+
+  color: #24170e;
+
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.calls-header h1 {
+  margin: 0;
+
+  font-size: 21px;
+}
+
+.calls-header span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #958372;
+
+  font-size: 12px;
+}
+
+.new-call-button {
+  min-height: 40px;
+
+  padding: 0 15px;
+
+  border: 0;
+
+  border-radius: 12px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #e0b56a,
+      #c58a3a
+    );
+
+  color: #24170e;
+
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+
+/* =========================================
+   QUICK ACTIONS
+========================================= */
+
+.call-actions {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 12px;
+
+  padding: 24px;
+}
+
+.call-action-card {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  min-height: 82px;
+
+  padding: 14px;
+
+  border: 1px solid
+    rgba(224, 181, 106, 0.13);
+
+  border-radius: 17px;
+
+  background: #24170e;
+
+  color: #fff8ed;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.call-action-card:hover {
+  background: #302014;
+
+  border-color:
+    rgba(224, 181, 106, 0.28);
+}
+
+.call-action-icon {
+  width: 44px;
+  height: 44px;
+
+  flex-shrink: 0;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 13px;
+
+  background:
+    rgba(197, 138, 58, 0.14);
+
+  font-size: 20px;
+}
+
+.call-action-card h3 {
+  margin: 0;
+
+  font-size: 14px;
+}
+
+.call-action-card p {
+  margin: 5px 0 0;
+
+  color: #756657;
+
+  font-size: 11px;
+}
+
+
+/* =========================================
+   RECENT CALLS
+========================================= */
+
+.recent-calls {
+  padding: 0 24px;
+}
+
+.calls-section-title {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  margin-bottom: 12px;
+}
+
+.calls-section-title h2 {
+  margin: 0;
+
+  font-size: 18px;
+}
+
+.calls-section-title span {
+  display: block;
+
+  margin-top: 4px;
+
+  color: #756657;
+
+  font-size: 11px;
+}
+
+.clear-calls {
+  border: 0;
+
+  background: transparent;
+
+  color: #c58a3a;
+
+  font-size: 12px;
+
+  cursor: pointer;
+}
+
+
+/* =========================================
+   CALL LIST
+========================================= */
+
+.call-list {
+  display: flex;
+
+  flex-direction: column;
+}
+
+.call-item {
+  width: 100%;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 13px;
+
+  padding: 14px 4px;
+
+  border: 0;
+
+  border-bottom: 1px solid
+    rgba(224, 181, 106, 0.07);
+
+  background: transparent;
+
+  color: inherit;
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.call-item:hover {
+  background:
+    rgba(197, 138, 58, 0.06);
+}
+
+.call-avatar {
+  width: 50px;
+  height: 50px;
+
+  flex-shrink: 0;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background:
+    linear-gradient(
+      135deg,
+      #6d461b,
+      #332115
+    );
+
+  color: #e0b56a;
+
+  font-weight: 700;
+}
+
+.call-information {
+  flex: 1;
+
+  min-width: 0;
+}
+
+.call-name-row {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 10px;
+}
+
+.call-name-row h3 {
+  margin: 0;
+
+  font-size: 14px;
+}
+
+.call-name-row span {
+  flex-shrink: 0;
+
+  color: #756657;
+
+  font-size: 10px;
+}
+
+.call-type {
+  display: flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+  margin-top: 6px;
+
+  color: #958372;
+
+  font-size: 11px;
+}
+
+.call-type.missed {
+  color: #d76b57;
+}
+
+.call-item-action {
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 11px;
+
+  background:
+    rgba(197, 138, 58, 0.10);
+
+  color: #e0b56a;
+}
+
+
+/* =========================================
+   INFO
+========================================= */
+
+.calls-info {
+  max-width: 360px;
+
+  margin: 40px auto;
+
+  padding: 25px;
+
+  text-align: center;
+}
+
+.calls-info-icon {
+  font-size: 30px;
+
+  margin-bottom: 10px;
+}
+
+.calls-info h3 {
+  margin: 0 0 8px;
+
+  font-size: 15px;
+}
+
+.calls-info p {
+  margin: 0;
+
+  color: #756657;
+
+  font-size: 12px;
+
+  line-height: 1.6;
+}
+
+
+/* =========================================
+   BOTTOM NAVIGATION
+========================================= */
+
+.calls-bottom-navigation {
+  position: fixed;
+
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  z-index: 30;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  padding: 8px 10px 10px;
+
+  box-sizing: border-box;
+
+  background: #1b120b;
+
+  border-top: 1px solid
+    rgba(224, 181, 106, 0.12);
+}
+
+.calls-nav-button {
+  min-height: 58px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 4px;
+
+  border: 0;
+
+  border-radius: 12px;
+
+  background: transparent;
+
+  color: #756657;
+
+  cursor: pointer;
+}
+
+.calls-nav-button span {
+  font-size: 19px;
+}
+
+.calls-nav-button small {
+  font-size: 10px;
+}
+
+.calls-nav-button.active {
+  color: #e0b56a;
+}
+
+.calls-nav-button:hover {
+  background:
+    rgba(197, 138, 58, 0.07);
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 600px) {
+
+  .calls-header {
+    padding: 16px;
+  }
+
+  .call-actions {
+    padding: 18px 16px 22px;
+  }
+
+  .recent-calls {
+    padding: 0 16px;
+  }
+
+  .calls-logo {
+    width: 42px;
+    height: 42px;
+  }
+
+  .calls-header h1 {
+    font-size: 19px;
+  }
+
+  .call-action-card {
+    min-height: 76px;
+
+    padding: 11px;
+  }
+
+  .call-action-card p {
+    font-size: 10px;
+  }
+}
+
+
+@media (max-width: 420px) {
+
+  .call-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .new-call-button {
+    padding: 0 11px;
+
+    font-size: 11px;
+  }
+}
