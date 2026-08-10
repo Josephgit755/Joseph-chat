@@ -15,6 +15,9 @@ function Register({ onBack }) {
   });
 
   const [usernameStatus, setUsernameStatus] = useState("idle");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -24,12 +27,13 @@ function Register({ onBack }) {
       [name]: value,
     }));
 
+    setErrorMessage("");
+    setSuccessMessage("");
+
     if (name === "username") {
       if (!value.trim()) {
         setUsernameStatus("idle");
       } else {
-        // Real username availability checking
-        // will be connected to the backend later.
         setUsernameStatus("checking");
       }
     }
@@ -68,16 +72,68 @@ function Register({ onBack }) {
     agreedToTerms &&
     usernameStatus !== "unavailable";
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
+    setErrorMessage("");
+    setSuccessMessage("");
+
     if (!formIsValid) {
+      setErrorMessage(
+        "Please complete all required fields correctly."
+      );
       return;
     }
 
-    console.log("Registration data:", formData);
+    setIsSubmitting(true);
 
-    // Backend registration will be connected in Step 25B.
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/auth/register",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setErrorMessage(
+          data.message || "Registration failed."
+        );
+        return;
+      }
+
+      setSuccessMessage(
+        "Account created successfully!"
+      );
+
+      console.log("Registered user:", data.user);
+
+      setFormData({
+        fullName: "",
+        username: "",
+        email: "",
+        phone: "",
+        password: "",
+        confirmPassword: "",
+      });
+
+      setAgreedToTerms(false);
+      setUsernameStatus("idle");
+    } catch (error) {
+      console.error("Registration error:", error);
+
+      setErrorMessage(
+        "Unable to connect to the server. Please make sure the backend is running."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -103,6 +159,20 @@ function Register({ onBack }) {
             Join ZenvaZapp and start connecting with people.
           </p>
         </div>
+
+        {/* Error message */}
+        {errorMessage && (
+          <div className="auth-error">
+            {errorMessage}
+          </div>
+        )}
+
+        {/* Success message */}
+        {successMessage && (
+          <div className="auth-success">
+            {successMessage}
+          </div>
+        )}
 
         {/* Registration form */}
         <form
@@ -204,9 +274,7 @@ function Register({ onBack }) {
                 id="registerPassword"
                 name="password"
                 type={
-                  showPassword
-                    ? "text"
-                    : "password"
+                  showPassword ? "text" : "password"
                 }
                 value={formData.password}
                 onChange={handleChange}
@@ -221,9 +289,7 @@ function Register({ onBack }) {
                   setShowPassword(!showPassword)
                 }
               >
-                {showPassword
-                  ? "Hide"
-                  : "Show"}
+                {showPassword ? "Hide" : "Show"}
               </button>
             </div>
 
@@ -294,7 +360,6 @@ function Register({ onBack }) {
               </button>
             </div>
 
-            {/* Password match message */}
             {formData.confirmPassword && (
               <p
                 className={`password-match ${
@@ -348,9 +413,11 @@ function Register({ onBack }) {
           <button
             type="submit"
             className="primary-button"
-            disabled={!formIsValid}
+            disabled={!formIsValid || isSubmitting}
           >
-            Create account
+            {isSubmitting
+              ? "Creating account..."
+              : "Create account"}
           </button>
 
         </form>
@@ -375,9 +442,6 @@ function Register({ onBack }) {
   );
 }
 
-/*
-  Reusable password requirement component
-*/
 function PasswordRule({ valid, text }) {
   return (
     <div

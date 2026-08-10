@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 
-function OTPVerification({ method = "phone", destination = "+237 ••••••1234", onBack }) {
+function OTPVerification({ method = "phone",
+  destination = "+237 ••••••1234",
+  onBack,
+  user,
+  onVerified, }) {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [secondsLeft, setSecondsLeft] = useState(60);
   const [error, setError] = useState("");
@@ -100,6 +104,9 @@ function OTPVerification({ method = "phone", destination = "+237 •••••
 
     setTimeout(() => {
       setIsVerifying(false);
+      if (onVerified) {
+        onVerified(user);
+      }
     }, 1000);
   };
 
