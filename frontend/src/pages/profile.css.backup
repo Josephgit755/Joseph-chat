@@ -1,6 +1,5 @@
 /* =========================================
-   ZENVAZAPP PROFILE SETUP
-   GOLDEN-BROWN THEME
+   PROFILE SETUP PAGE
 ========================================= */
 
 .profile-page {
@@ -11,24 +10,9 @@
   justify-content: center;
   align-items: flex-start;
 
-  padding: 50px 20px 70px;
+  padding: 40px 20px 70px;
 
   box-sizing: border-box;
-
-  color: #fff8ed;
-
-  background:
-    radial-gradient(
-      circle at top left,
-      rgba(197, 138, 58, 0.12),
-      transparent 35%
-    ),
-    radial-gradient(
-      circle at bottom right,
-      rgba(138, 90, 32, 0.10),
-      transparent 35%
-    ),
-    #1b120b;
 }
 
 
@@ -40,24 +24,18 @@
   width: 100%;
   max-width: 620px;
 
-  padding: 42px;
-
-  border-radius: 28px;
+  padding: 40px;
 
   box-sizing: border-box;
 
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.045),
-      rgba(197, 138, 58, 0.035)
-    ),
-    #2a1b10;
+  border-radius: 26px;
 
-  border: 1px solid rgba(224, 181, 106, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+
+  border: 1px solid rgba(255, 255, 255, 0.10);
 
   box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.42);
+    0 24px 70px rgba(0, 0, 0, 0.35);
 }
 
 
@@ -68,48 +46,47 @@
 .profile-header {
   text-align: center;
 
-  margin-bottom: 38px;
+  margin-bottom: 42px;
 }
 
 .profile-logo {
-  width: 64px;
-  height: 64px;
+  width: 58px;
+  height: 58px;
 
-  margin: 0 auto 22px;
+  margin: 0 auto 20px;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  border-radius: 20px;
+  border-radius: 18px;
 
-  background:
-    linear-gradient(
-      135deg,
-      #e0b56a,
-      #8a5a20
-    );
+  background: linear-gradient(
+    135deg,
+    #ffffff,
+    #d8d8d8
+  );
 
   box-shadow:
-    0 10px 30px rgba(197, 138, 58, 0.18);
+    0 10px 30px rgba(0, 0, 0, 0.20);
 }
 
 .logo-z-upper {
-  font-size: 34px;
+  font-size: 31px;
   font-weight: 800;
 
   line-height: 1;
 
-  color: #24170e;
+  color: #111111;
 }
 
 .logo-z-lower {
-  font-size: 34px;
+  font-size: 31px;
   font-weight: 500;
 
   line-height: 1;
 
-  color: #4a2d13;
+  color: #555555;
 
   margin-left: -3px;
 }
@@ -117,12 +94,11 @@
 .profile-header h1 {
   margin: 0;
 
-  font-size: 32px;
+  font-size: 31px;
+
   line-height: 1.2;
 
   font-weight: 750;
-
-  color: #fff8ed;
 }
 
 .profile-header p {
@@ -131,9 +107,10 @@
   max-width: 440px;
 
   font-size: 15px;
+
   line-height: 1.6;
 
-  color: #958372;
+  opacity: 0.65;
 }
 
 
@@ -144,15 +121,15 @@
 .profile-error {
   padding: 13px 16px;
 
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 
   border-radius: 12px;
 
-  background: rgba(255, 107, 95, 0.10);
+  background: rgba(255, 70, 70, 0.12);
 
-  border: 1px solid rgba(255, 107, 95, 0.25);
+  border: 1px solid rgba(255, 70, 70, 0.25);
 
-  color: #ff9389;
+  color: #ff8d8d;
 
   font-size: 14px;
 
@@ -161,7 +138,32 @@
 
 
 /* =========================================
-   PHOTO
+   SUCCESS
+========================================= */
+
+.profile-success {
+  padding: 13px 16px;
+
+  margin-bottom: 24px;
+
+  border-radius: 12px;
+
+  background: rgba(80, 220, 140, 0.12);
+
+  border: 1px solid rgba(80, 220, 140, 0.25);
+
+  color: #7ee2a8;
+
+  font-size: 14px;
+
+  line-height: 1.5;
+
+  text-align: center;
+}
+
+
+/* =========================================
+   PROFILE PHOTO SECTION
 ========================================= */
 
 .profile-photo-section {
@@ -169,33 +171,37 @@
 
   padding-bottom: 38px;
 
-  margin-bottom: 36px;
+  margin-bottom: 38px;
 
   border-bottom: 1px solid
-    rgba(224, 181, 106, 0.13);
+    rgba(255, 255, 255, 0.09);
 }
 
+
+/* =========================================
+   PROFILE PHOTO
+========================================= */
+
 .profile-photo-wrapper {
-  width: 132px;
-  height: 132px;
+  width: 108px;
+  height: 108px;
 
-  margin: 0 auto 20px;
+  margin: 0 auto 18px;
 
-  padding: 4px;
-
-  border-radius: 50%;
-
-  background:
-    linear-gradient(
-      135deg,
-      #e0b56a,
-      #8a5a20
-    );
+  padding: 3px;
 
   box-sizing: border-box;
 
+  border-radius: 50%;
+
+  background: linear-gradient(
+    135deg,
+    #ffffff,
+    rgba(255, 255, 255, 0.30)
+  );
+
   box-shadow:
-    0 10px 28px rgba(197, 138, 58, 0.14);
+    0 10px 28px rgba(0, 0, 0, 0.22);
 }
 
 .profile-photo {
@@ -208,28 +214,37 @@
 
   border-radius: 50%;
 
-  background: #24170e;
-}
-
-.photo-text h3 {
-  margin: 0;
-
-  font-size: 18px;
-
-  color: #fff8ed;
-}
-
-.photo-text p {
-  margin: 7px 0 20px;
-
-  font-size: 14px;
-
-  color: #958372;
+  background: #222222;
 }
 
 
 /* =========================================
-   PHOTO ACTIONS
+   PHOTO TEXT
+========================================= */
+
+.photo-text h3 {
+  margin: 0;
+
+  font-size: 17px;
+
+  font-weight: 650;
+}
+
+.photo-text p {
+  margin: 7px auto 20px;
+
+  max-width: 360px;
+
+  font-size: 13px;
+
+  line-height: 1.5;
+
+  opacity: 0.60;
+}
+
+
+/* =========================================
+   PHOTO BUTTONS
 ========================================= */
 
 .photo-actions {
@@ -244,11 +259,11 @@
 
 .secondary-button {
   border: 1px solid
-    rgba(224, 181, 106, 0.16);
+    rgba(255, 255, 255, 0.13);
 
-  background: rgba(255, 255, 255, 0.045);
+  background: rgba(255, 255, 255, 0.06);
 
-  color: #fff8ed;
+  color: inherit;
 
   padding: 10px 14px;
 
@@ -258,19 +273,31 @@
 
   font-size: 13px;
 
+  font-family: inherit;
+
   transition:
     transform 0.18s ease,
     background 0.18s ease,
     border-color 0.18s ease;
 }
 
-.secondary-button:hover {
+.secondary-button:hover:not(:disabled) {
   transform: translateY(-1px);
 
-  background: rgba(197, 138, 58, 0.12);
+  background: rgba(255, 255, 255, 0.11);
 
   border-color:
-    rgba(224, 181, 106, 0.32);
+    rgba(255, 255, 255, 0.22);
+}
+
+.secondary-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.secondary-button:disabled {
+  opacity: 0.45;
+
+  cursor: not-allowed;
 }
 
 
@@ -283,34 +310,39 @@
 
   flex-direction: column;
 
-  gap: 28px;
+  gap: 32px;
 }
+
+
+/* =========================================
+   FORM FIELD
+========================================= */
 
 .profile-field {
   display: flex;
 
   flex-direction: column;
 
-  gap: 9px;
+  gap: 10px;
 }
 
 .profile-field label {
   font-size: 14px;
 
   font-weight: 650;
-
-  color: #cdbfae;
 }
 
 .profile-field small {
   font-size: 12px;
 
-  color: #756657;
+  line-height: 1.4;
+
+  opacity: 0.48;
 }
 
 
 /* =========================================
-   INPUTS
+   INPUT / TEXTAREA / SELECT
 ========================================= */
 
 .profile-field input,
@@ -321,13 +353,13 @@
   box-sizing: border-box;
 
   border: 1px solid
-    rgba(224, 181, 106, 0.15);
+    rgba(255, 255, 255, 0.10);
 
   border-radius: 13px;
 
-  background: #24170e;
+  background: rgba(255, 255, 255, 0.07);
 
-  color: #fff8ed;
+  color: inherit;
 
   padding: 14px 15px;
 
@@ -343,48 +375,97 @@
     box-shadow 0.18s ease;
 }
 
+
+/* =========================================
+   INPUT
+========================================= */
+
 .profile-field input {
   height: 50px;
 }
+
+
+/* =========================================
+   TEXTAREA
+========================================= */
 
 .profile-field textarea {
   resize: vertical;
 
   min-height: 110px;
+
+  line-height: 1.5;
 }
+
+
+/* =========================================
+   SELECT
+========================================= */
 
 .profile-field select {
   height: 50px;
 
   cursor: pointer;
+
+  appearance: auto;
+
+  color: #ffffff;
+
+  background: rgba(255, 255, 255, 0.07);
+
+  color-scheme: dark;
 }
 
-.profile-field input::placeholder,
-.profile-field textarea::placeholder {
-  color: #756657;
+/* Gender dropdown options */
+.profile-field select option {
+  background: #242424;
+
+  color: #ffffff;
+
+  padding: 12px;
 }
 
-.profile-field input:focus,
-.profile-field textarea:focus,
-.profile-field select:focus {
-  border-color: #c58a3a;
+/* Selected option */
+.profile-field select option:checked {
+  background: #3a3a3a;
 
-  background: #2d1d11;
+  color: #ffffff;
+}
+.profile-field select:hover {
+  background: rgba(255, 255, 255, 0.10);
 
-  box-shadow:
-    0 0 0 3px
-    rgba(197, 138, 58, 0.08);
+  border-color: rgba(255, 255, 255, 0.20);
 }
 
 
 /* =========================================
-   SELECT OPTIONS
+   FOCUS
 ========================================= */
 
-.profile-field select option {
-  background: #2a1b10;
+.profile-field input:focus,
+.profile-field textarea:focus,
+.profile-field select:focus {
+  border-color:
+    rgba(255, 255, 255, 0.35);
 
-  color: #fff8ed;
+  background:
+    rgba(255, 255, 255, 0.10);
+
+  box-shadow:
+    0 0 0 3px
+    rgba(255, 255, 255, 0.05);
+}
+
+
+/* =========================================
+   PLACEHOLDER
+========================================= */
+
+.profile-field input::placeholder,
+.profile-field textarea::placeholder {
+  color: inherit;
+
+  opacity: 0.38;
 }
 
 
@@ -403,12 +484,12 @@
 .field-heading span {
   font-size: 12px;
 
-  color: #756657;
+  opacity: 0.45;
 }
 
 
 /* =========================================
-   COMPLETE BUTTON
+   COMPLETE PROFILE BUTTON
 ========================================= */
 
 .complete-profile-button {
@@ -422,23 +503,17 @@
 
   border-radius: 15px;
 
-  background:
-    linear-gradient(
-      135deg,
-      #e0b56a,
-      #c58a3a
-    );
+  background: #ffffff;
 
-  color: #24170e;
+  color: #111111;
+
+  font-family: inherit;
 
   font-size: 15px;
 
   font-weight: 700;
 
   cursor: pointer;
-
-  box-shadow:
-    0 10px 25px rgba(197, 138, 58, 0.14);
 
   transition:
     transform 0.18s ease,
@@ -450,7 +525,7 @@
   transform: translateY(-2px);
 
   box-shadow:
-    0 12px 30px rgba(197, 138, 58, 0.22);
+    0 12px 30px rgba(0, 0, 0, 0.22);
 }
 
 .complete-profile-button:active:not(:disabled) {
@@ -471,7 +546,7 @@
 @media (max-width: 600px) {
 
   .profile-page {
-    padding: 25px 14px 45px;
+    padding: 24px 14px 45px;
   }
 
   .profile-card {
@@ -480,13 +555,21 @@
     border-radius: 22px;
   }
 
+  .profile-header {
+    margin-bottom: 34px;
+  }
+
   .profile-header h1 {
     font-size: 27px;
   }
 
+  .profile-header p {
+    font-size: 14px;
+  }
+
   .profile-photo-wrapper {
-    width: 112px;
-    height: 112px;
+    width: 96px;
+    height: 96px;
   }
 
   .photo-actions {
@@ -495,5 +578,9 @@
 
   .secondary-button {
     width: 100%;
+  }
+
+  .profile-form {
+    gap: 28px;
   }
 }

@@ -1,0 +1,459 @@
+import { useMemo, useState } from "react";
+import "./chatlist.css";
+
+function ChatList({ user, onOpenChat, onNavigate }) {
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showPlusMenu, setShowPlusMenu] = useState(false);
+
+  // Temporary chat data.
+  // We will replace this with MongoDB data later.
+  const chats = [
+    {
+      id: 1,
+      name: "John",
+      message: "Hey, are you coming today?",
+      time: "10:42 AM",
+      unread: 2,
+      favorite: true,
+      group: false,
+      avatar: "https://ui-avatars.com/api/?name=John&background=222&color=fff",
+    },
+    {
+      id: 2,
+      name: "Computer Engineering 2026",
+      message: "Sarah: The assignment is due tomorrow.",
+      time: "9:18 AM",
+      unread: 5,
+      favorite: false,
+      group: true,
+      avatar:
+        "https://ui-avatars.com/api/?name=CE&background=222&color=fff",
+    },
+    {
+      id: 3,
+      name: "Sarah",
+      message: "I sent you the document.",
+      time: "Yesterday",
+      unread: 0,
+      favorite: true,
+      group: false,
+      avatar:
+        "https://ui-avatars.com/api/?name=Sarah&background=222&color=fff",
+    },
+    {
+      id: 4,
+      name: "ZenvaZapp Team",
+      message: "Welcome to ZenvaZapp!",
+      time: "Yesterday",
+      unread: 0,
+      favorite: false,
+      group: true,
+      avatar:
+        "https://ui-avatars.com/api/?name=ZZ&background=222&color=fff",
+    },
+  ];
+
+  const filteredChats = useMemo(() => {
+    return chats.filter((chat) => {
+      const matchesSearch = chat.name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+
+      if (!matchesSearch) {
+        return false;
+      }
+
+      if (activeFilter === "unread") {
+        return chat.unread > 0;
+      }
+
+      if (activeFilter === "favorites") {
+        return chat.favorite;
+      }
+
+      if (activeFilter === "groups") {
+        return chat.group;
+      }
+
+      return true;
+    });
+  }, [activeFilter, searchQuery]);
+
+  const handleNavigation = (section) => {
+    if (onNavigate) {
+      onNavigate(section);
+    }
+  };
+
+  return (
+    <main className="chat-page">
+      <section className="chat-shell">
+
+        {/* =====================================
+            HEADER
+        ===================================== */}
+
+        <header className="chat-header">
+          <div className="chat-brand">
+            <div className="chat-logo">
+              <span>Z</span>
+              <span>z</span>
+            </div>
+
+            <div>
+              <h1>ZenvaZapp</h1>
+              <p>Stay connected</p>
+            </div>
+          </div>
+
+          <div className="header-actions">
+            <button
+              type="button"
+              className="header-icon-button"
+              aria-label="Search"
+              onClick={() => document.getElementById("chat-search")?.focus()}
+            >
+              🔍
+            </button>
+
+            <button
+              type="button"
+              className="header-icon-button"
+              aria-label="More options"
+            >
+              ⋮
+            </button>
+          </div>
+        </header>
+
+        {/* =====================================
+            SEARCH
+        ===================================== */}
+
+        <div className="chat-search-wrapper">
+          <span className="search-icon">⌕</span>
+
+          <input
+            id="chat-search"
+            type="text"
+            placeholder="Search chats"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+          />
+
+          {searchQuery && (
+            <button
+              type="button"
+              className="clear-search"
+              onClick={() => setSearchQuery("")}
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        {/* =====================================
+            STATUS
+        ===================================== */}
+
+        <section className="status-section">
+          <div className="section-heading">
+            <div>
+              <h2>Status</h2>
+              <p>Updates from your contacts</p>
+            </div>
+
+            <button type="button" className="section-link">
+              See all
+            </button>
+          </div>
+
+          <div className="status-list">
+
+            {/* My Status */}
+
+            <button type="button" className="status-item">
+              <div className="status-avatar add-status">
+                <img
+                  src={
+                    user?.profilePhoto ||
+                    "https://ui-avatars.com/api/?name=Me&background=222&color=fff"
+                  }
+                  alt="Your status"
+                />
+
+                <span>+</span>
+              </div>
+
+              <strong>My status</strong>
+            </button>
+
+            {/* Status 1 */}
+
+            <button type="button" className="status-item">
+              <div className="status-avatar">
+                <img
+                  src="https://ui-avatars.com/api/?name=John&background=444&color=fff"
+                  alt="John"
+                />
+              </div>
+
+              <strong>John</strong>
+            </button>
+
+            {/* Status 2 */}
+
+            <button type="button" className="status-item">
+              <div className="status-avatar">
+                <img
+                  src="https://ui-avatars.com/api/?name=Sarah&background=555&color=fff"
+                  alt="Sarah"
+                />
+              </div>
+
+              <strong>Sarah</strong>
+            </button>
+
+            {/* Status 3 */}
+
+            <button type="button" className="status-item">
+              <div className="status-avatar">
+                <img
+                  src="https://ui-avatars.com/api/?name=Mike&background=666&color=fff"
+                  alt="Mike"
+                />
+              </div>
+
+              <strong>Mike</strong>
+            </button>
+
+            {/* Status 4 */}
+
+            <button type="button" className="status-item">
+              <div className="status-avatar">
+                <img
+                  src="https://ui-avatars.com/api/?name=Anna&background=777&color=fff"
+                  alt="Anna"
+                />
+              </div>
+
+              <strong>Anna</strong>
+            </button>
+
+          </div>
+        </section>
+
+        {/* =====================================
+            CHAT FILTERS
+        ===================================== */}
+
+        <div className="chat-filters">
+
+          <button
+            type="button"
+            className={activeFilter === "unread" ? "active" : ""}
+            onClick={() => setActiveFilter("unread")}
+          >
+            Unread
+          </button>
+
+          <button
+            type="button"
+            className={activeFilter === "favorites" ? "active" : ""}
+            onClick={() => setActiveFilter("favorites")}
+          >
+            Favorites
+          </button>
+
+          <button
+            type="button"
+            className={activeFilter === "groups" ? "active" : ""}
+            onClick={() => setActiveFilter("groups")}
+          >
+            Groups
+          </button>
+
+          <button
+            type="button"
+            className={activeFilter === "all" ? "active" : ""}
+            onClick={() => setActiveFilter("all")}
+          >
+            All
+          </button>
+
+        </div>
+
+        {/* =====================================
+            CHAT LIST HEADER
+        ===================================== */}
+
+        <div className="conversation-heading">
+          <div>
+            <h2>Chats</h2>
+            <p>Your conversations</p>
+          </div>
+
+          <div className="plus-wrapper">
+
+            <button
+              type="button"
+              className="plus-button"
+              onClick={() => setShowPlusMenu((previous) => !previous)}
+              aria-label="Create new chat"
+            >
+              +
+            </button>
+
+            {showPlusMenu && (
+              <div className="plus-menu">
+
+                <button
+                  type="button"
+                  onClick={() => setShowPlusMenu(false)}
+                >
+                  💬 New chat
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPlusMenu(false)}
+                >
+                  👥 New group
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPlusMenu(false)}
+                >
+                  👤 New contact
+                </button>
+
+              </div>
+            )}
+
+          </div>
+        </div>
+
+        {/* =====================================
+            CONVERSATIONS
+        ===================================== */}
+
+        <section className="conversation-list">
+
+          {filteredChats.length === 0 ? (
+            <div className="empty-chats">
+              <div>🔎</div>
+              <h3>No chats found</h3>
+              <p>Try another search or filter.</p>
+            </div>
+          ) : (
+            filteredChats.map((chat) => (
+              <button
+                type="button"
+                key={chat.id}
+                className="chat-item"
+                onClick={() => onOpenChat && onOpenChat(chat)}
+              >
+
+                <div className="chat-avatar-wrapper">
+                  <img
+                    src={chat.avatar}
+                    alt={chat.name}
+                    className="chat-avatar"
+                  />
+
+                  {chat.group && (
+                    <span className="group-indicator">👥</span>
+                  )}
+                </div>
+
+                <div className="chat-content">
+
+                  <div className="chat-top-line">
+                    <h3>{chat.name}</h3>
+
+                    <span className="chat-time">
+                      {chat.time}
+                    </span>
+                  </div>
+
+                  <div className="chat-bottom-line">
+
+                    <p>{chat.message}</p>
+
+                    {chat.unread > 0 && (
+                      <span className="unread-count">
+                        {chat.unread}
+                      </span>
+                    )}
+
+                  </div>
+
+                </div>
+
+              </button>
+            ))
+          )}
+
+        </section>
+
+        {/* =====================================
+            BOTTOM NAVIGATION
+        ===================================== */}
+
+        <nav className="bottom-navigation">
+
+          <button
+            type="button"
+            className="nav-item active"
+            onClick={() => handleNavigation("chats")}
+          >
+            <span className="nav-icon">💬</span>
+            <span>Chats</span>
+          </button>
+
+          <button
+            type="button"
+            className="nav-item"
+            onClick={() => handleNavigation("calls")}
+          >
+            <span className="nav-icon">📞</span>
+            <span>Calls</span>
+          </button>
+
+          <button
+            type="button"
+            className="nav-item"
+            onClick={() => handleNavigation("tools")}
+          >
+            <span className="nav-icon">🧰</span>
+            <span>Tools</span>
+          </button>
+
+          <button
+            type="button"
+            className="nav-item"
+            onClick={() => handleNavigation("settings")}
+          >
+            <span className="nav-icon">⚙️</span>
+            <span>Settings</span>
+          </button>
+
+          <button
+            type="button"
+            className="nav-item"
+            onClick={() => handleNavigation("profile")}
+          >
+            <span className="nav-icon">👤</span>
+            <span>Profile</span>
+          </button>
+
+        </nav>
+
+      </section>
+    </main>
+  );
+}
+
+export default ChatList;
