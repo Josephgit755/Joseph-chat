@@ -2,28 +2,30 @@ import { useEffect, useState } from "react";
 
 import "./zenva-breath.css";
 
-function ZenvaBreath({ onBack }) {
-  const phases = [
-    {
-      name: "Breathe In",
-      instruction: "Slowly breathe in",
-      duration: 4,
-    },
-    {
-      name: "Hold",
-      instruction: "Hold your breath gently",
-      duration: 4,
-    },
-    {
-      name: "Release",
-      instruction: "Slowly release your breath",
-      duration: 4,
-    },
-  ];
+const phases = [
+  {
+    name: "Breathe In",
+    instruction: "Slowly breathe in",
+    duration: 4,
+  },
+  {
+    name: "Hold",
+    instruction: "Hold your breath gently",
+    duration: 4,
+  },
+  {
+    name: "Release",
+    instruction: "Slowly release your breath",
+    duration: 4,
+  },
+];
 
+function ZenvaBreath({ onBack }) {
   const [isRunning, setIsRunning] = useState(false);
   const [phaseIndex, setPhaseIndex] = useState(0);
-  const [secondsLeft, setSecondsLeft] = useState(4);
+  const [secondsLeft, setSecondsLeft] = useState(
+    phases[0].duration
+  );
   const [cycles, setCycles] = useState(0);
 
   const currentPhase = phases[phaseIndex];
@@ -62,7 +64,7 @@ function ZenvaBreath({ onBack }) {
   const handleReset = () => {
     setIsRunning(false);
     setPhaseIndex(0);
-    setSecondsLeft(4);
+    setSecondsLeft(phases[0].duration);
     setCycles(0);
   };
 
@@ -70,7 +72,6 @@ function ZenvaBreath({ onBack }) {
     <div className="zenva-breath-page">
 
       {/* HEADER */}
-
       <header className="zenva-breath-header">
 
         <button
@@ -92,7 +93,6 @@ function ZenvaBreath({ onBack }) {
 
 
       {/* INTRO */}
-
       <section className="zenva-breath-intro">
 
         <div className="zenva-breath-icon">
@@ -113,15 +113,15 @@ function ZenvaBreath({ onBack }) {
 
 
       {/* BREATHING AREA */}
-
       <section className="breathing-area">
 
         <div
-          className={`breathing-circle ${phaseIndex === 0
-            ? "breathing-in"
-            : phaseIndex === 1
-              ? "breathing-hold"
-              : "breathing-out"
+          className={`breathing-circle ${
+            phaseIndex === 0
+              ? "breathing-in"
+              : phaseIndex === 1
+                ? "breathing-hold"
+                : "breathing-out"
           }`}
         >
 
@@ -157,14 +157,15 @@ function ZenvaBreath({ onBack }) {
 
 
       {/* CONTROLS */}
-
       <section className="breath-controls">
 
         <button
           className="breath-primary-button"
           onClick={handleStartPause}
         >
-          {isRunning ? "Pause" : "Start Breathing"}
+          {isRunning
+            ? "Pause"
+            : "Start Breathing"}
         </button>
 
         <button
@@ -178,7 +179,6 @@ function ZenvaBreath({ onBack }) {
 
 
       {/* PROGRESS */}
-
       <section className="breath-progress">
 
         <div className="breath-progress-header">
@@ -211,7 +211,6 @@ function ZenvaBreath({ onBack }) {
 
 
       {/* FOOTER MESSAGE */}
-
       <section className="breath-message">
 
         <span>✨</span>
