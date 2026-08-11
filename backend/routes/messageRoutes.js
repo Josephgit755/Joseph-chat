@@ -21,7 +21,6 @@ router.get("/test", (req, res) => {
 router.get("/:conversationId", async (req, res) => {
   try {
     const { conversationId } = req.params;
-    const { userId } = req.query;
 
     if (!conversationId) {
       return res.status(400).json({
@@ -30,32 +29,19 @@ router.get("/:conversationId", async (req, res) => {
       });
     }
 
-    // If a userId is provided, hide messages
-    // that this particular user deleted.
-    let filter = {
+    const messages = await Message.find({
       conversationId,
-    };
-
-    if (userId) {
-      filter = {
-        conversationId,
-        $or: [
-          {
-            senderId: userId,
-            deletedForSender: false,
-          },
-          {
-            receiverId: userId,
-            deletedForReceiver: false,
-          },
-        ],
-      };
-    }
-
-    const messages = await Message.find(filter)
-      .sort({
-        createdAt: 1,
-      });
+      $or: [
+        {
+          deletedForSender: false,
+        },
+        {
+          deletedForReceiver: false,
+        },
+      ],
+    }).sort({
+      createdAt: 1,
+    });
 
     res.json({
       success: true,
@@ -125,6 +111,7 @@ router.post("/", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to send message.",
+      error: error.message,
     });
   }
 });
@@ -137,30 +124,23 @@ router.patch(
   "/:messageId/delete-for-me",
   async (req, res) => {
     try {
-      const { messageId } =
-        req.params;
-
-      const { userId } =
-        req.body;
+      const { messageId } = req.params;
+      const { userId } = req.body;
 
       if (!userId) {
         return res.status(400).json({
           success: false,
-          message:
-            "User ID is required.",
+          message: "User ID is required.",
         });
       }
 
       const message =
-        await Message.findById(
-          messageId
-        );
+        await Message.findById(messageId);
 
       if (!message) {
         return res.status(404).json({
           success: false,
-          message:
-            "Message not found.",
+          message: "Message not found.",
         });
       }
 
@@ -168,14 +148,12 @@ router.patch(
         String(message.senderId) ===
         String(userId)
       ) {
-        message.deletedForSender =
-          true;
+        message.deletedForSender = true;
       } else if (
         String(message.receiverId) ===
         String(userId)
       ) {
-        message.deletedForReceiver =
-          true;
+        message.deletedForReceiver = true;
       } else {
         return res.status(403).json({
           success: false,
@@ -213,35 +191,26 @@ router.patch(
   "/:messageId/delete-for-everyone",
   async (req, res) => {
     try {
-      const { messageId } =
-        req.params;
-
-      const { userId } =
-        req.body;
+      const { messageId } = req.params;
+      const { userId } = req.body;
 
       if (!userId) {
         return res.status(400).json({
           success: false,
-          message:
-            "User ID is required.",
+          message: "User ID is required.",
         });
       }
 
       const message =
-        await Message.findById(
-          messageId
-        );
+        await Message.findById(messageId);
 
       if (!message) {
         return res.status(404).json({
           success: false,
-          message:
-            "Message not found.",
+          message: "Message not found.",
         });
       }
 
-      // Only the sender can delete
-      // a message for everyone.
       if (
         String(message.senderId) !==
         String(userId)
@@ -256,11 +225,8 @@ router.patch(
       message.text =
         "This message was deleted.";
 
-      message.deletedForSender =
-        true;
-
-      message.deletedForReceiver =
-        true;
+      message.deletedForSender = true;
+      message.deletedForReceiver = true;
 
       await message.save();
 
@@ -284,18 +250,15 @@ router.patch(
 );
 
 // ==========================================
-// UPDATE MESSAGE STATUS
+// UPDATE INDIVIDUAL MESSAGE STATUS
 // ==========================================
 
 router.patch(
   "/:messageId/status",
   async (req, res) => {
     try {
-      const { messageId } =
-        req.params;
-
-      const { status } =
-        req.body;
+      const { messageId } = req.params;
+      const { status } = req.body;
 
       if (
         ![
@@ -314,15 +277,18 @@ router.patch(
       const message =
         await Message.findByIdAndUpdate(
           messageId,
-          { status },
-          { new: true }
+          {
+            status,
+          },
+          {
+            new: true,
+          }
         );
 
       if (!message) {
         return res.status(404).json({
           success: false,
-          message:
-            "Message not found.",
+          message: "Message not found.",
         });
       }
 
@@ -344,5 +310,242 @@ router.patch(
     }
   }
 );
+
+// ==========================================
+// MARK CONVERSATION MESSAGES AS DELIVERED
+// ==========================================
+
+router.patch(
+  "/:conversationId/delivered",
+  async (req, res) => {
+    try {
+      const { conversationId } =
+        req.params;
+
+      const { userId } = req.body;
+
+      if (!conversationId) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Conversation ID is required.",
+        });
+      }
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "User ID is required.",
+        });
+      }
+
+      const result =
+        await Message.updateMany(
+          {
+            conversationId,
+            receiverId: userId,
+            status: "sent",
+            deletedForReceiver: false,
+          },
+          {
+            $set: {
+              status: "delivered",
+            },
+          }
+        );
+
+      res.json({
+        success: true,
+        message:
+          "Messages marked as delivered.",
+        modifiedCount:
+          result.modifiedCount,
+      });
+    } catch (error) {
+      console.error(
+        "Mark conversation messages delivered error:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to mark messages as delivered.",
+      });
+    }
+  }
+);
+
+// ==========================================
+// MARK CONVERSATION MESSAGES AS READ
+// ==========================================
+
+router.patch(
+  "/:conversationId/read",
+  async (req, res) => {
+    try {
+      const { conversationId } =
+        req.params;
+
+      const { userId } = req.body;
+
+      if (!conversationId) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Conversation ID is required.",
+        });
+      }
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "User ID is required.",
+        });
+      }
+
+      const result =
+        await Message.updateMany(
+          {
+            conversationId,
+            receiverId: userId,
+            status: {
+              $in: [
+                "sent",
+                "delivered",
+              ],
+            },
+            deletedForReceiver: false,
+          },
+          {
+            $set: {
+              status: "read",
+            },
+          }
+        );
+
+      res.json({
+        success: true,
+        message:
+          "Messages marked as read.",
+        modifiedCount:
+          result.modifiedCount,
+      });
+    } catch (error) {
+      console.error(
+        "Mark conversation messages read error:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to mark messages as read.",
+      });
+    }
+  }
+);
+
+// ==========================================
+// MARK INDIVIDUAL MESSAGE AS DELIVERED
+// ==========================================
+
+router.patch(
+  "/:messageId/delivered",
+  async (req, res) => {
+    try {
+      const { messageId } =
+        req.params;
+
+      const message =
+        await Message.findByIdAndUpdate(
+          messageId,
+          {
+            status: "delivered",
+          },
+          {
+            new: true,
+          }
+        );
+
+      if (!message) {
+        return res.status(404).json({
+          success: false,
+          message: "Message not found.",
+        });
+      }
+
+      res.json({
+        success: true,
+        message,
+      });
+    } catch (error) {
+      console.error(
+        "Mark message delivered error:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to mark message as delivered.",
+      });
+    }
+  }
+);
+
+// ==========================================
+// MARK INDIVIDUAL MESSAGE AS READ
+// ==========================================
+
+router.patch(
+  "/:messageId/read",
+  async (req, res) => {
+    try {
+      const { messageId } =
+        req.params;
+
+      const message =
+        await Message.findByIdAndUpdate(
+          messageId,
+          {
+            status: "read",
+          },
+          {
+            new: true,
+          }
+        );
+
+      if (!message) {
+        return res.status(404).json({
+          success: false,
+          message: "Message not found.",
+        });
+      }
+
+      res.json({
+        success: true,
+        message,
+      });
+    } catch (error) {
+      console.error(
+        "Mark message read error:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to mark message as read.",
+      });
+    }
+  }
+);
+
+// ==========================================
+// EXPORT ROUTER
+// ==========================================
 
 module.exports = router;

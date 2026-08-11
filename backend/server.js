@@ -43,6 +43,10 @@ io.on("connection", (socket) => {
     "join-conversation",
     (conversationId) => {
       if (!conversationId) {
+        console.log(
+          "Join conversation rejected: conversationId missing."
+        );
+
         return;
       }
 
@@ -98,10 +102,14 @@ io.on("connection", (socket) => {
       message
     );
 
-    io.to(conversationId).emit(
-      "new-message",
-      message
-    );
+    // Send message to OTHER users in the conversation.
+    // The sender already added the saved message locally.
+    socket
+      .to(conversationId)
+      .emit(
+        "new-message",
+        message
+      );
   });
 
   // ========================================
@@ -121,12 +129,18 @@ io.on("connection", (socket) => {
         return;
       }
 
-      io.to(conversationId).emit(
-        "message-delivered",
-        {
-          messageId,
-        }
+      console.log(
+        `Message delivered: ${messageId}`
       );
+
+      socket
+        .to(conversationId)
+        .emit(
+          "message-delivered",
+          {
+            messageId,
+          }
+        );
     }
   );
 
@@ -147,12 +161,18 @@ io.on("connection", (socket) => {
         return;
       }
 
-      io.to(conversationId).emit(
-        "message-read",
-        {
-          messageId,
-        }
+      console.log(
+        `Message read: ${messageId}`
       );
+
+      socket
+        .to(conversationId)
+        .emit(
+          "message-read",
+          {
+            messageId,
+          }
+        );
     }
   );
 

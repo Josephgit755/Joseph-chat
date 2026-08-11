@@ -56,21 +56,6 @@ app.use(
 );
 
 // ==========================================
-// MESSAGE TEST ROUTE
-// ==========================================
-
-app.get(
-  "/api/messages/test",
-  (req, res) => {
-    res.json({
-      success: true,
-      message:
-        "ZenvaZapp message API is working",
-    });
-  }
-);
-
-// ==========================================
 // 404 HANDLER
 // ==========================================
 
