@@ -5,6 +5,7 @@ const dotenv = require("dotenv");
 
 const authRoutes = require("./routes/authRoutes");
 const profileRoutes = require("./routes/profileRoutes");
+const messageRoutes = require("./routes/messageRoutes");
 
 dotenv.config();
 
@@ -20,7 +21,6 @@ app.use(cors());
 
 app.use(express.json());
 
-
 // ==========================================
 // HEALTH CHECK
 // ==========================================
@@ -32,26 +32,61 @@ app.get("/", (req, res) => {
   });
 });
 
-
 // ==========================================
 // AUTHENTICATION ROUTES
 // ==========================================
 
-app.use(
-  "/api/auth",
-  authRoutes
-);
-
+app.use("/api/auth", authRoutes);
 
 // ==========================================
 // PROFILE ROUTES
 // ==========================================
 
-app.use(
-  "/api/profile",
-  profileRoutes
-);
+app.use("/api/profile", profileRoutes);
 
+// ==========================================
+// MESSAGE ROUTES
+// ==========================================
+
+app.use("/api/messages", messageRoutes);
+
+// ==========================================
+// MESSAGE TEST ROUTE
+// ==========================================
+
+app.get("/api/messages/test", (req, res) => {
+  res.json({
+    success: true,
+    message: "ZenvaZapp message API is working",
+  });
+});
+
+// ==========================================
+// 404 HANDLER
+// ==========================================
+
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
+  });
+});
+
+// ==========================================
+// CONNECT TO MONGODB
+// ==========================================
+
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("MongoDB connected successfully.");
+  })
+  .catch((error) => {
+    console.error(
+      "MongoDB connection failed:",
+      error.message
+    );
+  });
 
 // ==========================================
 // START SERVER
@@ -67,26 +102,6 @@ const server = app.listen(
   }
 );
 
-
-// ==========================================
-// CONNECT TO MONGODB
-// ==========================================
-
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log(
-      "MongoDB connected successfully."
-    );
-  })
-  .catch((error) => {
-    console.error(
-      "MongoDB connection failed:",
-      error.message
-    );
-  });
-
-
 // ==========================================
 // SHUTDOWN
 // ==========================================
@@ -98,6 +113,7 @@ process.on("SIGINT", () => {
 
   server.close(() => {
     mongoose.connection.close();
+
     process.exit(0);
   });
 });
