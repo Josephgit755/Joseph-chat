@@ -1,0 +1,89 @@
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+
+const authRoutes = require("./routes/authRoutes");
+const profileRoutes = require("./routes/profileRoutes");
+const messageRoutes = require("./routes/messageRoutes");
+
+dotenv.config();
+
+const app = express();
+
+// ==========================================
+// MIDDLEWARE
+// ==========================================
+
+app.use(cors());
+app.use(express.json());
+
+// ==========================================
+// HEALTH CHECK
+// ==========================================
+
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "ZenvaZapp API is running",
+  });
+});
+
+// ==========================================
+// AUTHENTICATION ROUTES
+// ==========================================
+
+app.use(
+  "/api/auth",
+  authRoutes
+);
+
+// ==========================================
+// PROFILE ROUTES
+// ==========================================
+
+app.use(
+  "/api/profile",
+  profileRoutes
+);
+
+// ==========================================
+// MESSAGE ROUTES
+// ==========================================
+
+app.use(
+  "/api/messages",
+  messageRoutes
+);
+
+// ==========================================
+// MESSAGE TEST ROUTE
+// ==========================================
+
+app.get(
+  "/api/messages/test",
+  (req, res) => {
+    res.json({
+      success: true,
+      message:
+        "ZenvaZapp message API is working",
+    });
+  }
+);
+
+// ==========================================
+// 404 HANDLER
+// ==========================================
+
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
+    path: req.originalUrl,
+  });
+});
+
+// ==========================================
+// EXPORT APP
+// ==========================================
+
+module.exports = app;
