@@ -63,17 +63,17 @@ function Tools({ user, onNavigate }) {
     }
 
     if (tool.id === "files") {
-      console.log("Smart Files selected");
+      onNavigate?.("files");
       return;
     }
 
     if (tool.id === "marketing") {
-      console.log("Marketing Status selected");
+      onNavigate?.("marketing");
       return;
     }
 
     if (tool.id === "ai") {
-      console.log("Zenva AI selected");
+      onNavigate?.("ai");
       return;
     }
   };

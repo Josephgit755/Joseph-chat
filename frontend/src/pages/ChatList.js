@@ -97,6 +97,16 @@ function ChatList({ user, onOpenChat, onNavigate }) {
     );
   };
 
+  /* =========================================
+     OPEN CHAT
+  ========================================= */
+
+  const handleOpenChat = (chat) => {
+    if (onOpenChat) {
+      onOpenChat(chat);
+    }
+  };
+
   return (
     <div className="chatlist-page">
 
@@ -122,7 +132,6 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
         </div>
 
-
         <div className="header-actions">
 
           <button
@@ -138,7 +147,6 @@ function ChatList({ user, onOpenChat, onNavigate }) {
           >
             🔍
           </button>
-
 
           <button
             className="header-icon-button"
@@ -166,7 +174,6 @@ function ChatList({ user, onOpenChat, onNavigate }) {
               🔍
             </span>
 
-
             <input
               type="text"
               placeholder="Search chats, contacts and messages..."
@@ -176,7 +183,6 @@ function ChatList({ user, onOpenChat, onNavigate }) {
               }
               autoFocus
             />
-
 
             {searchQuery && (
               <button
@@ -204,12 +210,14 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
           <h2>Status</h2>
 
-          <button className="view-status-button">
+          <button
+            className="view-status-button"
+            onClick={() => onNavigate?.("status")}
+          >
             View all
           </button>
 
         </div>
-
 
         <div className="status-list">
 
@@ -219,10 +227,11 @@ function ChatList({ user, onOpenChat, onNavigate }) {
               +
             </div>
 
-            <span>Your status</span>
+            <span>
+              Your status
+            </span>
 
           </button>
-
 
           <button className="status-item">
 
@@ -230,10 +239,11 @@ function ChatList({ user, onOpenChat, onNavigate }) {
               J
             </div>
 
-            <span>John</span>
+            <span>
+              John
+            </span>
 
           </button>
-
 
           <button className="status-item">
 
@@ -241,10 +251,11 @@ function ChatList({ user, onOpenChat, onNavigate }) {
               M
             </div>
 
-            <span>Mary</span>
+            <span>
+              Mary
+            </span>
 
           </button>
-
 
           <button className="status-item">
 
@@ -252,10 +263,11 @@ function ChatList({ user, onOpenChat, onNavigate }) {
               C
             </div>
 
-            <span>Chris</span>
+            <span>
+              Chris
+            </span>
 
           </button>
-
 
           <button className="status-item">
 
@@ -263,7 +275,9 @@ function ChatList({ user, onOpenChat, onNavigate }) {
               A
             </div>
 
-            <span>Alex</span>
+            <span>
+              Alex
+            </span>
 
           </button>
 
@@ -289,7 +303,6 @@ function ChatList({ user, onOpenChat, onNavigate }) {
           Unread
         </button>
 
-
         <button
           className={
             activeFilter === "favorites"
@@ -301,7 +314,6 @@ function ChatList({ user, onOpenChat, onNavigate }) {
           Favorites
         </button>
 
-
         <button
           className={
             activeFilter === "groups"
@@ -312,7 +324,6 @@ function ChatList({ user, onOpenChat, onNavigate }) {
         >
           Groups
         </button>
-
 
         <button
           className={
@@ -346,7 +357,6 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
         </div>
 
-
         <div className="plus-container">
 
           <button
@@ -358,7 +368,6 @@ function ChatList({ user, onOpenChat, onNavigate }) {
           >
             +
           </button>
-
 
           {showPlusMenu && (
 
@@ -374,7 +383,6 @@ function ChatList({ user, onOpenChat, onNavigate }) {
                 New Chat
               </button>
 
-
               <button
                 onClick={() => {
                   setShowPlusMenu(false);
@@ -385,7 +393,6 @@ function ChatList({ user, onOpenChat, onNavigate }) {
                 New Group
               </button>
 
-
               <button
                 onClick={() => {
                   setShowPlusMenu(false);
@@ -395,7 +402,6 @@ function ChatList({ user, onOpenChat, onNavigate }) {
                 <span>👤</span>
                 New Contact
               </button>
-
 
               <button
                 onClick={() => {
@@ -447,13 +453,12 @@ function ChatList({ user, onOpenChat, onNavigate }) {
             <button
               className="chat-item"
               key={chat.id}
-              onClick={() => onOpenChat?.(chat)}
+              onClick={() => handleOpenChat(chat)}
             >
 
               <div className="chat-avatar">
                 {chat.avatar}
               </div>
-
 
               <div className="chat-content">
 
@@ -469,13 +474,11 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
                 </div>
 
-
                 <div className="chat-bottom">
 
                   <p>
                     {chat.message}
                   </p>
-
 
                   {chat.unread > 0 && (
 
@@ -517,7 +520,6 @@ function ChatList({ user, onOpenChat, onNavigate }) {
           </span>
         </button>
 
-
         <button
           className="nav-button"
           onClick={() => onNavigate?.("calls")}
@@ -531,7 +533,6 @@ function ChatList({ user, onOpenChat, onNavigate }) {
           </span>
         </button>
 
-
         <button
           className="nav-button"
           onClick={() => onNavigate?.("tools")}
@@ -544,7 +545,6 @@ function ChatList({ user, onOpenChat, onNavigate }) {
             Tools
           </span>
         </button>
-
 
         <button
           className="nav-button"

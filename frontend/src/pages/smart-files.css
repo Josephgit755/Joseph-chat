@@ -1,0 +1,679 @@
+.smart-files-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+
+  box-sizing: border-box;
+
+  padding: 24px;
+
+  background: #8b5e34;
+  color: #ffffff;
+
+  overflow-y: auto;
+}
+
+
+/* ================================
+   HEADER
+================================ */
+
+.smart-files-header {
+  width: 100%;
+  max-width: 900px;
+
+  margin: 0 auto 24px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 16px;
+}
+
+.smart-files-back {
+  width: 44px;
+  height: 44px;
+
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 14px;
+
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+
+  font-size: 24px;
+
+  cursor: pointer;
+}
+
+.smart-files-title {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+}
+
+.smart-files-title-icon {
+  width: 50px;
+  height: 50px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 16px;
+
+  background: rgba(255, 255, 255, 0.18);
+
+  font-size: 25px;
+}
+
+.smart-files-title h1 {
+  margin: 0;
+
+  font-size: 27px;
+}
+
+.smart-files-title p {
+  margin: 4px 0 0;
+
+  color: rgba(255, 255, 255, 0.8);
+
+  font-size: 14px;
+}
+
+
+/* ================================
+   SEARCH
+================================ */
+
+.smart-files-search-section {
+  width: 100%;
+  max-width: 900px;
+
+  margin: 0 auto;
+}
+
+.smart-files-search {
+  min-height: 54px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 0 16px;
+
+  box-sizing: border-box;
+
+  border-radius: 17px;
+
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.smart-files-search-icon {
+  font-size: 18px;
+}
+
+.smart-files-search input {
+  flex: 1;
+
+  width: 100%;
+
+  border: 0;
+  outline: none;
+
+  background: transparent;
+
+  color: #3b2818;
+
+  font-size: 15px;
+}
+
+.smart-files-search input::placeholder {
+  color: #8d8278;
+}
+
+.smart-files-clear {
+  width: 28px;
+  height: 28px;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: #eee3d6;
+  color: #5b4028;
+
+  font-size: 18px;
+
+  cursor: pointer;
+}
+
+.smart-files-search-hint {
+  margin: 8px 4px 0;
+
+  color: rgba(255, 255, 255, 0.78);
+
+  font-size: 12px;
+}
+
+
+/* ================================
+   AI SEARCH
+================================ */
+
+.smart-files-ai-search {
+  width: 100%;
+  max-width: 900px;
+
+  margin: 20px auto;
+
+  box-sizing: border-box;
+
+  padding: 16px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 13px;
+
+  border-radius: 18px;
+
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.smart-files-ai-icon {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 13px;
+
+  background: rgba(255, 255, 255, 0.18);
+
+  font-size: 20px;
+}
+
+.smart-files-ai-content {
+  flex: 1;
+}
+
+.smart-files-ai-content strong {
+  display: block;
+
+  font-size: 15px;
+}
+
+.smart-files-ai-content p {
+  margin: 4px 0 0;
+
+  color: rgba(255, 255, 255, 0.78);
+
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.smart-files-ai-button {
+  border: 0;
+  border-radius: 11px;
+
+  padding: 10px 17px;
+
+  background: #ffffff;
+  color: #68451f;
+
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+
+/* ================================
+   SECTIONS
+================================ */
+
+.smart-files-categories,
+.smart-files-list-section,
+.smart-files-ai-tools,
+.smart-files-storage {
+  width: 100%;
+  max-width: 900px;
+
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.smart-files-section-heading,
+.smart-files-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 12px;
+}
+
+.smart-files-section-heading h2,
+.smart-files-list-heading h2 {
+  margin: 0;
+
+  font-size: 17px;
+}
+
+.smart-files-section-heading span,
+.smart-files-list-heading span {
+  color: rgba(255, 255, 255, 0.78);
+
+  font-size: 13px;
+}
+
+
+/* ================================
+   CATEGORIES
+================================ */
+
+.smart-files-category-list {
+  display: flex;
+
+  gap: 8px;
+
+  overflow-x: auto;
+
+  padding-bottom: 6px;
+}
+
+.smart-files-category-list::-webkit-scrollbar {
+  height: 4px;
+}
+
+.smart-files-category-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 10px;
+}
+
+.smart-files-category {
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  padding: 10px 13px;
+
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 13px;
+
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.smart-files-category.active {
+  background: #ffffff;
+  color: #68451f;
+
+  border-color: #ffffff;
+}
+
+
+/* ================================
+   FILE LIST
+================================ */
+
+.smart-files-list-section {
+  margin-top: 24px;
+}
+
+.smart-files-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 9px;
+}
+
+.smart-file-card {
+  min-height: 76px;
+
+  box-sizing: border-box;
+
+  padding: 12px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  border-radius: 17px;
+
+  background: rgba(255, 255, 255, 0.13);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.smart-file-icon {
+  width: 46px;
+  height: 46px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 13px;
+
+  background: rgba(255, 255, 255, 0.2);
+
+  font-size: 22px;
+}
+
+.smart-file-info {
+  flex: 1;
+
+  min-width: 0;
+}
+
+.smart-file-info h3 {
+  margin: 0 0 4px;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  font-size: 14px;
+}
+
+.smart-file-info p {
+  margin: 0 0 3px;
+
+  color: rgba(255, 255, 255, 0.78);
+
+  font-size: 12px;
+}
+
+.smart-file-info span {
+  color: rgba(255, 255, 255, 0.65);
+
+  font-size: 11px;
+}
+
+.smart-file-actions {
+  display: flex;
+
+  gap: 4px;
+}
+
+.smart-file-actions button {
+  width: 31px;
+  height: 31px;
+
+  border: 0;
+  border-radius: 9px;
+
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+
+  cursor: pointer;
+}
+
+.smart-file-actions button:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+
+/* ================================
+   EMPTY
+================================ */
+
+.smart-files-empty {
+  padding: 45px 20px;
+
+  text-align: center;
+
+  border-radius: 18px;
+
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.smart-files-empty-icon {
+  font-size: 35px;
+}
+
+.smart-files-empty h3 {
+  margin: 12px 0 6px;
+
+  font-size: 16px;
+}
+
+.smart-files-empty p {
+  margin: 0;
+
+  color: rgba(255, 255, 255, 0.72);
+
+  font-size: 13px;
+}
+
+
+/* ================================
+   AI TOOLS
+================================ */
+
+.smart-files-ai-tools {
+  margin-top: 28px;
+}
+
+.smart-files-ai-tools-header {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  margin-bottom: 12px;
+}
+
+.smart-files-ai-tools-header > span {
+  font-size: 22px;
+}
+
+.smart-files-ai-tools-header h2 {
+  margin: 0;
+
+  font-size: 17px;
+}
+
+.smart-files-ai-tools-header p {
+  margin: 3px 0 0;
+
+  color: rgba(255, 255, 255, 0.72);
+
+  font-size: 12px;
+}
+
+.smart-files-ai-grid {
+  display: grid;
+
+  grid-template-columns: repeat(4, 1fr);
+
+  gap: 9px;
+}
+
+.smart-files-ai-grid button {
+  min-height: 120px;
+
+  padding: 14px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  text-align: left;
+
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 16px;
+
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+
+  cursor: pointer;
+}
+
+.smart-files-ai-grid button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.smart-files-ai-grid button > span {
+  font-size: 22px;
+
+  margin-bottom: 10px;
+}
+
+.smart-files-ai-grid strong {
+  font-size: 13px;
+}
+
+.smart-files-ai-grid small {
+  margin-top: 5px;
+
+  color: rgba(255, 255, 255, 0.7);
+
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+
+/* ================================
+   STORAGE
+================================ */
+
+.smart-files-storage {
+  margin-top: 24px;
+  margin-bottom: 20px;
+
+  padding: 16px;
+
+  box-sizing: border-box;
+
+  border-radius: 17px;
+
+  background: rgba(255, 255, 255, 0.13);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.smart-files-storage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.smart-files-storage-header > div {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+}
+
+.smart-files-storage-header > div > span {
+  font-size: 22px;
+}
+
+.smart-files-storage-header strong {
+  font-size: 13px;
+}
+
+.smart-files-storage-header p {
+  margin: 3px 0 0;
+
+  color: rgba(255, 255, 255, 0.68);
+
+  font-size: 11px;
+}
+
+.smart-files-storage-bar {
+  height: 7px;
+
+  margin-top: 14px;
+
+  overflow: hidden;
+
+  border-radius: 20px;
+
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.smart-files-storage-fill {
+  height: 100%;
+
+  border-radius: 20px;
+
+  background: #ffffff;
+}
+
+.smart-files-storage > small {
+  display: block;
+
+  margin-top: 7px;
+
+  color: rgba(255, 255, 255, 0.65);
+
+  font-size: 10px;
+}
+
+
+/* ================================
+   MOBILE
+================================ */
+
+@media (max-width: 700px) {
+  .smart-files-page {
+    padding: 18px 14px;
+  }
+
+  .smart-files-ai-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .smart-file-actions button {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .smart-files-title h1 {
+    font-size: 22px;
+  }
+
+  .smart-files-title p {
+    font-size: 12px;
+  }
+
+  .smart-files-title-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .smart-file-card {
+    align-items: flex-start;
+  }
+
+  .smart-file-actions {
+    flex-direction: column;
+  }
+
+  .smart-files-ai-search {
+    align-items: flex-start;
+  }
+
+  .smart-files-ai-button {
+    align-self: center;
+  }
+}

@@ -3,11 +3,14 @@ import { useState } from "react";
 import Login from "./pages/Login";
 import ProfileSetup from "./pages/ProfileSetup";
 import ChatList from "./pages/ChatList";
+import PrivateChat from "./pages/PrivateChat";
+
 import Calls from "./pages/Calls";
 import Tools from "./pages/Tools";
 import ZenvaBreath from "./pages/ZenvaBreath";
 import Translator from "./pages/Translator";
 import StudentMode from "./pages/StudentMode";
+import SmartFiles from "./pages/SmartFiles";
 
 import "./styles/auth.css";
 
@@ -17,9 +20,11 @@ function App() {
 
   const [user, setUser] = useState(null);
 
+  const [selectedChat, setSelectedChat] =
+    useState(null);
 
   // ==========================================
-  // AUTHENTICATION
+  // AFTER LOGIN
   // ==========================================
 
   const handleAuthenticated = (
@@ -30,6 +35,149 @@ function App() {
     setCurrentScreen("profile");
   };
 
+  // ==========================================
+  // OPEN PRIVATE CHAT
+  // ==========================================
+
+  const handleOpenChat = (chat) => {
+    setSelectedChat(chat);
+
+    setCurrentScreen("private-chat");
+  };
+
+  // ==========================================
+  // NAVIGATION
+  // ==========================================
+
+  const handleNavigate = (section) => {
+    switch (section) {
+      // --------------------------------------
+      // CHATS
+      // --------------------------------------
+
+      case "chats":
+      case "chatlist":
+        setCurrentScreen("chatlist");
+        break;
+
+      // --------------------------------------
+      // CALLS
+      // --------------------------------------
+
+      case "calls":
+        setCurrentScreen("calls");
+        break;
+
+      // --------------------------------------
+      // TOOLS
+      // --------------------------------------
+
+      case "tools":
+        setCurrentScreen("tools");
+        break;
+
+      // --------------------------------------
+      // ZENVA BREATH
+      // --------------------------------------
+
+      case "breath":
+        setCurrentScreen("breath");
+        break;
+
+      // --------------------------------------
+      // TRANSLATOR
+      // --------------------------------------
+
+      case "translator":
+        setCurrentScreen("translator");
+        break;
+
+      // --------------------------------------
+      // STUDENT MODE
+      // --------------------------------------
+
+      case "student":
+        setCurrentScreen("student");
+        break;
+
+      // --------------------------------------
+      // SMART FILES
+      // --------------------------------------
+
+      case "files":
+        setCurrentScreen("files");
+        break;
+
+      // --------------------------------------
+      // PROFILE
+      // --------------------------------------
+
+      case "profile":
+        setCurrentScreen("profile");
+        break;
+
+      // --------------------------------------
+      // SETTINGS
+      // --------------------------------------
+
+      case "settings":
+        // Settings page has not been created yet.
+        console.log(
+          "Settings page is not implemented yet."
+        );
+        break;
+
+      // --------------------------------------
+      // NEW CHAT
+      // --------------------------------------
+
+      case "new-chat":
+        console.log(
+          "New Chat page is not implemented yet."
+        );
+        break;
+
+      // --------------------------------------
+      // NEW GROUP
+      // --------------------------------------
+
+      case "new-group":
+        console.log(
+          "New Group page is not implemented yet."
+        );
+        break;
+
+      // --------------------------------------
+      // NEW CONTACT
+      // --------------------------------------
+
+      case "new-contact":
+        console.log(
+          "New Contact page is not implemented yet."
+        );
+        break;
+
+      // --------------------------------------
+      // COMMUNITY
+      // --------------------------------------
+
+      case "community":
+        console.log(
+          "Community page is not implemented yet."
+        );
+        break;
+
+      // --------------------------------------
+      // DEFAULT
+      // --------------------------------------
+
+      default:
+        console.log(
+          "Navigation selected:",
+          section
+        );
+    }
+  };
 
   // ==========================================
   // LOGIN
@@ -44,7 +192,6 @@ function App() {
       />
     );
   }
-
 
   // ==========================================
   // PROFILE SETUP
@@ -63,7 +210,6 @@ function App() {
     );
   }
 
-
   // ==========================================
   // CHAT LIST
   // ==========================================
@@ -72,21 +218,52 @@ function App() {
     return (
       <ChatList
         user={user}
-
-        onOpenChat={(chat) => {
-          console.log(
-            "Opening chat:",
-            chat
-          );
-        }}
-
-        onNavigate={(section) => {
-          setCurrentScreen(section);
-        }}
+        onOpenChat={
+          handleOpenChat
+        }
+        onNavigate={
+          handleNavigate
+        }
       />
     );
   }
 
+  // ==========================================
+  // PRIVATE CHAT
+  // ==========================================
+
+  if (currentScreen === "private-chat") {
+    return (
+      <PrivateChat
+        user={user}
+        chat={selectedChat}
+
+        onBack={() => {
+          setSelectedChat(null);
+
+          setCurrentScreen("chatlist");
+        }}
+
+        onCall={(chat) => {
+          console.log(
+            "Starting voice call:",
+            chat
+          );
+
+          setCurrentScreen("calls");
+        }}
+
+        onVideoCall={(chat) => {
+          console.log(
+            "Starting video call:",
+            chat
+          );
+
+          setCurrentScreen("calls");
+        }}
+      />
+    );
+  }
 
   // ==========================================
   // CALLS
@@ -96,14 +273,12 @@ function App() {
     return (
       <Calls
         user={user}
-
-        onNavigate={(section) => {
-          setCurrentScreen(section);
-        }}
+        onNavigate={
+          handleNavigate
+        }
       />
     );
   }
-
 
   // ==========================================
   // TOOLS
@@ -113,14 +288,12 @@ function App() {
     return (
       <Tools
         user={user}
-
-        onNavigate={(section) => {
-          setCurrentScreen(section);
-        }}
+        onNavigate={
+          handleNavigate
+        }
       />
     );
   }
-
 
   // ==========================================
   // ZENVA BREATH
@@ -129,13 +302,12 @@ function App() {
   if (currentScreen === "breath") {
     return (
       <ZenvaBreath
-        onBack={() => {
-          setCurrentScreen("tools");
-        }}
+        onBack={() =>
+          setCurrentScreen("tools")
+        }
       />
     );
   }
-
 
   // ==========================================
   // TRANSLATOR
@@ -144,13 +316,12 @@ function App() {
   if (currentScreen === "translator") {
     return (
       <Translator
-        onBack={() => {
-          setCurrentScreen("tools");
-        }}
+        onBack={() =>
+          setCurrentScreen("tools")
+        }
       />
     );
   }
-
 
   // ==========================================
   // STUDENT MODE
@@ -159,13 +330,34 @@ function App() {
   if (currentScreen === "student") {
     return (
       <StudentMode
-        onBack={() => {
-          setCurrentScreen("tools");
-        }}
+        user={user}
+        onBack={() =>
+          setCurrentScreen("tools")
+        }
+        onNavigate={
+          handleNavigate
+        }
       />
     );
   }
 
+  // ==========================================
+  // SMART FILES
+  // ==========================================
+
+  if (currentScreen === "files") {
+    return (
+      <SmartFiles
+        user={user}
+        onBack={() =>
+          setCurrentScreen("tools")
+        }
+        onNavigate={
+          handleNavigate
+        }
+      />
+    );
+  }
 
   // ==========================================
   // FALLBACK
