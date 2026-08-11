@@ -1,98 +1,177 @@
-const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
 const mongoose = require("mongoose");
-const cors = require("cors");
 const dotenv = require("dotenv");
 
-const authRoutes = require("./routes/authRoutes");
-const profileRoutes = require("./routes/profileRoutes");
-const messageRoutes = require("./routes/messageRoutes");
+const app = require("./app");
 
 dotenv.config();
-
-const app = express();
 
 const PORT = process.env.PORT || 5000;
 
 // ==========================================
-// MIDDLEWARE
+// CREATE HTTP SERVER
 // ==========================================
 
-app.use(cors());
-
-app.use(express.json());
+const server = http.createServer(app);
 
 // ==========================================
-// HEALTH CHECK
+// SOCKET.IO
 // ==========================================
 
-app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "ZenvaZapp API is running",
-  });
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST", "PATCH"],
+  },
 });
 
 // ==========================================
-// AUTHENTICATION ROUTES
+// SOCKET.IO CONNECTION
 // ==========================================
 
-app.use("/api/auth", authRoutes);
+io.on("connection", (socket) => {
+  console.log(
+    `ZenvaZapp Socket.IO user connected: ${socket.id}`
+  );
 
-// ==========================================
-// PROFILE ROUTES
-// ==========================================
+  // ========================================
+  // JOIN CONVERSATION
+  // ========================================
 
-app.use("/api/profile", profileRoutes);
+  socket.on(
+    "join-conversation",
+    (conversationId) => {
+      if (!conversationId) {
+        return;
+      }
 
-// ==========================================
-// MESSAGE ROUTES
-// ==========================================
+      socket.join(conversationId);
 
-app.use("/api/messages", messageRoutes);
+      console.log(
+        `Socket ${socket.id} joined conversation: ${conversationId}`
+      );
+    }
+  );
 
-// ==========================================
-// MESSAGE TEST ROUTE
-// ==========================================
+  // ========================================
+  // LEAVE CONVERSATION
+  // ========================================
 
-app.get("/api/messages/test", (req, res) => {
-  res.json({
-    success: true,
-    message: "ZenvaZapp message API is working",
-  });
-});
+  socket.on(
+    "leave-conversation",
+    (conversationId) => {
+      if (!conversationId) {
+        return;
+      }
 
-// ==========================================
-// 404 HANDLER
-// ==========================================
+      socket.leave(conversationId);
 
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Route not found: ${req.method} ${req.originalUrl}`,
-  });
-});
+      console.log(
+        `Socket ${socket.id} left conversation: ${conversationId}`
+      );
+    }
+  );
 
-// ==========================================
-// CONNECT TO MONGODB
-// ==========================================
+  // ========================================
+  // REAL-TIME MESSAGE
+  // ========================================
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("MongoDB connected successfully.");
-  })
-  .catch((error) => {
-    console.error(
-      "MongoDB connection failed:",
-      error.message
+  socket.on("send-message", (message) => {
+    if (!message) {
+      return;
+    }
+
+    const conversationId =
+      message.conversationId;
+
+    if (!conversationId) {
+      console.log(
+        "Socket message rejected: conversationId missing."
+      );
+
+      return;
+    }
+
+    console.log(
+      "Real-time message received:",
+      message
+    );
+
+    io.to(conversationId).emit(
+      "new-message",
+      message
     );
   });
+
+  // ========================================
+  // MESSAGE DELIVERED
+  // ========================================
+
+  socket.on(
+    "message-delivered",
+    ({
+      conversationId,
+      messageId,
+    }) => {
+      if (
+        !conversationId ||
+        !messageId
+      ) {
+        return;
+      }
+
+      io.to(conversationId).emit(
+        "message-delivered",
+        {
+          messageId,
+        }
+      );
+    }
+  );
+
+  // ========================================
+  // MESSAGE READ
+  // ========================================
+
+  socket.on(
+    "message-read",
+    ({
+      conversationId,
+      messageId,
+    }) => {
+      if (
+        !conversationId ||
+        !messageId
+      ) {
+        return;
+      }
+
+      io.to(conversationId).emit(
+        "message-read",
+        {
+          messageId,
+        }
+      );
+    }
+  );
+
+  // ========================================
+  // DISCONNECT
+  // ========================================
+
+  socket.on("disconnect", () => {
+    console.log(
+      `ZenvaZapp Socket.IO user disconnected: ${socket.id}`
+    );
+  });
+});
 
 // ==========================================
 // START SERVER
 // ==========================================
 
-const server = app.listen(
+server.listen(
   PORT,
   "0.0.0.0",
   () => {
@@ -101,6 +180,24 @@ const server = app.listen(
     );
   }
 );
+
+// ==========================================
+// CONNECT TO MONGODB
+// ==========================================
+
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log(
+      "MongoDB connected successfully."
+    );
+  })
+  .catch((error) => {
+    console.error(
+      "MongoDB connection failed:",
+      error.message
+    );
+  });
 
 // ==========================================
 // SHUTDOWN
