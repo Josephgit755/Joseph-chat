@@ -5,6 +5,7 @@ const dotenv = require("dotenv");
 const authRoutes = require("./routes/authRoutes");
 const profileRoutes = require("./routes/profileRoutes");
 const messageRoutes = require("./routes/messageRoutes");
+const userRoutes = require("./routes/userRoutes");
 
 dotenv.config();
 
@@ -53,6 +54,15 @@ app.use(
 app.use(
   "/api/messages",
   messageRoutes
+);
+
+// ==========================================
+// USER ROUTES
+// ==========================================
+
+app.use(
+  "/api/users",
+  userRoutes
 );
 
 // ==========================================
