@@ -1,88 +1,254 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./chatlist.css";
 
 function ChatList({ user, onOpenChat, onNavigate }) {
   const [activeFilter, setActiveFilter] = useState("all");
-  const [showPlusMenu, setShowPlusMenu] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
 
-  const [chats] = useState([
-    {
-      id: 1,
-      name: "John",
-      message: "Hey, are you coming?",
-      time: "10:42",
-      unread: 2,
-      favorite: true,
-      group: false,
-      avatar: "J",
-    },
-    {
-      id: 2,
-      name: "Mary",
-      message: "See you tomorrow.",
-      time: "09:15",
-      unread: 0,
-      favorite: false,
-      group: false,
-      avatar: "M",
-    },
-    {
-      id: 3,
-      name: "Computer Engineering 2026",
-      message: "Assignment has been uploaded.",
-      time: "Yesterday",
-      unread: 5,
-      favorite: true,
-      group: true,
-      avatar: "CE",
-    },
-    {
-      id: 4,
-      name: "Chris",
-      message: "The meeting starts at 3 PM.",
-      time: "Yesterday",
-      unread: 0,
-      favorite: false,
-      group: false,
-      avatar: "C",
-    },
+  const [showPlusMenu, setShowPlusMenu] =
+    useState(false);
+
+  const [showSearch, setShowSearch] =
+    useState(false);
+
+  const [searchQuery, setSearchQuery] =
+    useState("");
+
+  // ==========================================
+  // REAL CHAT DATA
+  // ==========================================
+
+  const [chats, setChats] = useState([]);
+
+  const [isLoadingChats, setIsLoadingChats] =
+    useState(true);
+
+  const [chatLoadError, setChatLoadError] =
+    useState("");
+
+  // ==========================================
+  // API URL
+  // ==========================================
+
+  const API_URL =
+    process.env.REACT_APP_API_URL ||
+    "https://joseph-backend.onrender.com";
+
+  // ==========================================
+  // CURRENT USER ID
+  // ==========================================
+
+  const currentUserId =
+    user?._id ||
+    user?.id ||
+    user?.userId ||
+    user?.username;
+
+  // ==========================================
+  // LOAD REAL REGISTERED USERS
+  // ==========================================
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      if (!currentUserId) {
+        console.log(
+          "Cannot load chat users: current user ID missing."
+        );
+
+        setIsLoadingChats(false);
+
+        return;
+      }
+
+      try {
+        setIsLoadingChats(true);
+        setChatLoadError("");
+
+        console.log(
+          "=========================================="
+        );
+
+        console.log(
+          "Loading registered ZenvaZapp users..."
+        );
+
+        console.log(
+          "Current user ID:",
+          currentUserId
+        );
+
+        console.log(
+          "Users API:",
+          `${API_URL}/api/users`
+        );
+
+        const response = await fetch(
+          `${API_URL}/api/users`
+        );
+
+        console.log(
+          "Users API status:",
+          response.status
+        );
+
+        const data =
+          await response.json();
+
+        console.log(
+          "Users API response:",
+          data
+        );
+
+        if (
+          !response.ok ||
+          !data.success
+        ) {
+          throw new Error(
+            data.message ||
+              "Failed to load registered users."
+          );
+        }
+
+        // ======================================
+        // CONVERT DATABASE USERS INTO CHAT ITEMS
+        // ======================================
+
+        const registeredUsers =
+          (data.users || [])
+            .filter((account) => {
+              // Never show the logged-in user
+              // as their own chat.
+
+              return (
+                String(account.id) !==
+                String(currentUserId)
+              );
+            })
+            .map((account) => {
+              const displayName =
+                account.displayName ||
+                account.fullName ||
+                account.username ||
+                "User";
+
+              return {
+                // IMPORTANT:
+                // This is the REAL MongoDB user ID.
+                id: account.id,
+
+                name: displayName,
+
+                username:
+                  account.username || "",
+
+                message:
+                  "Start a conversation",
+
+                time: "",
+
+                unread: 0,
+
+                favorite: false,
+
+                group: false,
+
+                avatar:
+                  account.profilePhoto ||
+                  displayName
+                    .charAt(0)
+                    .toUpperCase(),
+
+                profilePhoto:
+                  account.profilePhoto || "",
+
+                profileCompleted:
+                  account.profileCompleted,
+
+                fullName:
+                  account.fullName || "",
+              };
+            });
+
+        console.log(
+          "Registered users for chat list:",
+          registeredUsers
+        );
+
+        setChats(
+          registeredUsers
+        );
+      } catch (error) {
+        console.error(
+          "Load registered users error:",
+          error
+        );
+
+        setChatLoadError(
+          error.message ||
+            "Unable to load registered users."
+        );
+
+        setChats([]);
+      } finally {
+        setIsLoadingChats(false);
+      }
+    };
+
+    loadUsers();
+  }, [
+    API_URL,
+    currentUserId,
   ]);
 
-  /* =========================================
-     SEARCH + FILTER
-  ========================================= */
+  // ==========================================
+  // SEARCH + FILTER
+  // ==========================================
 
-  const filteredChats = chats.filter((chat) => {
-    const query = searchQuery.toLowerCase().trim();
+  const filteredChats =
+    chats.filter((chat) => {
+      const query =
+        searchQuery
+          .toLowerCase()
+          .trim();
 
-    const matchesSearch =
-      chat.name.toLowerCase().includes(query) ||
-      chat.message.toLowerCase().includes(query);
+      const matchesSearch =
+        chat.name
+          .toLowerCase()
+          .includes(query) ||
+        chat.message
+          .toLowerCase()
+          .includes(query) ||
+        chat.username
+          .toLowerCase()
+          .includes(query);
 
-    if (!matchesSearch) {
-      return false;
-    }
+      if (!matchesSearch) {
+        return false;
+      }
 
-    if (activeFilter === "unread") {
-      return chat.unread > 0;
-    }
+      if (
+        activeFilter === "unread"
+      ) {
+        return chat.unread > 0;
+      }
 
-    if (activeFilter === "favorites") {
-      return chat.favorite;
-    }
+      if (
+        activeFilter === "favorites"
+      ) {
+        return chat.favorite;
+      }
 
-    if (activeFilter === "groups") {
-      return chat.group;
-    }
+      if (
+        activeFilter === "groups"
+      ) {
+        return chat.group;
+      }
 
-    return true;
-  });
+      return true;
+    });
 
-  /* =========================================
-     USER NAME
-  ========================================= */
+  // ==========================================
+  // USER NAME
+  // ==========================================
 
   const getUserName = () => {
     if (!user) {
@@ -90,22 +256,59 @@ function ChatList({ user, onOpenChat, onNavigate }) {
     }
 
     return (
-      user.name ||
+      user.displayName ||
       user.fullName ||
       user.username ||
+      user.name ||
       "User"
     );
   };
 
-  /* =========================================
-     OPEN CHAT
-  ========================================= */
+  // ==========================================
+  // OPEN CHAT
+  // ==========================================
 
   const handleOpenChat = (chat) => {
+    console.log(
+      "=========================================="
+    );
+
+    console.log(
+      "Opening real registered user chat:"
+    );
+
+    console.log(
+      "Current user ID:",
+      currentUserId
+    );
+
+    console.log(
+      "Selected chat:",
+      chat
+    );
+
+    console.log(
+      "Selected user REAL ID:",
+      chat.id
+    );
+
+    console.log(
+      "Selected username:",
+      chat.username
+    );
+
+    console.log(
+      "=========================================="
+    );
+
     if (onOpenChat) {
       onOpenChat(chat);
     }
   };
+
+  // ==========================================
+  // RENDER
+  // ==========================================
 
   return (
     <div className="chatlist-page">
@@ -123,7 +326,9 @@ function ChatList({ user, onOpenChat, onNavigate }) {
           </div>
 
           <div>
-            <h1>ZenvaZapp</h1>
+            <h1>
+              ZenvaZapp
+            </h1>
 
             <span>
               Welcome, {getUserName()}
@@ -138,7 +343,9 @@ function ChatList({ user, onOpenChat, onNavigate }) {
             className="header-icon-button"
             aria-label="Search"
             onClick={() => {
-              setShowSearch(!showSearch);
+              setShowSearch(
+                !showSearch
+              );
 
               if (showSearch) {
                 setSearchQuery("");
@@ -151,7 +358,11 @@ function ChatList({ user, onOpenChat, onNavigate }) {
           <button
             className="header-icon-button"
             aria-label="Profile"
-            onClick={() => onNavigate?.("profile")}
+            onClick={() =>
+              onNavigate?.(
+                "profile"
+              )
+            }
           >
             👤
           </button>
@@ -159,7 +370,6 @@ function ChatList({ user, onOpenChat, onNavigate }) {
         </div>
 
       </header>
-
 
       {/* =====================================
           SEARCH BAR
@@ -179,7 +389,9 @@ function ChatList({ user, onOpenChat, onNavigate }) {
               placeholder="Search chats, contacts and messages..."
               value={searchQuery}
               onChange={(e) =>
-                setSearchQuery(e.target.value)
+                setSearchQuery(
+                  e.target.value
+                )
               }
               autoFocus
             />
@@ -187,7 +399,9 @@ function ChatList({ user, onOpenChat, onNavigate }) {
             {searchQuery && (
               <button
                 className="clear-search"
-                onClick={() => setSearchQuery("")}
+                onClick={() =>
+                  setSearchQuery("")
+                }
                 aria-label="Clear search"
               >
                 ×
@@ -199,7 +413,6 @@ function ChatList({ user, onOpenChat, onNavigate }) {
         </div>
       )}
 
-
       {/* =====================================
           STATUS
       ===================================== */}
@@ -208,11 +421,17 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
         <div className="section-heading">
 
-          <h2>Status</h2>
+          <h2>
+            Status
+          </h2>
 
           <button
             className="view-status-button"
-            onClick={() => onNavigate?.("status")}
+            onClick={() =>
+              onNavigate?.(
+                "status"
+              )
+            }
           >
             View all
           </button>
@@ -221,7 +440,10 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
         <div className="status-list">
 
-          <button className="status-item add-status">
+          <button
+            className="status-item add-status"
+            type="button"
+          >
 
             <div className="status-avatar">
               +
@@ -233,7 +455,10 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
           </button>
 
-          <button className="status-item">
+          <button
+            className="status-item"
+            type="button"
+          >
 
             <div className="status-avatar status-active">
               J
@@ -245,7 +470,10 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
           </button>
 
-          <button className="status-item">
+          <button
+            className="status-item"
+            type="button"
+          >
 
             <div className="status-avatar status-active">
               M
@@ -257,7 +485,10 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
           </button>
 
-          <button className="status-item">
+          <button
+            className="status-item"
+            type="button"
+          >
 
             <div className="status-avatar status-active">
               C
@@ -269,7 +500,10 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
           </button>
 
-          <button className="status-item">
+          <button
+            className="status-item"
+            type="button"
+          >
 
             <div className="status-avatar status-active">
               A
@@ -285,7 +519,6 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
       </section>
 
-
       {/* =====================================
           CHAT FILTERS
       ===================================== */}
@@ -294,50 +527,69 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
         <button
           className={
-            activeFilter === "unread"
+            activeFilter ===
+            "unread"
               ? "filter-button active"
               : "filter-button"
           }
-          onClick={() => setActiveFilter("unread")}
+          onClick={() =>
+            setActiveFilter(
+              "unread"
+            )
+          }
         >
           Unread
         </button>
 
         <button
           className={
-            activeFilter === "favorites"
+            activeFilter ===
+            "favorites"
               ? "filter-button active"
               : "filter-button"
           }
-          onClick={() => setActiveFilter("favorites")}
+          onClick={() =>
+            setActiveFilter(
+              "favorites"
+            )
+          }
         >
           Favorites
         </button>
 
         <button
           className={
-            activeFilter === "groups"
+            activeFilter ===
+            "groups"
               ? "filter-button active"
               : "filter-button"
           }
-          onClick={() => setActiveFilter("groups")}
+          onClick={() =>
+            setActiveFilter(
+              "groups"
+            )
+          }
         >
           Groups
         </button>
 
         <button
           className={
-            activeFilter === "all"
+            activeFilter ===
+            "all"
               ? "filter-button active"
               : "filter-button"
           }
-          onClick={() => setActiveFilter("all")}
+          onClick={() =>
+            setActiveFilter(
+              "all"
+            )
+          }
         >
           All
         </button>
 
       </section>
-
 
       {/* =====================================
           CHAT HEADING
@@ -352,7 +604,9 @@ function ChatList({ user, onOpenChat, onNavigate }) {
           </h2>
 
           <span>
-            {filteredChats.length} conversations
+            {isLoadingChats
+              ? "Loading..."
+              : `${filteredChats.length} conversations`}
           </span>
 
         </div>
@@ -362,7 +616,9 @@ function ChatList({ user, onOpenChat, onNavigate }) {
           <button
             className="plus-button"
             onClick={() =>
-              setShowPlusMenu(!showPlusMenu)
+              setShowPlusMenu(
+                !showPlusMenu
+              )
             }
             aria-label="New"
           >
@@ -375,41 +631,73 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
               <button
                 onClick={() => {
-                  setShowPlusMenu(false);
-                  onNavigate?.("new-chat");
+                  setShowPlusMenu(
+                    false
+                  );
+
+                  onNavigate?.(
+                    "new-chat"
+                  );
                 }}
               >
-                <span>💬</span>
+                <span>
+                  💬
+                </span>
+
                 New Chat
               </button>
 
               <button
                 onClick={() => {
-                  setShowPlusMenu(false);
-                  onNavigate?.("new-group");
+                  setShowPlusMenu(
+                    false
+                  );
+
+                  onNavigate?.(
+                    "new-group"
+                  );
                 }}
               >
-                <span>👥</span>
+                <span>
+                  👥
+                </span>
+
                 New Group
               </button>
 
               <button
                 onClick={() => {
-                  setShowPlusMenu(false);
-                  onNavigate?.("new-contact");
+                  setShowPlusMenu(
+                    false
+                  );
+
+                  onNavigate?.(
+                    "new-contact"
+                  );
                 }}
               >
-                <span>👤</span>
+                <span>
+                  👤
+                </span>
+
                 New Contact
               </button>
 
               <button
                 onClick={() => {
-                  setShowPlusMenu(false);
-                  onNavigate?.("community");
+                  setShowPlusMenu(
+                    false
+                  );
+
+                  onNavigate?.(
+                    "community"
+                  );
                 }}
               >
-                <span>🏘️</span>
+                <span>
+                  🏘️
+                </span>
+
                 New Community
               </button>
 
@@ -421,6 +709,15 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
       </section>
 
+      {/* =====================================
+          ERROR
+      ===================================== */}
+
+      {chatLoadError && (
+        <div className="private-chat-error">
+          {chatLoadError}
+        </div>
+      )}
 
       {/* =====================================
           CHAT LIST
@@ -428,7 +725,25 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
       <main className="chat-list">
 
-        {filteredChats.length === 0 ? (
+        {isLoadingChats ? (
+
+          <div className="empty-chats">
+
+            <div className="empty-icon">
+              💬
+            </div>
+
+            <h3>
+              Loading contacts...
+            </h3>
+
+            <p>
+              Getting registered ZenvaZapp users.
+            </p>
+
+          </div>
+
+        ) : filteredChats.length === 0 ? (
 
           <div className="empty-chats">
 
@@ -437,7 +752,7 @@ function ChatList({ user, onOpenChat, onNavigate }) {
             </div>
 
             <h3>
-              No results found
+              No users found
             </h3>
 
             <p>
@@ -448,58 +763,91 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
         ) : (
 
-          filteredChats.map((chat) => (
+          filteredChats.map(
+            (chat) => (
 
-            <button
-              className="chat-item"
-              key={chat.id}
-              onClick={() => handleOpenChat(chat)}
-            >
+              <button
+                className="chat-item"
+                key={chat.id}
+                onClick={() =>
+                  handleOpenChat(
+                    chat
+                  )
+                }
+              >
 
-              <div className="chat-avatar">
-                {chat.avatar}
-              </div>
+                <div className="chat-avatar">
 
-              <div className="chat-content">
+                  {chat.profilePhoto ? (
 
-                <div className="chat-top">
+                    <img
+                      src={
+                        chat.profilePhoto
+                      }
+                      alt={
+                        chat.name
+                      }
+                      style={{
+                        width:
+                          "100%",
+                        height:
+                          "100%",
+                        borderRadius:
+                          "50%",
+                        objectFit:
+                          "cover",
+                      }}
+                    />
 
-                  <h3>
-                    {chat.name}
-                  </h3>
+                  ) : (
 
-                  <span className="chat-time">
-                    {chat.time}
-                  </span>
-
-                </div>
-
-                <div className="chat-bottom">
-
-                  <p>
-                    {chat.message}
-                  </p>
-
-                  {chat.unread > 0 && (
-
-                    <span className="unread-count">
-                      {chat.unread}
-                    </span>
+                    chat.avatar
 
                   )}
 
                 </div>
 
-              </div>
+                <div className="chat-content">
 
-            </button>
+                  <div className="chat-top">
 
-          ))
+                    <h3>
+                      {chat.name}
+                    </h3>
+
+                    <span className="chat-time">
+                      {chat.time}
+                    </span>
+
+                  </div>
+
+                  <div className="chat-bottom">
+
+                    <p>
+                      {chat.message}
+                    </p>
+
+                    {chat.unread >
+                      0 && (
+
+                      <span className="unread-count">
+                        {chat.unread}
+                      </span>
+
+                    )}
+
+                  </div>
+
+                </div>
+
+              </button>
+
+            )
+          )
 
         )}
 
       </main>
-
 
       {/* =====================================
           BOTTOM NAVIGATION
@@ -509,7 +857,11 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
         <button
           className="nav-button active"
-          onClick={() => onNavigate?.("chats")}
+          onClick={() =>
+            onNavigate?.(
+              "chats"
+            )
+          }
         >
           <span className="nav-icon">
             💬
@@ -522,7 +874,11 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
         <button
           className="nav-button"
-          onClick={() => onNavigate?.("calls")}
+          onClick={() =>
+            onNavigate?.(
+              "calls"
+            )
+          }
         >
           <span className="nav-icon">
             📞
@@ -535,7 +891,11 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
         <button
           className="nav-button"
-          onClick={() => onNavigate?.("tools")}
+          onClick={() =>
+            onNavigate?.(
+              "tools"
+            )
+          }
         >
           <span className="nav-icon">
             🛠
@@ -548,7 +908,11 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
         <button
           className="nav-button"
-          onClick={() => onNavigate?.("settings")}
+          onClick={() =>
+            onNavigate?.(
+              "settings"
+            )
+          }
         >
           <span className="nav-icon">
             ⚙️
