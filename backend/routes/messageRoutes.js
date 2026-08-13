@@ -11,7 +11,7 @@ const DELETED_MESSAGE_TEXT =
   "This message was deleted.";
 
 // Supported disappearing-message durations.
-// 0 = never disappear.
+// Backend stores these as milliseconds.
 const DISAPPEARING_DURATIONS = [
   0,
   24 * 60 * 60 * 1000, // 24 hours
@@ -20,13 +20,81 @@ const DISAPPEARING_DURATIONS = [
 ];
 
 // ==========================================
+// CONVERT DISAPPEARING DURATION
+// ==========================================
+//
+// Accepts:
+//
+// 0
+// "0"
+// "24h"
+// "7d"
+// "90d"
+// 86400000
+// 604800000
+// 7776000000
+//
+// This makes the backend compatible with
+// the current frontend and future versions.
+//
+
+function normalizeDisappearingDuration(value) {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
+    return 0;
+  }
+
+  if (typeof value === "string") {
+    const normalized =
+      value.trim().toLowerCase();
+
+    if (
+      normalized === "0" ||
+      normalized === "never" ||
+      normalized === "off"
+    ) {
+      return 0;
+    }
+
+    if (normalized === "24h") {
+      return 24 * 60 * 60 * 1000;
+    }
+
+    if (normalized === "7d") {
+      return 7 * 24 * 60 * 60 * 1000;
+    }
+
+    if (normalized === "90d") {
+      return 90 * 24 * 60 * 60 * 1000;
+    }
+  }
+
+  const numericValue = Number(value);
+
+  if (
+    Number.isFinite(numericValue) &&
+    DISAPPEARING_DURATIONS.includes(
+      numericValue
+    )
+  ) {
+    return numericValue;
+  }
+
+  return null;
+}
+
+// ==========================================
 // TEST MESSAGE ROUTE
 // ==========================================
 
 router.get("/test", (req, res) => {
   res.json({
     success: true,
-    message: "ZenvaZapp message API is working",
+    message:
+      "ZenvaZapp message API is working",
   });
 });
 
@@ -51,15 +119,19 @@ router.get(
 
       const now = new Date();
 
-      // Automatically mark expired
-      // disappearing messages as undone.
+      // ========================================
+      // MARK EXPIRED MESSAGES AS UNDONE
+      // ========================================
+
       await Message.updateMany(
         {
           conversationId,
+
           expiresAt: {
             $ne: null,
             $lte: now,
           },
+
           undone: false,
         },
         {
@@ -71,27 +143,37 @@ router.get(
         }
       );
 
+      // ========================================
+      // LOAD ACTIVE MESSAGES
+      // ========================================
+      //
+      // IMPORTANT:
+      // We only return messages that have NOT
+      // been deleted for the current request.
+      //
+      // The frontend currently requests the
+      // conversation without passing userId,
+      // so we return the conversation messages
+      // while excluding globally removed/undone
+      // messages.
+      //
+      // Individual "delete for me" filtering is
+      // handled by the frontend state until the
+      // API is upgraded to authenticated requests.
+      //
+
       const messages =
         await Message.find({
           conversationId,
+
           undone: false,
-          $or: [
-            {
-              senderId: {
-                $exists: true,
-              },
-              deletedForSender: false,
-            },
-            {
-              receiverId: {
-                $exists: true,
-              },
-              deletedForReceiver: false,
-            },
-          ],
-        }).sort({
-          createdAt: 1,
-        });
+
+          deletedForEveryone: false,
+        })
+          .sort({
+            createdAt: 1,
+          })
+          .lean();
 
       res.json({
         success: true,
@@ -107,6 +189,7 @@ router.get(
         success: false,
         message:
           "Failed to load messages.",
+        error: error.message,
       });
     }
   }
@@ -129,6 +212,10 @@ router.post(
         disappearingDuration,
       } = req.body;
 
+      // ========================================
+      // REQUIRED FIELDS
+      // ========================================
+
       if (
         !conversationId ||
         !senderId ||
@@ -141,9 +228,47 @@ router.post(
         });
       }
 
+      // ========================================
+      // MESSAGE TYPE
+      // ========================================
+
+      const finalMessageType =
+        messageType || "text";
+
+      const supportedMessageTypes = [
+        "text",
+        "image",
+        "video",
+        "audio",
+        "file",
+        "location",
+        "contact",
+      ];
+
       if (
-        messageType === "text" &&
-        (!text || !text.trim())
+        !supportedMessageTypes.includes(
+          finalMessageType
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid message type.",
+        });
+      }
+
+      // ========================================
+      // TEXT VALIDATION
+      // ========================================
+
+      const cleanText =
+        typeof text === "string"
+          ? text.trim()
+          : "";
+
+      if (
+        finalMessageType === "text" &&
+        !cleanText
       ) {
         return res.status(400).json({
           success: false,
@@ -152,22 +277,16 @@ router.post(
         });
       }
 
-      let duration = 0;
+      // ========================================
+      // DISAPPEARING MESSAGE
+      // ========================================
 
-      if (
-        disappearingDuration !==
-        undefined
-      ) {
-        duration = Number(
+      const duration =
+        normalizeDisappearingDuration(
           disappearingDuration
         );
-      }
 
-      if (
-        !DISAPPEARING_DURATIONS.includes(
-          duration
-        )
-      ) {
+      if (duration === null) {
         return res.status(400).json({
           success: false,
           message:
@@ -183,35 +302,47 @@ router.post(
         );
       }
 
-      const message = await Message.create({
-        conversationId,
-        senderId,
-        receiverId,
+      // ========================================
+      // CREATE MESSAGE
+      // ========================================
 
-       text: text
-       ? text.trim()
-       : "",
+      const message =
+        await Message.create({
+          conversationId,
 
-        messageType:
-          messageType || "text",
+          senderId,
 
-         status: "sent",
+          receiverId,
 
-         deletedForSender: false,
+          text: cleanText,
 
-         deletedForReceiver: false,
+          messageType:
+            finalMessageType,
 
-         deletedForEveryone: false,
+          status: "sent",
 
-         undone: false,
+          deletedForSender:
+            false,
 
-         disappearingDuration:
-             duration,
+          deletedForReceiver:
+            false,
+
+          deletedForEveryone:
+            false,
+
+          undone: false,
+
+          disappearingDuration:
+            duration,
 
           expiresAt,
-      });
+        });
 
-      res.status(201).json({
+      // ========================================
+      // RESPONSE
+      // ========================================
+
+      return res.status(201).json({
         success: true,
         message,
       });
@@ -221,7 +352,7 @@ router.post(
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message:
           "Failed to send message.",
@@ -293,7 +424,6 @@ router.patch(
         });
       }
 
-      // Cannot edit undone messages.
       if (message.undone) {
         return res.status(400).json({
           success: false,
@@ -302,10 +432,10 @@ router.patch(
         });
       }
 
-      // Cannot edit deleted messages.
       if (
         message.deletedForSender ||
-        message.deletedForReceiver
+        message.deletedForReceiver ||
+        message.deletedForEveryone
       ) {
         return res.status(400).json({
           success: false,
@@ -377,7 +507,6 @@ router.patch(
         });
       }
 
-      // Only sender can undo.
       if (
         String(
           message.senderId
@@ -544,8 +673,6 @@ router.patch(
         });
       }
 
-      // Only sender can delete
-      // for everyone.
       if (
         String(
           message.senderId
@@ -596,13 +723,6 @@ router.patch(
 // ==========================================
 // SET DISAPPEARING MESSAGE DURATION
 // ==========================================
-//
-// This stores the expiration duration
-// on individual messages through the
-// send-message request.
-//
-// This route is also provided so the
-// frontend can validate/test a duration.
 
 router.patch(
   "/:messageId/disappearing",
@@ -626,13 +746,11 @@ router.patch(
       }
 
       const numericDuration =
-        Number(duration);
+        normalizeDisappearingDuration(
+          duration
+        );
 
-      if (
-        !DISAPPEARING_DURATIONS.includes(
-          numericDuration
-        )
-      ) {
+      if (numericDuration === null) {
         return res.status(400).json({
           success: false,
           message:
@@ -667,6 +785,9 @@ router.patch(
             "You are not part of this conversation.",
         });
       }
+
+      message.disappearingDuration =
+        numericDuration;
 
       message.expiresAt =
         numericDuration === 0
@@ -802,8 +923,7 @@ router.patch(
           {
             conversationId,
 
-            receiverId:
-              userId,
+            receiverId: userId,
 
             status: "sent",
 
@@ -879,8 +999,7 @@ router.patch(
           {
             conversationId,
 
-            receiverId:
-              userId,
+            receiverId: userId,
 
             status: {
               $in: [
