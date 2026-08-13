@@ -22,9 +22,11 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: "*",
-    methods: ["GET", "POST", "PATCH"],
+    methods: ["GET", "POST", "PATCH", "DELETE"],
   },
 });
+
+app.set("io", io);
 
 // ==========================================
 // SOCKET.IO CONNECTION
@@ -78,7 +80,7 @@ io.on("connection", (socket) => {
   );
 
   // ========================================
-  // REAL-TIME MESSAGE
+  // REAL-TIME NEW MESSAGE
   // ========================================
 
   socket.on("send-message", (message) => {
@@ -102,8 +104,8 @@ io.on("connection", (socket) => {
       message
     );
 
-    // Send message to OTHER users in the conversation.
-    // The sender already added the saved message locally.
+    // The sender already added the saved message
+    // locally, so only send it to the other users.
     socket
       .to(conversationId)
       .emit(
@@ -111,6 +113,191 @@ io.on("connection", (socket) => {
         message
       );
   });
+
+  // ========================================
+  // MESSAGE EDITED
+  // ========================================
+
+  socket.on(
+    "message-edited",
+    (message) => {
+      if (!message) {
+        return;
+      }
+
+      const conversationId =
+        message.conversationId;
+
+      if (!conversationId) {
+        console.log(
+          "Edited message rejected: conversationId missing."
+        );
+
+        return;
+      }
+
+      if (!message._id && !message.id) {
+        console.log(
+          "Edited message rejected: message ID missing."
+        );
+
+        return;
+      }
+
+      console.log(
+        `Message edited: ${
+          message._id || message.id
+        }`
+      );
+
+      // Send the updated message to the
+      // OTHER browsers in this conversation.
+      socket
+        .to(conversationId)
+        .emit(
+          "message-edited",
+          message
+        );
+    }
+  );
+
+  // ========================================
+  // MESSAGE DELETED FOR EVERYONE
+  // ========================================
+
+  socket.on(
+    "message-deleted-for-everyone",
+    (message) => {
+      if (!message) {
+        return;
+      }
+
+      const conversationId =
+        message.conversationId;
+
+      if (!conversationId) {
+        console.log(
+          "Delete-for-everyone rejected: conversationId missing."
+        );
+
+        return;
+      }
+
+      if (!message._id && !message.id) {
+        console.log(
+          "Delete-for-everyone rejected: message ID missing."
+        );
+
+        return;
+      }
+
+      console.log(
+        `Message deleted for everyone: ${
+          message._id || message.id
+        }`
+      );
+
+      // Both browsers must display the deleted
+      // state. The requesting browser updates
+      // itself locally, while this broadcasts
+      // the change to the other browser(s).
+      socket
+        .to(conversationId)
+        .emit(
+          "message-deleted-for-everyone",
+          message
+        );
+    }
+  );
+
+  // ========================================
+  // MESSAGE DELETED FOR ME
+  // ========================================
+
+  socket.on(
+    "message-deleted-for-me",
+    (message) => {
+      if (!message) {
+        return;
+      }
+
+      const conversationId =
+        message.conversationId;
+
+      if (!conversationId) {
+        return;
+      }
+
+      if (!message._id && !message.id) {
+        return;
+      }
+
+      console.log(
+        `Message deleted for one user: ${
+          message._id || message.id
+        }`
+      );
+
+      /*
+        IMPORTANT:
+
+        Delete-for-me should normally NOT remove
+        the message from the other user's browser.
+
+        Therefore we do NOT broadcast this event
+        as a deletion to the other participant.
+
+        The requesting browser handles its own
+        local deletion.
+      */
+    }
+  );
+
+  // ========================================
+  // MESSAGE UNDONE
+  // ========================================
+
+  socket.on(
+    "message-undone",
+    (message) => {
+      if (!message) {
+        return;
+      }
+
+      const conversationId =
+        message.conversationId;
+
+      if (!conversationId) {
+        console.log(
+          "Undo rejected: conversationId missing."
+        );
+
+        return;
+      }
+
+      if (!message._id && !message.id) {
+        console.log(
+          "Undo rejected: message ID missing."
+        );
+
+        return;
+      }
+
+      console.log(
+        `Message undone: ${
+          message._id || message.id
+        }`
+      );
+
+      // Tell the other browser about the undo.
+      socket
+        .to(conversationId)
+        .emit(
+          "message-undone",
+          message
+        );
+    }
+  );
 
   // ========================================
   // MESSAGE DELIVERED

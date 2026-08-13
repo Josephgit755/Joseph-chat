@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import ProfileSetup from "./pages/ProfileSetup";
 import ChatList from "./pages/ChatList";
 import PrivateChat from "./pages/PrivateChat";
+import DisappearingMessage from "./pages/DisappearingMessage";
 
 import Calls from "./pages/Calls";
 import Tools from "./pages/Tools";
@@ -31,7 +32,6 @@ function App() {
     authenticatedUser
   ) => {
     setUser(authenticatedUser);
-
     setCurrentScreen("profile");
   };
 
@@ -41,9 +41,38 @@ function App() {
 
   const handleOpenChat = (chat) => {
     setSelectedChat(chat);
-
     setCurrentScreen("private-chat");
   };
+
+  // ==========================================
+  // OPEN DISAPPEARING MESSAGE SETTINGS
+  // ==========================================
+
+  const handleOpenDisappearingSettings = (
+    chat,
+    settings
+  ) => {
+    console.log(
+      "Opening disappearing message settings:",
+      chat,
+      settings
+    );
+
+    setSelectedChat(chat);
+
+    setCurrentScreen(
+      "disappearing-message"
+    );
+  };
+
+  // ==========================================
+  // CLOSE DISAPPEARING MESSAGE SETTINGS
+  // ==========================================
+
+  const handleCloseDisappearingSettings =
+    () => {
+      setCurrentScreen("private-chat");
+    };
 
   // ==========================================
   // NAVIGATION
@@ -121,7 +150,6 @@ function App() {
       // --------------------------------------
 
       case "settings":
-        // Settings page has not been created yet.
         console.log(
           "Settings page is not implemented yet."
         );
@@ -203,7 +231,6 @@ function App() {
         user={user}
         onComplete={(updatedUser) => {
           setUser(updatedUser);
-
           setCurrentScreen("chatlist");
         }}
       />
@@ -240,7 +267,6 @@ function App() {
 
         onBack={() => {
           setSelectedChat(null);
-
           setCurrentScreen("chatlist");
         }}
 
@@ -261,6 +287,34 @@ function App() {
 
           setCurrentScreen("calls");
         }}
+
+        onOpenDisappearingSettings={
+          handleOpenDisappearingSettings
+        }
+      />
+    );
+  }
+
+  // ==========================================
+  // DISAPPEARING MESSAGE SETTINGS
+  // ==========================================
+
+  if (
+    currentScreen ===
+    "disappearing-message"
+  ) {
+    return (
+      <DisappearingMessage
+        user={user}
+        chat={selectedChat}
+
+        onBack={
+          handleCloseDisappearingSettings
+        }
+
+        onClose={
+          handleCloseDisappearingSettings
+        }
       />
     );
   }

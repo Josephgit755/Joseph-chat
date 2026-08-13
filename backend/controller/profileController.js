@@ -1,141 +1,192 @@
 const User = require("../models/User");
 
+// ==========================================
+// UPDATE USER PROFILE
+// ==========================================
+
 const updateProfile = async (req, res) => {
   try {
+    // authMiddleware should attach the authenticated
+    // user's information to req.user.
+    const userId =
+      req.user?._id ||
+      req.user?.id ||
+      req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User authentication information is missing.",
+      });
+    }
+
     const {
+      fullName,
       displayName,
       bio,
       gender,
       profilePhoto,
+      profileCompleted,
     } = req.body;
 
-    // --------------------------------
-    // 1. Validate display name
-    // --------------------------------
-    if (!displayName || !displayName.trim()) {
+    // ==========================================
+    // BUILD UPDATE OBJECT
+    // ==========================================
+
+    const updates = {};
+
+    if (fullName !== undefined) {
+      updates.fullName = String(fullName).trim();
+    }
+
+    if (displayName !== undefined) {
+      updates.displayName = String(displayName).trim();
+    }
+
+    if (bio !== undefined) {
+      updates.bio = String(bio).trim();
+    }
+
+    if (gender !== undefined) {
+      const allowedGenders = [
+        "",
+        "male",
+        "female",
+        "other",
+        "prefer-not-to-say",
+      ];
+
+      if (!allowedGenders.includes(gender)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid gender value.",
+        });
+      }
+
+      updates.gender = gender;
+    }
+
+    if (profilePhoto !== undefined) {
+      updates.profilePhoto = String(profilePhoto).trim();
+    }
+
+    if (profileCompleted !== undefined) {
+      updates.profileCompleted =
+        Boolean(profileCompleted);
+    }
+
+    // ==========================================
+    // VALIDATE FULL NAME
+    // ==========================================
+
+    if (
+      updates.fullName !== undefined &&
+      updates.fullName.length < 2
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Display name is required.",
+        message: "Full name must contain at least 2 characters.",
       });
     }
 
-    // --------------------------------
-    // 2. Validate display name length
-    // --------------------------------
-    const cleanedDisplayName =
-      displayName.trim();
-
-    if (cleanedDisplayName.length > 100) {
+    if (
+      updates.fullName !== undefined &&
+      updates.fullName.length > 100
+    ) {
       return res.status(400).json({
         success: false,
-        message:
-          "Display name cannot exceed 100 characters.",
+        message: "Full name cannot exceed 100 characters.",
       });
     }
 
-    // --------------------------------
-    // 3. Validate bio
-    // --------------------------------
-    const cleanedBio = bio
-      ? bio.trim()
-      : "";
+    // ==========================================
+    // VALIDATE DISPLAY NAME
+    // ==========================================
 
-    if (cleanedBio.length > 160) {
+    if (
+      updates.displayName !== undefined &&
+      updates.displayName.length > 100
+    ) {
       return res.status(400).json({
         success: false,
-        message:
-          "Bio cannot exceed 160 characters.",
+        message: "Display name cannot exceed 100 characters.",
       });
     }
 
-    // --------------------------------
-    // 4. Validate gender
-    // --------------------------------
-    const allowedGenders = [
-      "male",
-      "female",
-      "other",
-      "prefer-not-to-say",
-    ];
+    // ==========================================
+    // VALIDATE BIO
+    // ==========================================
 
-    if (!allowedGenders.includes(gender)) {
+    if (
+      updates.bio !== undefined &&
+      updates.bio.length > 160
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Please select a valid gender.",
+        message: "Bio cannot exceed 160 characters.",
       });
     }
 
-    // --------------------------------
-    // 5. Find authenticated user
-    // --------------------------------
-    const user = await User.findById(
-      req.user.id
-    );
+    // ==========================================
+    // REQUIRE AT LEAST ONE FIELD
+    // ==========================================
 
-    if (!user) {
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No profile information was provided.",
+      });
+    }
+
+    // ==========================================
+    // UPDATE USER
+    // ==========================================
+
+    const updatedUser =
+      await User.findByIdAndUpdate(
+        userId,
+        {
+          $set: updates,
+        },
+        {
+          new: true,
+          runValidators: true,
+        }
+      ).select("-password");
+
+    if (!updatedUser) {
       return res.status(404).json({
         success: false,
         message: "User not found.",
       });
     }
 
-    // --------------------------------
-    // 6. Update profile
-    // --------------------------------
-    user.displayName =
-      cleanedDisplayName;
+    // ==========================================
+    // RESPONSE
+    // ==========================================
 
-    user.bio = cleanedBio;
-
-    user.gender = gender;
-
-    if (profilePhoto) {
-      user.profilePhoto =
-        profilePhoto;
-    }
-
-    // --------------------------------
-    // 7. Mark profile complete
-    // --------------------------------
-    user.profileCompleted = true;
-
-    await user.save();
-
-    // --------------------------------
-    // 8. Return safe response
-    // --------------------------------
-    return res.status(200).json({
+    return res.json({
       success: true,
-      message: "Profile completed successfully.",
-
-      user: {
-        id: user._id,
-        fullName: user.fullName,
-        username: user.username,
-        email: user.email,
-        profileCompleted:
-          user.profileCompleted,
-        profilePhoto:
-          user.profilePhoto,
-        displayName:
-          user.displayName,
-        bio: user.bio,
-        gender: user.gender,
-      },
+      message: "Profile updated successfully.",
+      user: updatedUser,
     });
   } catch (error) {
     console.error(
-      "Profile update error:",
+      "Update profile error:",
       error
     );
 
     return res.status(500).json({
       success: false,
-      message:
-        "Server error while updating profile.",
+      message: "Failed to update profile.",
+      error: error.message,
     });
   }
 };
+
+// ==========================================
+// EXPORT
+// ==========================================
 
 module.exports = {
   updateProfile,
