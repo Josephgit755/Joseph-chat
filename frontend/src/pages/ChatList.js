@@ -1,17 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./chatlist.css";
 
 function ChatList({ user, onOpenChat, onNavigate }) {
   const [activeFilter, setActiveFilter] = useState("all");
 
-  const [showPlusMenu, setShowPlusMenu] =
-    useState(false);
-
-  const [showSearch, setShowSearch] =
-    useState(false);
-
-  const [searchQuery, setSearchQuery] =
-    useState("");
+  const [showPlusMenu, setShowPlusMenu] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // ==========================================
   // REAL CHAT DATA
@@ -44,210 +39,7 @@ function ChatList({ user, onOpenChat, onNavigate }) {
     user?.username;
 
   // ==========================================
-  // LOAD REAL REGISTERED USERS
-  // ==========================================
-
-  useEffect(() => {
-    const loadUsers = async () => {
-      if (!currentUserId) {
-        console.log(
-          "Cannot load chat users: current user ID missing."
-        );
-
-        setIsLoadingChats(false);
-
-        return;
-      }
-
-      try {
-        setIsLoadingChats(true);
-        setChatLoadError("");
-
-        console.log(
-          "=========================================="
-        );
-
-        console.log(
-          "Loading registered ZenvaZapp users..."
-        );
-
-        console.log(
-          "Current user ID:",
-          currentUserId
-        );
-
-        console.log(
-          "Users API:",
-          `${API_URL}/api/users`
-        );
-
-        const response = await fetch(
-          `${API_URL}/api/users`
-        );
-
-        console.log(
-          "Users API status:",
-          response.status
-        );
-
-        const data =
-          await response.json();
-
-        console.log(
-          "Users API response:",
-          data
-        );
-
-        if (
-          !response.ok ||
-          !data.success
-        ) {
-          throw new Error(
-            data.message ||
-              "Failed to load registered users."
-          );
-        }
-
-        // ======================================
-        // CONVERT DATABASE USERS INTO CHAT ITEMS
-        // ======================================
-
-        const registeredUsers =
-          (data.users || [])
-            .filter((account) => {
-              // Never show the logged-in user
-              // as their own chat.
-
-              return (
-                String(account.id) !==
-                String(currentUserId)
-              );
-            })
-            .map((account) => {
-              const displayName =
-                account.displayName ||
-                account.fullName ||
-                account.username ||
-                "User";
-
-              return {
-                // IMPORTANT:
-                // This is the REAL MongoDB user ID.
-                id: account.id,
-
-                name: displayName,
-
-                username:
-                  account.username || "",
-
-                message:
-                  "Start a conversation",
-
-                time: "",
-
-                unread: 0,
-
-                favorite: false,
-
-                group: false,
-
-                avatar:
-                  account.profilePhoto ||
-                  displayName
-                    .charAt(0)
-                    .toUpperCase(),
-
-                profilePhoto:
-                  account.profilePhoto || "",
-
-                profileCompleted:
-                  account.profileCompleted,
-
-                fullName:
-                  account.fullName || "",
-              };
-            });
-
-        console.log(
-          "Registered users for chat list:",
-          registeredUsers
-        );
-
-        setChats(
-          registeredUsers
-        );
-      } catch (error) {
-        console.error(
-          "Load registered users error:",
-          error
-        );
-
-        setChatLoadError(
-          error.message ||
-            "Unable to load registered users."
-        );
-
-        setChats([]);
-      } finally {
-        setIsLoadingChats(false);
-      }
-    };
-
-    loadUsers();
-  }, [
-    API_URL,
-    currentUserId,
-  ]);
-
-  // ==========================================
-  // SEARCH + FILTER
-  // ==========================================
-
-  const filteredChats =
-    chats.filter((chat) => {
-      const query =
-        searchQuery
-          .toLowerCase()
-          .trim();
-
-      const matchesSearch =
-        chat.name
-          .toLowerCase()
-          .includes(query) ||
-        chat.message
-          .toLowerCase()
-          .includes(query) ||
-        chat.username
-          .toLowerCase()
-          .includes(query);
-
-      if (!matchesSearch) {
-        return false;
-      }
-
-      if (
-        activeFilter === "unread"
-      ) {
-        return chat.unread > 0;
-      }
-
-      if (
-        activeFilter === "favorites"
-      ) {
-        return chat.favorite;
-      }
-
-      if (
-        activeFilter === "groups"
-      ) {
-        return chat.group;
-      }
-
-      return true;
-    });
-
-  // ==========================================
-  // USER NAME
+  // CURRENT USER NAME
   // ==========================================
 
   const getUserName = () => {
@@ -265,16 +57,869 @@ function ChatList({ user, onOpenChat, onNavigate }) {
   };
 
   // ==========================================
+  // CREATE CONSISTENT CONVERSATION ID
+  // ==========================================
+
+  const createConversationId = (
+    participantOne,
+    participantTwo
+  ) => {
+    if (
+      !participantOne ||
+      !participantTwo
+    ) {
+      return "";
+    }
+
+    return [
+      String(participantOne),
+      String(participantTwo),
+    ]
+      .sort()
+      .join("_");
+  };
+
+  // ==========================================
+  // FORMAT MESSAGE TIME
+  // ==========================================
+
+  const formatMessageTime = (dateValue) => {
+    if (!dateValue) {
+      return "";
+    }
+
+    const date = new Date(dateValue);
+
+    if (Number.isNaN(date.getTime())) {
+      return "";
+    }
+
+    const now = new Date();
+
+    const isToday =
+      date.toDateString() ===
+      now.toDateString();
+
+    if (isToday) {
+      return date.toLocaleTimeString(
+        [],
+        {
+          hour: "numeric",
+          minute: "2-digit",
+        }
+      );
+    }
+
+    const yesterday =
+      new Date(now);
+
+    yesterday.setDate(
+      now.getDate() - 1
+    );
+
+    if (
+      date.toDateString() ===
+      yesterday.toDateString()
+    ) {
+      return "Yesterday";
+    }
+
+    const difference =
+      now.getTime() -
+      date.getTime();
+
+    const sevenDays =
+      7 * 24 * 60 * 60 * 1000;
+
+    if (
+      difference >= 0 &&
+      difference < sevenDays
+    ) {
+      return date.toLocaleDateString(
+        [],
+        {
+          weekday: "short",
+        }
+      );
+    }
+
+    return date.toLocaleDateString(
+      [],
+      {
+        month: "short",
+        day: "numeric",
+      }
+    );
+  };
+
+  // ==========================================
+  // GET MESSAGE PREVIEW
+  // ==========================================
+
+  const getMessagePreview = (
+    message
+  ) => {
+    if (!message) {
+      return "Start a conversation";
+    }
+
+    if (
+      message.deletedForEveryone ||
+      message.text ===
+        "This message was deleted."
+    ) {
+      return "This message was deleted.";
+    }
+
+    const messageType =
+      message.messageType ||
+      "text";
+
+    if (
+      messageType === "image"
+    ) {
+      return "📷 Photo";
+    }
+
+    if (
+      messageType === "video"
+    ) {
+      return "🎥 Video";
+    }
+
+    if (
+      messageType === "audio" ||
+      messageType === "voice"
+    ) {
+      return "🎤 Voice message";
+    }
+
+    if (
+      messageType === "file" ||
+      messageType === "document"
+    ) {
+      return "📎 Document";
+    }
+
+    if (
+      messageType === "location"
+    ) {
+      return "📍 Location";
+    }
+
+    if (
+      messageType === "contact"
+    ) {
+      return "👤 Contact";
+    }
+
+    if (
+      message.text &&
+      message.text.trim()
+    ) {
+      return message.text.trim();
+    }
+
+    return "Message";
+  };
+
+  // ==========================================
+  // LOAD MESSAGES FOR ONE CONVERSATION
+  // ==========================================
+
+  const loadConversationData = async (
+    conversation
+  ) => {
+    try {
+      if (
+        !conversation?.conversationId
+      ) {
+        return {
+          ...conversation,
+          message:
+            "Start a conversation",
+          time: "",
+          unread: 0,
+        };
+      }
+
+      const response =
+        await fetch(
+          `${API_URL}/api/messages/${encodeURIComponent(
+            conversation.conversationId
+          )}`
+        );
+
+      let data;
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error(
+          "Invalid message response."
+        );
+      }
+
+      if (
+        !response.ok ||
+        !data?.success
+      ) {
+        throw new Error(
+          data?.message ||
+            "Failed to load conversation."
+        );
+      }
+
+      const messages =
+        Array.isArray(data.messages)
+          ? data.messages
+          : [];
+
+      // ======================================
+      // FIND LATEST MESSAGE
+      // ======================================
+
+      const latestMessage =
+        messages.length > 0
+          ? messages[
+              messages.length - 1
+            ]
+          : null;
+
+      // ======================================
+      // COUNT UNREAD INCOMING MESSAGES
+      // ======================================
+
+      const unreadCount =
+        messages.filter(
+          (message) => {
+            const receiverId =
+              message?.receiverId;
+
+            return (
+              receiverId &&
+              String(receiverId) ===
+                String(currentUserId) &&
+              message?.status !==
+                "read" &&
+              !message?.deletedForReceiver &&
+              !message?.deletedForEveryone
+            );
+          }
+        ).length;
+
+      return {
+        ...conversation,
+
+        message:
+          getMessagePreview(
+            latestMessage
+          ),
+
+        time:
+          formatMessageTime(
+            latestMessage?.createdAt ||
+              latestMessage?.updatedAt
+          ),
+
+        unread: unreadCount,
+
+        latestMessage,
+      };
+    } catch (error) {
+      console.error(
+        `Failed to load conversation ${conversation?.conversationId}:`,
+        error
+      );
+
+      return {
+        ...conversation,
+
+        message:
+          "Start a conversation",
+
+        time: "",
+
+        unread: 0,
+      };
+    }
+  };
+
+  // ==========================================
+  // LOAD REGISTERED USERS + REAL MESSAGES
+  // ==========================================
+  // ==========================================
+// LOAD REGISTERED USERS + REAL MESSAGES
+// ==========================================
+
+useEffect(() => {
+  let isMounted = true;
+
+  // ========================================
+  // FORMAT MESSAGE TIME
+  // ========================================
+
+  const formatMessageTime = (dateValue) => {
+    if (!dateValue) {
+      return "";
+    }
+
+    const date = new Date(dateValue);
+
+    if (Number.isNaN(date.getTime())) {
+      return "";
+    }
+
+    const now = new Date();
+
+    const isToday =
+      date.toDateString() ===
+      now.toDateString();
+
+    if (isToday) {
+      return date.toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+      });
+    }
+
+    const yesterday = new Date(now);
+
+    yesterday.setDate(
+      now.getDate() - 1
+    );
+
+    if (
+      date.toDateString() ===
+      yesterday.toDateString()
+    ) {
+      return "Yesterday";
+    }
+
+    const difference =
+      now.getTime() -
+      date.getTime();
+
+    const sevenDays =
+      7 * 24 * 60 * 60 * 1000;
+
+    if (
+      difference >= 0 &&
+      difference < sevenDays
+    ) {
+      return date.toLocaleDateString([], {
+        weekday: "short",
+      });
+    }
+
+    return date.toLocaleDateString([], {
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  // ========================================
+  // GET MESSAGE PREVIEW
+  // ========================================
+
+  const getMessagePreview = (message) => {
+    if (!message) {
+      return "Start a conversation";
+    }
+
+    if (
+      message.deletedForEveryone ||
+      message.text ===
+        "This message was deleted."
+    ) {
+      return "This message was deleted.";
+    }
+
+    const messageType =
+      message.messageType || "text";
+
+    if (messageType === "image") {
+      return "📷 Photo";
+    }
+
+    if (messageType === "video") {
+      return "🎥 Video";
+    }
+
+    if (
+      messageType === "audio" ||
+      messageType === "voice"
+    ) {
+      return "🎤 Voice message";
+    }
+
+    if (
+      messageType === "file" ||
+      messageType === "document"
+    ) {
+      return "📎 Document";
+    }
+
+    if (messageType === "location") {
+      return "📍 Location";
+    }
+
+    if (messageType === "contact") {
+      return "👤 Contact";
+    }
+
+    if (
+      message.text &&
+      message.text.trim()
+    ) {
+      return message.text.trim();
+    }
+
+    return "Message";
+  };
+
+  // ========================================
+  // LOAD ONE CONVERSATION
+  // ========================================
+
+  const loadConversationData = async (
+    conversation
+  ) => {
+    try {
+      if (
+        !conversation?.conversationId
+      ) {
+        return {
+          ...conversation,
+          message:
+            "Start a conversation",
+          time: "",
+          unread: 0,
+        };
+      }
+
+      const response = await fetch(
+        `${API_URL}/api/messages/${encodeURIComponent(
+          conversation.conversationId
+        )}`
+      );
+
+      let data;
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error(
+          "Invalid message response."
+        );
+      }
+
+      if (
+        !response.ok ||
+        !data?.success
+      ) {
+        throw new Error(
+          data?.message ||
+            "Failed to load conversation."
+        );
+      }
+
+      const messages =
+        Array.isArray(data.messages)
+          ? data.messages
+          : [];
+
+      // ====================================
+      // FIND LATEST MESSAGE
+      // ====================================
+
+      const latestMessage =
+        messages.length > 0
+          ? messages[
+              messages.length - 1
+            ]
+          : null;
+
+      // ====================================
+      // COUNT UNREAD MESSAGES
+      // ====================================
+
+      const unreadCount =
+        messages.filter((message) => {
+          const receiverId =
+            message?.receiverId;
+
+          return (
+            receiverId &&
+            String(receiverId) ===
+              String(currentUserId) &&
+            message?.status !== "read" &&
+            !message?.deletedForReceiver &&
+            !message?.deletedForEveryone
+          );
+        }).length;
+
+      return {
+        ...conversation,
+
+        message:
+          getMessagePreview(
+            latestMessage
+          ),
+
+        time:
+          formatMessageTime(
+            latestMessage?.createdAt ||
+              latestMessage?.updatedAt
+          ),
+
+        unread: unreadCount,
+
+        latestMessage,
+      };
+    } catch (error) {
+      console.error(
+        `Failed to load conversation ${conversation?.conversationId}:`,
+        error
+      );
+
+      return {
+        ...conversation,
+
+        message:
+          "Start a conversation",
+
+        time: "",
+
+        unread: 0,
+      };
+    }
+  };
+
+  // ========================================
+  // LOAD REGISTERED USERS
+  // ========================================
+
+  const loadUsers = async () => {
+    if (!currentUserId) {
+      console.log(
+        "Cannot load chat users: current user ID missing."
+      );
+
+      if (isMounted) {
+        setIsLoadingChats(false);
+      }
+
+      return;
+    }
+
+    try {
+      if (isMounted) {
+        setIsLoadingChats(true);
+        setChatLoadError("");
+      }
+
+      console.log(
+        "=========================================="
+      );
+
+      console.log(
+        "Loading registered ZenvaZapp users..."
+      );
+
+      console.log(
+        "Current user ID:",
+        currentUserId
+      );
+
+      console.log(
+        "Users API:",
+        `${API_URL}/api/users`
+      );
+
+      const response = await fetch(
+        `${API_URL}/api/users`
+      );
+
+      console.log(
+        "Users API status:",
+        response.status
+      );
+
+      let data;
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error(
+          "The server returned an invalid response."
+        );
+      }
+
+      console.log(
+        "Users API response:",
+        data
+      );
+
+      if (
+        !response.ok ||
+        !data?.success
+      ) {
+        throw new Error(
+          data?.message ||
+            "Failed to load registered users."
+        );
+      }
+
+      // ====================================
+      // CREATE BASE CHAT ITEMS
+      // ====================================
+
+      const registeredUsers =
+        (data.users || [])
+          .filter((account) => {
+            const accountId =
+              account?._id ||
+              account?.id ||
+              account?.userId;
+
+            return (
+              accountId &&
+              String(accountId) !==
+                String(currentUserId)
+            );
+          })
+          .map((account) => {
+            const accountId =
+              account?._id ||
+              account?.id ||
+              account?.userId;
+
+            const displayName =
+              account?.displayName ||
+              account?.fullName ||
+              account?.username ||
+              "User";
+
+            const profilePhoto =
+              account?.profilePhoto ||
+              account?.avatar ||
+              "";
+
+            const conversationId =
+              createConversationId(
+                currentUserId,
+                accountId
+              );
+
+            return {
+              id: accountId,
+
+              conversationId,
+
+              name: displayName,
+
+              username:
+                account?.username || "",
+
+              fullName:
+                account?.fullName || "",
+
+              profilePhoto,
+
+              profileCompleted:
+                account?.profileCompleted,
+
+              message:
+                "Start a conversation",
+
+              time: "",
+
+              unread: 0,
+
+              favorite:
+                Boolean(
+                  account?.favorite
+                ),
+
+              group: false,
+
+              avatar:
+                profilePhoto ||
+                displayName
+                  .charAt(0)
+                  .toUpperCase(),
+            };
+          });
+
+      console.log(
+        "Registered users:",
+        registeredUsers
+      );
+
+      // ====================================
+      // LOAD REAL CONVERSATION DATA
+      // ====================================
+
+      const enrichedChats =
+        await Promise.all(
+          registeredUsers.map(
+            (chat) =>
+              loadConversationData(
+                chat
+              )
+          )
+        );
+
+      // ====================================
+      // SORT BY MOST RECENT MESSAGE
+      // ====================================
+
+      enrichedChats.sort(
+        (a, b) => {
+          const dateA =
+            a?.latestMessage
+              ?.createdAt
+              ? new Date(
+                  a.latestMessage.createdAt
+                ).getTime()
+              : 0;
+
+          const dateB =
+            b?.latestMessage
+              ?.createdAt
+              ? new Date(
+                  b.latestMessage.createdAt
+                ).getTime()
+              : 0;
+
+          return dateB - dateA;
+        }
+      );
+
+      console.log(
+        "Final ZenvaZapp chats:",
+        enrichedChats
+      );
+
+      if (isMounted) {
+        setChats(enrichedChats);
+      }
+    } catch (error) {
+      console.error(
+        "Load registered users error:",
+        error
+      );
+
+      if (isMounted) {
+        setChatLoadError(
+          error?.message ||
+            "Unable to load registered users."
+        );
+
+        setChats([]);
+      }
+    } finally {
+      if (isMounted) {
+        setIsLoadingChats(false);
+      }
+    }
+  };
+
+  loadUsers();
+
+  return () => {
+    isMounted = false;
+  };
+}, [
+  API_URL,
+  currentUserId,
+]);
+
+  
+
+   
+
+  // ==========================================
+  // SEARCH + FILTER
+  // ==========================================
+
+  const filteredChats = useMemo(() => {
+    const query =
+      searchQuery
+        .toLowerCase()
+        .trim();
+
+    return chats.filter((chat) => {
+      const name =
+        chat?.name
+          ?.toLowerCase() || "";
+
+      const username =
+        chat?.username
+          ?.toLowerCase() || "";
+
+      const message =
+        chat?.message
+          ?.toLowerCase() || "";
+
+      const matchesSearch =
+        !query ||
+        name.includes(query) ||
+        username.includes(query) ||
+        message.includes(query);
+
+      if (!matchesSearch) {
+        return false;
+      }
+
+      if (
+        activeFilter === "unread"
+      ) {
+        return (
+          Number(
+            chat?.unread || 0
+          ) > 0
+        );
+      }
+
+      if (
+        activeFilter === "favorites"
+      ) {
+        return Boolean(
+          chat?.favorite
+        );
+      }
+
+      if (
+        activeFilter === "groups"
+      ) {
+        return Boolean(
+          chat?.group
+        );
+      }
+
+      return true;
+    });
+  }, [
+    chats,
+    searchQuery,
+    activeFilter,
+  ]);
+
+  // ==========================================
   // OPEN CHAT
   // ==========================================
 
-  const handleOpenChat = (chat) => {
+  const handleOpenChat = (
+    chat
+  ) => {
     console.log(
       "=========================================="
     );
 
     console.log(
-      "Opening real registered user chat:"
+      "Opening ZenvaZapp conversation:"
     );
 
     console.log(
@@ -283,18 +928,28 @@ function ChatList({ user, onOpenChat, onNavigate }) {
     );
 
     console.log(
-      "Selected chat:",
+      "Selected user:",
       chat
     );
 
     console.log(
       "Selected user REAL ID:",
-      chat.id
+      chat?.id
+    );
+
+    console.log(
+      "Conversation ID:",
+      chat?.conversationId
     );
 
     console.log(
       "Selected username:",
-      chat.username
+      chat?.username
+    );
+
+    console.log(
+      "Latest message:",
+      chat?.latestMessage
     );
 
     console.log(
@@ -303,6 +958,30 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
     if (onOpenChat) {
       onOpenChat(chat);
+    }
+  };
+
+  // ==========================================
+  // STATUS NAVIGATION
+  // ==========================================
+
+  const handleYourStatus = () => {
+    if (onNavigate) {
+      onNavigate("status");
+    }
+  };
+
+  // ==========================================
+  // PLUS MENU NAVIGATION
+  // ==========================================
+
+  const handlePlusNavigation = (
+    destination
+  ) => {
+    setShowPlusMenu(false);
+
+    if (onNavigate) {
+      onNavigate(destination);
     }
   };
 
@@ -340,6 +1019,7 @@ function ChatList({ user, onOpenChat, onNavigate }) {
         <div className="header-actions">
 
           <button
+            type="button"
             className="header-icon-button"
             aria-label="Search"
             onClick={() => {
@@ -356,12 +1036,11 @@ function ChatList({ user, onOpenChat, onNavigate }) {
           </button>
 
           <button
+            type="button"
             className="header-icon-button"
             aria-label="Profile"
             onClick={() =>
-              onNavigate?.(
-                "profile"
-              )
+              onNavigate?.("profile")
             }
           >
             👤
@@ -388,16 +1067,18 @@ function ChatList({ user, onOpenChat, onNavigate }) {
               type="text"
               placeholder="Search chats, contacts and messages..."
               value={searchQuery}
-              onChange={(e) =>
+              onChange={(event) =>
                 setSearchQuery(
-                  e.target.value
+                  event.target.value
                 )
               }
               autoFocus
+              aria-label="Search chats"
             />
 
             {searchQuery && (
               <button
+                type="button"
                 className="clear-search"
                 onClick={() =>
                   setSearchQuery("")
@@ -426,11 +1107,10 @@ function ChatList({ user, onOpenChat, onNavigate }) {
           </h2>
 
           <button
+            type="button"
             className="view-status-button"
             onClick={() =>
-              onNavigate?.(
-                "status"
-              )
+              onNavigate?.("status")
             }
           >
             View all
@@ -440,13 +1120,40 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
         <div className="status-list">
 
+          {/* YOUR STATUS */}
+
           <button
-            className="status-item add-status"
             type="button"
+            className="status-item add-status"
+            onClick={handleYourStatus}
           >
 
             <div className="status-avatar">
-              +
+
+              {user?.profilePhoto ? (
+                <img
+                  src={user.profilePhoto}
+                  alt="Your profile"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                user?.displayName
+                  ?.charAt(0)
+                  ?.toUpperCase() ||
+                user?.fullName
+                  ?.charAt(0)
+                  ?.toUpperCase() ||
+                user?.username
+                  ?.charAt(0)
+                  ?.toUpperCase() ||
+                "+"
+              )}
+
             </div>
 
             <span>
@@ -455,65 +1162,47 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
           </button>
 
-          <button
-            className="status-item"
-            type="button"
-          >
+          {/* REGISTERED USERS */}
 
-            <div className="status-avatar status-active">
-              J
-            </div>
+          {chats
+            .slice(0, 8)
+            .map((chat) => (
+              <button
+                type="button"
+                className="status-item"
+                key={`status-${chat.id}`}
+                onClick={() =>
+                  handleOpenChat(chat)
+                }
+              >
 
-            <span>
-              John
-            </span>
+                <div className="status-avatar status-active">
 
-          </button>
+                  {chat.profilePhoto ? (
+                    <img
+                      src={
+                        chat.profilePhoto
+                      }
+                      alt={chat.name}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  ) : (
+                    chat.avatar
+                  )}
 
-          <button
-            className="status-item"
-            type="button"
-          >
+                </div>
 
-            <div className="status-avatar status-active">
-              M
-            </div>
+                <span>
+                  {chat.name}
+                </span>
 
-            <span>
-              Mary
-            </span>
-
-          </button>
-
-          <button
-            className="status-item"
-            type="button"
-          >
-
-            <div className="status-avatar status-active">
-              C
-            </div>
-
-            <span>
-              Chris
-            </span>
-
-          </button>
-
-          <button
-            className="status-item"
-            type="button"
-          >
-
-            <div className="status-avatar status-active">
-              A
-            </div>
-
-            <span>
-              Alex
-            </span>
-
-          </button>
+              </button>
+            ))}
 
         </div>
 
@@ -526,64 +1215,56 @@ function ChatList({ user, onOpenChat, onNavigate }) {
       <section className="chat-filters">
 
         <button
+          type="button"
           className={
-            activeFilter ===
-            "unread"
+            activeFilter === "unread"
               ? "filter-button active"
               : "filter-button"
           }
           onClick={() =>
-            setActiveFilter(
-              "unread"
-            )
+            setActiveFilter("unread")
           }
         >
           Unread
         </button>
 
         <button
+          type="button"
           className={
-            activeFilter ===
-            "favorites"
+            activeFilter === "favorites"
               ? "filter-button active"
               : "filter-button"
           }
           onClick={() =>
-            setActiveFilter(
-              "favorites"
-            )
+            setActiveFilter("favorites")
           }
         >
           Favorites
         </button>
 
         <button
+          type="button"
           className={
-            activeFilter ===
-            "groups"
+            activeFilter === "groups"
               ? "filter-button active"
               : "filter-button"
           }
           onClick={() =>
-            setActiveFilter(
-              "groups"
-            )
+            setActiveFilter("groups")
           }
         >
           Groups
         </button>
 
         <button
+          type="button"
           className={
-            activeFilter ===
-            "all"
+            activeFilter === "all"
               ? "filter-button active"
               : "filter-button"
           }
           onClick={() =>
-            setActiveFilter(
-              "all"
-            )
+            setActiveFilter("all")
           }
         >
           All
@@ -606,7 +1287,11 @@ function ChatList({ user, onOpenChat, onNavigate }) {
           <span>
             {isLoadingChats
               ? "Loading..."
-              : `${filteredChats.length} conversations`}
+              : `${filteredChats.length} ${
+                  filteredChats.length === 1
+                    ? "conversation"
+                    : "conversations"
+                }`}
           </span>
 
         </div>
@@ -614,6 +1299,7 @@ function ChatList({ user, onOpenChat, onNavigate }) {
         <div className="plus-container">
 
           <button
+            type="button"
             className="plus-button"
             onClick={() =>
               setShowPlusMenu(
@@ -621,6 +1307,9 @@ function ChatList({ user, onOpenChat, onNavigate }) {
               )
             }
             aria-label="New"
+            aria-expanded={
+              showPlusMenu
+            }
           >
             +
           </button>
@@ -630,15 +1319,12 @@ function ChatList({ user, onOpenChat, onNavigate }) {
             <div className="plus-menu">
 
               <button
-                onClick={() => {
-                  setShowPlusMenu(
-                    false
-                  );
-
-                  onNavigate?.(
+                type="button"
+                onClick={() =>
+                  handlePlusNavigation(
                     "new-chat"
-                  );
-                }}
+                  )
+                }
               >
                 <span>
                   💬
@@ -648,15 +1334,12 @@ function ChatList({ user, onOpenChat, onNavigate }) {
               </button>
 
               <button
-                onClick={() => {
-                  setShowPlusMenu(
-                    false
-                  );
-
-                  onNavigate?.(
+                type="button"
+                onClick={() =>
+                  handlePlusNavigation(
                     "new-group"
-                  );
-                }}
+                  )
+                }
               >
                 <span>
                   👥
@@ -666,15 +1349,12 @@ function ChatList({ user, onOpenChat, onNavigate }) {
               </button>
 
               <button
-                onClick={() => {
-                  setShowPlusMenu(
-                    false
-                  );
-
-                  onNavigate?.(
+                type="button"
+                onClick={() =>
+                  handlePlusNavigation(
                     "new-contact"
-                  );
-                }}
+                  )
+                }
               >
                 <span>
                   👤
@@ -684,15 +1364,12 @@ function ChatList({ user, onOpenChat, onNavigate }) {
               </button>
 
               <button
-                onClick={() => {
-                  setShowPlusMenu(
-                    false
-                  );
-
-                  onNavigate?.(
+                type="button"
+                onClick={() =>
+                  handlePlusNavigation(
                     "community"
-                  );
-                }}
+                  )
+                }
               >
                 <span>
                   🏘️
@@ -714,8 +1391,22 @@ function ChatList({ user, onOpenChat, onNavigate }) {
       ===================================== */}
 
       {chatLoadError && (
-        <div className="private-chat-error">
-          {chatLoadError}
+        <div
+          className="private-chat-error"
+          role="alert"
+        >
+          <span>
+            {chatLoadError}
+          </span>
+
+          <button
+            type="button"
+            onClick={() =>
+              window.location.reload()
+            }
+          >
+            Retry
+          </button>
         </div>
       )}
 
@@ -734,11 +1425,11 @@ function ChatList({ user, onOpenChat, onNavigate }) {
             </div>
 
             <h3>
-              Loading contacts...
+              Loading conversations...
             </h3>
 
             <p>
-              Getting registered ZenvaZapp users.
+              Getting registered users and messages.
             </p>
 
           </div>
@@ -748,15 +1439,35 @@ function ChatList({ user, onOpenChat, onNavigate }) {
           <div className="empty-chats">
 
             <div className="empty-icon">
-              🔎
+              {searchQuery
+                ? "🔎"
+                : activeFilter !== "all"
+                ? "📭"
+                : "💬"}
             </div>
 
             <h3>
-              No users found
+              {searchQuery
+                ? "No users found"
+                : activeFilter ===
+                  "unread"
+                ? "No unread chats"
+                : activeFilter ===
+                  "favorites"
+                ? "No favorite chats"
+                : activeFilter ===
+                  "groups"
+                ? "No groups yet"
+                : "No users found"}
             </h3>
 
             <p>
-              Try another search or filter.
+              {searchQuery
+                ? "Try another search."
+                : activeFilter !==
+                  "all"
+                ? "Try another chat filter."
+                : "Registered ZenvaZapp users will appear here."}
             </p>
 
           </div>
@@ -767,14 +1478,17 @@ function ChatList({ user, onOpenChat, onNavigate }) {
             (chat) => (
 
               <button
+                type="button"
                 className="chat-item"
                 key={chat.id}
                 onClick={() =>
-                  handleOpenChat(
-                    chat
-                  )
+                  handleOpenChat(chat)
                 }
               >
+
+                {/* ==========================
+                    AVATAR
+                ========================== */}
 
                 <div className="chat-avatar">
 
@@ -788,14 +1502,10 @@ function ChatList({ user, onOpenChat, onNavigate }) {
                         chat.name
                       }
                       style={{
-                        width:
-                          "100%",
-                        height:
-                          "100%",
-                        borderRadius:
-                          "50%",
-                        objectFit:
-                          "cover",
+                        width: "100%",
+                        height: "100%",
+                        borderRadius: "50%",
+                        objectFit: "cover",
                       }}
                     />
 
@@ -806,6 +1516,10 @@ function ChatList({ user, onOpenChat, onNavigate }) {
                   )}
 
                 </div>
+
+                {/* ==========================
+                    CHAT CONTENT
+                ========================== */}
 
                 <div className="chat-content">
 
@@ -853,14 +1567,16 @@ function ChatList({ user, onOpenChat, onNavigate }) {
           BOTTOM NAVIGATION
       ===================================== */}
 
-      <nav className="bottom-navigation">
+      <nav
+        className="bottom-navigation"
+        aria-label="Main navigation"
+      >
 
         <button
+          type="button"
           className="nav-button active"
           onClick={() =>
-            onNavigate?.(
-              "chats"
-            )
+            onNavigate?.("chats")
           }
         >
           <span className="nav-icon">
@@ -873,11 +1589,10 @@ function ChatList({ user, onOpenChat, onNavigate }) {
         </button>
 
         <button
+          type="button"
           className="nav-button"
           onClick={() =>
-            onNavigate?.(
-              "calls"
-            )
+            onNavigate?.("calls")
           }
         >
           <span className="nav-icon">
@@ -890,11 +1605,10 @@ function ChatList({ user, onOpenChat, onNavigate }) {
         </button>
 
         <button
+          type="button"
           className="nav-button"
           onClick={() =>
-            onNavigate?.(
-              "tools"
-            )
+            onNavigate?.("tools")
           }
         >
           <span className="nav-icon">
@@ -907,11 +1621,10 @@ function ChatList({ user, onOpenChat, onNavigate }) {
         </button>
 
         <button
+          type="button"
           className="nav-button"
           onClick={() =>
-            onNavigate?.(
-              "settings"
-            )
+            onNavigate?.("settings")
           }
         >
           <span className="nav-icon">

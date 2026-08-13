@@ -21,45 +21,62 @@ function PrivateChat({
 
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+  const [isLoadingMessages, setIsLoadingMessages] =
+    useState(true);
   const [sendError, setSendError] = useState("");
 
   // ==========================================
   // MESSAGE MENU
   // ==========================================
 
-  const [selectedMessage, setSelectedMessage] = useState(null);
-  const [showMessageMenu, setShowMessageMenu] = useState(false);
+  const [selectedMessage, setSelectedMessage] =
+    useState(null);
 
-  const [showChatMenu, setShowChatMenu] = useState(false);
-  const [showDeleteMenu, setShowDeleteMenu] = useState(false);
+  const [showMessageMenu, setShowMessageMenu] =
+    useState(false);
+
+  const [showChatMenu, setShowChatMenu] =
+    useState(false);
+
+  const [showDeleteMenu, setShowDeleteMenu] =
+    useState(false);
 
   // ==========================================
   // EMOJI
   // ==========================================
 
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] =
+    useState(false);
 
   // ==========================================
   // UNDO
   // ==========================================
 
-  const [undoMessageId, setUndoMessageId] = useState(null);
-  const [undoSeconds, setUndoSeconds] = useState(0);
+  const [undoMessageId, setUndoMessageId] =
+    useState(null);
+
+  const [undoSeconds, setUndoSeconds] =
+    useState(0);
 
   // ==========================================
   // EDIT
   // ==========================================
 
-  const [editingMessage, setEditingMessage] = useState(null);
-  const [editText, setEditText] = useState("");
+  const [editingMessage, setEditingMessage] =
+    useState(null);
+
+  const [editText, setEditText] =
+    useState("");
 
   // ==========================================
   // SEARCH
   // ==========================================
 
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] =
+    useState(false);
+
+  const [searchQuery, setSearchQuery] =
+    useState("");
 
   const searchInputRef = useRef(null);
 
@@ -67,17 +84,21 @@ function PrivateChat({
   // DISAPPEARING MESSAGES
   // ==========================================
 
-  const [disappearingDuration, setDisappearingDuration] =
-    useState("off");
+  const [
+    disappearingDuration,
+    setDisappearingDuration,
+  ] = useState("off");
 
   // ==========================================
   // REFS
   // ==========================================
 
   const messageEndRef = useRef(null);
+
   const socketRef = useRef(null);
 
   const textareaRef = useRef(null);
+
   const editTextareaRef = useRef(null);
 
   // ==========================================
@@ -141,7 +162,8 @@ function PrivateChat({
     {
       value: "off",
       label: "Off",
-      description: "Messages never disappear.",
+      description:
+        "Messages never disappear.",
     },
     {
       value: "24h",
@@ -163,12 +185,10 @@ function PrivateChat({
     },
   ];
 
-  // Avoid unused-variable lint problems while keeping
-  // these options available for future UI integration.
   void disappearingOptions;
 
   // ==========================================
-  // DISAPPEARING STORAGE
+  // DISAPPEARING STORAGE KEY
   // ==========================================
 
   const disappearingStorageKey = conversationId
@@ -181,6 +201,7 @@ function PrivateChat({
 
   useEffect(() => {
     if (!disappearingStorageKey) {
+      setDisappearingDuration("off");
       return;
     }
 
@@ -210,6 +231,32 @@ function PrivateChat({
   }, [disappearingStorageKey]);
 
   // ==========================================
+  // SAVE DISAPPEARING SETTING
+  // ==========================================
+
+  const saveDisappearingSetting =
+    useCallback(
+      (duration) => {
+        if (!disappearingStorageKey) {
+          return;
+        }
+
+        try {
+          localStorage.setItem(
+            disappearingStorageKey,
+            duration
+          );
+        } catch (error) {
+          console.error(
+            "Unable to save disappearing message setting:",
+            error
+          );
+        }
+      },
+      [disappearingStorageKey]
+    );
+
+  // ==========================================
   // FORMAT MESSAGE
   // ==========================================
 
@@ -219,25 +266,91 @@ function PrivateChat({
         return null;
       }
 
+      const id =
+        item._id ||
+        item.id ||
+        item.messageId;
+
+      if (!id) {
+        return null;
+      }
+
+      const senderId =
+        item.senderId ||
+        item.sender?._id ||
+        item.sender?.id;
+
       const senderIsCurrentUser =
-        String(item.senderId) ===
+        String(senderId) ===
         String(currentUserId);
 
-      let displayText = item.text || "";
+      let displayText =
+        item.text ||
+        item.message ||
+        "";
+
+      const deletedForEveryone =
+        Boolean(
+          item.deletedForEveryone
+        );
+
+      const deletedForSender =
+        Boolean(
+          item.deletedForSender
+        );
+
+      const deletedForReceiver =
+        Boolean(
+          item.deletedForReceiver
+        );
+
+      const deleted =
+        Boolean(item.deleted);
 
       if (
-        item.deletedForEveryone ||
-        item.deleted ||
-        (item.deletedForSender && senderIsCurrentUser) ||
-        (item.deletedForReceiver && !senderIsCurrentUser)
+        deletedForEveryone ||
+        deleted ||
+        (deletedForSender &&
+          senderIsCurrentUser) ||
+        (deletedForReceiver &&
+          !senderIsCurrentUser)
       ) {
-        displayText = "This message was deleted.";
+        displayText =
+          "This message was deleted.";
       }
+
+      const createdAt =
+        item.createdAt ||
+        item.timestamp ||
+        item.sentAt;
+
+      const messageTime = createdAt
+        ? new Date(
+            createdAt
+          ).toLocaleTimeString([], {
+            hour: "numeric",
+            minute: "2-digit",
+          })
+        : new Date().toLocaleTimeString(
+            [],
+            {
+              hour: "numeric",
+              minute: "2-digit",
+            }
+          );
 
       return {
         ...item,
 
-        id: item._id || item.id,
+        id,
+
+        _id: item._id || id,
+
+        senderId,
+
+        receiverId:
+          item.receiverId ||
+          item.recipientId,
 
         sender: senderIsCurrentUser
           ? "me"
@@ -245,38 +358,72 @@ function PrivateChat({
 
         text: displayText,
 
-        time: item.createdAt
-          ? new Date(item.createdAt).toLocaleTimeString(
-              [],
-              {
-                hour: "numeric",
-                minute: "2-digit",
-              }
-            )
-          : new Date().toLocaleTimeString([], {
-              hour: "numeric",
-              minute: "2-digit",
-            }),
+        time: messageTime,
+
+        status:
+          item.status ||
+          (item.readAt
+            ? "read"
+            : item.deliveredAt
+            ? "delivered"
+            : "sent"),
+
+        edited:
+          Boolean(item.edited) ||
+          Boolean(item.isEdited),
+
+        deletedForEveryone,
+
+        deletedForSender,
+
+        deletedForReceiver,
+
+        deleted,
+
+        disappearingDuration:
+          item.disappearingDuration ||
+          "off",
+
+        expiresAt:
+          item.expiresAt ||
+          null,
       };
     },
     [currentUserId]
   );
 
   // ==========================================
-  // DISAPPEARING MILLISECONDS
+  // GET DISAPPEARING MILLISECONDS
   // ==========================================
 
   const getDisappearingMilliseconds =
     useCallback((duration) => {
       switch (duration) {
         case "24h":
-          return 24 * 60 * 60 * 1000;
+          return (
+            24 *
+            60 *
+            60 *
+            1000
+          );
 
         case "7d":
-          return 7 * 24 * 60 * 60 * 1000;
+          return (
+            7 *
+            24 *
+            60 *
+            60 *
+            1000
+          );
 
         case "90d":
-          return 90 * 24 * 60 * 60 * 1000;
+          return (
+            90 *
+            24 *
+            60 *
+            60 *
+            1000
+          );
 
         default:
           return null;
@@ -287,111 +434,150 @@ function PrivateChat({
   // RESIZE MESSAGE INPUT
   // ==========================================
 
-  const resizeMessageInput = useCallback(() => {
-    const textarea = textareaRef.current;
+  const resizeMessageInput =
+    useCallback(() => {
+      const textarea =
+        textareaRef.current;
 
-    if (!textarea) {
-      return;
-    }
+      if (!textarea) {
+        return;
+      }
 
-    textarea.style.height = "auto";
+      textarea.style.height =
+        "auto";
 
-    const minimumHeight = 24;
-    const maximumHeight = 140;
+      const minimumHeight = 24;
+      const maximumHeight = 140;
 
-    const nextHeight = Math.min(
-      Math.max(textarea.scrollHeight, minimumHeight),
-      maximumHeight
-    );
+      const nextHeight = Math.min(
+        Math.max(
+          textarea.scrollHeight,
+          minimumHeight
+        ),
+        maximumHeight
+      );
 
-    textarea.style.height = `${nextHeight}px`;
-  }, []);
+      textarea.style.height =
+        `${nextHeight}px`;
+    }, []);
 
   // ==========================================
   // RESIZE EDIT INPUT
   // ==========================================
 
-  const resizeEditInput = useCallback(() => {
-    const textarea = editTextareaRef.current;
+  const resizeEditInput =
+    useCallback(() => {
+      const textarea =
+        editTextareaRef.current;
 
-    if (!textarea) {
-      return;
-    }
+      if (!textarea) {
+        return;
+      }
 
-    textarea.style.height = "auto";
+      textarea.style.height =
+        "auto";
 
-    const minimumHeight = 24;
-    const maximumHeight = 120;
+      const minimumHeight = 24;
+      const maximumHeight = 120;
 
-    const nextHeight = Math.min(
-      Math.max(textarea.scrollHeight, minimumHeight),
-      maximumHeight
-    );
+      const nextHeight = Math.min(
+        Math.max(
+          textarea.scrollHeight,
+          minimumHeight
+        ),
+        maximumHeight
+      );
 
-    textarea.style.height = `${nextHeight}px`;
-  }, []);
+      textarea.style.height =
+        `${nextHeight}px`;
+    }, []);
 
   // ==========================================
   // RESET INPUT
   // ==========================================
 
-  const resetMessageInput = useCallback(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "24px";
-    }
-  }, []);
+  const resetMessageInput =
+    useCallback(() => {
+      if (textareaRef.current) {
+        textareaRef.current.style.height =
+          "24px";
+      }
+    }, []);
 
-  const resetEditInput = useCallback(() => {
-    if (editTextareaRef.current) {
-      editTextareaRef.current.style.height = "24px";
-    }
-  }, []);
+  const resetEditInput =
+    useCallback(() => {
+      if (editTextareaRef.current) {
+        editTextareaRef.current.style.height =
+          "24px";
+      }
+    }, []);
 
   // ==========================================
   // KEYBOARD
   // ==========================================
 
-  const handleMessageKeyDown = (event) => {
-    if (
-      event.key === "Enter" &&
-      !event.shiftKey
-    ) {
-      event.preventDefault();
-      event.currentTarget.form?.requestSubmit();
-    }
-  };
+  const handleMessageKeyDown =
+    (event) => {
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey
+      ) {
+        event.preventDefault();
 
-  const handleEditKeyDown = (event) => {
-    if (
-      event.key === "Enter" &&
-      !event.shiftKey
-    ) {
-      event.preventDefault();
-      handleSaveEdit();
-    }
+        event.currentTarget.form?.requestSubmit();
+      }
+    };
 
-    if (event.key === "Escape") {
-      event.preventDefault();
-      handleCancelEdit();
-    }
-  };
+  const handleEditKeyDown =
+    (event) => {
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey
+      ) {
+        event.preventDefault();
+
+        handleSaveEdit();
+      }
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+
+        handleCancelEdit();
+      }
+    };
 
   // ==========================================
   // SOCKET.IO
   // ==========================================
 
   useEffect(() => {
-    if (!conversationId || !currentUserId) {
-      return;
+    if (
+      !conversationId ||
+      !currentUserId
+    ) {
+      return undefined;
     }
 
-    const socket = io(SOCKET_URL, {
-      transports: ["polling", "websocket"],
-      upgrade: true,
-      reconnection: true,
-    });
+    const socket = io(
+      SOCKET_URL,
+      {
+        transports: [
+          "polling",
+          "websocket",
+        ],
+        upgrade: true,
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 1000,
+        timeout: 20000,
+      }
+    );
 
     socketRef.current = socket;
+
+    // ========================================
+    // CONNECT
+    // ========================================
 
     socket.on("connect", () => {
       console.log(
@@ -405,61 +591,111 @@ function PrivateChat({
       );
     });
 
-    socket.on("connect_error", (error) => {
-      console.error(
-        "ZenvaZapp Socket.IO error:",
-        error
-      );
-    });
+    // ========================================
+    // RECONNECT
+    // ========================================
+
+    socket.on(
+      "reconnect",
+      () => {
+        console.log(
+          "ZenvaZapp Socket.IO reconnected."
+        );
+
+        socket.emit(
+          "join-conversation",
+          conversationId
+        );
+      }
+    );
+
+    // ========================================
+    // CONNECT ERROR
+    // ========================================
+
+    socket.on(
+      "connect_error",
+      (error) => {
+        console.error(
+          "ZenvaZapp Socket.IO error:",
+          error
+        );
+      }
+    );
 
     // ========================================
     // NEW MESSAGE
     // ========================================
 
-    socket.on(
-      "new-message",
+    const handleIncomingMessage =
       (incomingMessage) => {
-        if (
-          !incomingMessage ||
-          !incomingMessage._id
-        ) {
+        if (!incomingMessage) {
           return;
         }
 
+        const incomingConversationId =
+          incomingMessage.conversationId;
+
         if (
+          incomingConversationId &&
           String(
-            incomingMessage.conversationId
-          ) !== String(conversationId)
+            incomingConversationId
+          ) !==
+            String(conversationId)
         ) {
           return;
         }
 
         const formattedMessage =
-          formatMessage(incomingMessage);
+          formatMessage(
+            incomingMessage
+          );
 
         if (!formattedMessage) {
           return;
         }
 
-        setMessages((previous) => {
-          const exists = previous.some(
-            (item) =>
-              String(item.id) ===
-              String(formattedMessage.id)
-          );
+        setMessages(
+          (previous) => {
+            const exists =
+              previous.some(
+                (item) =>
+                  String(item.id) ===
+                  String(
+                    formattedMessage.id
+                  )
+              );
 
-          if (exists) {
-            return previous;
+            if (exists) {
+              return previous.map(
+                (item) =>
+                  String(item.id) ===
+                  String(
+                    formattedMessage.id
+                  )
+                    ? {
+                        ...item,
+                        ...formattedMessage,
+                      }
+                    : item
+              );
+            }
+
+            return [
+              ...previous,
+              formattedMessage,
+            ];
           }
+        );
 
-          return [
-            ...previous,
-            formattedMessage,
-          ];
-        });
+        // ====================================
+        // DELIVERED + READ INCOMING MESSAGE
+        // ====================================
 
         if (
-          String(incomingMessage.senderId) !==
+          String(
+            incomingMessage.senderId
+          ) !==
           String(currentUserId)
         ) {
           socket.emit(
@@ -467,7 +703,7 @@ function PrivateChat({
             {
               conversationId,
               messageId:
-                incomingMessage._id,
+                formattedMessage.id,
             }
           );
 
@@ -476,126 +712,230 @@ function PrivateChat({
             {
               conversationId,
               messageId:
-                incomingMessage._id,
+                formattedMessage.id,
             }
           );
         }
-      }
+      };
+
+    socket.on(
+      "new-message",
+      handleIncomingMessage
+    );
+
+    socket.on(
+      "message",
+      handleIncomingMessage
     );
 
     // ========================================
-    // EDITED
+    // MESSAGE EDITED
     // ========================================
+
+    const handleEditedMessage =
+      (updatedMessage) => {
+        if (!updatedMessage) {
+          return;
+        }
+
+        if (
+          updatedMessage.conversationId &&
+          String(
+            updatedMessage.conversationId
+          ) !==
+            String(conversationId)
+        ) {
+          return;
+        }
+
+        const updatedId =
+          updatedMessage._id ||
+          updatedMessage.id ||
+          updatedMessage.messageId;
+
+        if (!updatedId) {
+          return;
+        }
+
+        setMessages(
+          (previous) =>
+            previous.map((item) =>
+              String(item.id) ===
+              String(updatedId)
+                ? {
+                    ...item,
+                    text:
+                      updatedMessage.text ||
+                      updatedMessage.message ||
+                      "",
+                    edited: true,
+                    updatedAt:
+                      updatedMessage.updatedAt ||
+                      new Date().toISOString(),
+                  }
+                : item
+            )
+        );
+      };
 
     socket.on(
       "message-edited",
-      (updatedMessage) => {
-        if (
-          !updatedMessage ||
-          !updatedMessage._id
-        ) {
-          return;
-        }
-
-        if (
-          String(
-            updatedMessage.conversationId
-          ) !== String(conversationId)
-        ) {
-          return;
-        }
-
-        setMessages((previous) =>
-          previous.map((item) => {
-            if (
-              String(item.id) !==
-              String(updatedMessage._id)
-            ) {
-              return item;
-            }
-
-            return {
-              ...item,
-              text:
-                updatedMessage.text || "",
-              edited: true,
-              updatedAt:
-                updatedMessage.updatedAt ||
-                new Date().toISOString(),
-            };
-          })
-        );
-      }
+      handleEditedMessage
     );
 
     // ========================================
-    // DELETE EVERYONE
+    // MESSAGE DELETED FOR EVERYONE
     // ========================================
+
+    const handleDeletedForEveryone =
+      (deletedMessage) => {
+        if (!deletedMessage) {
+          return;
+        }
+
+        if (
+          deletedMessage.conversationId &&
+          String(
+            deletedMessage.conversationId
+          ) !==
+            String(conversationId)
+        ) {
+          return;
+        }
+
+        const deletedId =
+          deletedMessage._id ||
+          deletedMessage.id ||
+          deletedMessage.messageId;
+
+        if (!deletedId) {
+          return;
+        }
+
+        setMessages(
+          (previous) =>
+            previous.map((item) =>
+              String(item.id) ===
+              String(deletedId)
+                ? {
+                    ...item,
+
+                    text:
+                      "This message was deleted.",
+
+                    deletedForEveryone:
+                      true,
+
+                    deleted: true,
+
+                    edited: false,
+                  }
+                : item
+            )
+        );
+      };
 
     socket.on(
       "message-deleted-for-everyone",
-      (deletedMessage) => {
-        if (
-          !deletedMessage ||
-          !deletedMessage._id
-        ) {
-          return;
-        }
+      handleDeletedForEveryone
+    );
 
-        if (
-          String(
-            deletedMessage.conversationId
-          ) !== String(conversationId)
-        ) {
-          return;
-        }
-
-        setMessages((previous) =>
-          previous.map((item) =>
-            String(item.id) ===
-            String(deletedMessage._id)
-              ? {
-                  ...item,
-                  text:
-                    "This message was deleted.",
-                  deletedForEveryone: true,
-                  deleted: true,
-                }
-              : item
-          )
-        );
-      }
+    socket.on(
+      "message-deleted",
+      handleDeletedForEveryone
     );
 
     // ========================================
     // MESSAGE UNDONE
     // ========================================
 
-    socket.on(
-      "message-undone",
+    const handleMessageUndone =
       (undoneMessage) => {
-        if (
-          !undoneMessage ||
-          !undoneMessage._id
-        ) {
+        if (!undoneMessage) {
           return;
         }
 
         if (
+          undoneMessage.conversationId &&
           String(
             undoneMessage.conversationId
-          ) !== String(conversationId)
+          ) !==
+            String(conversationId)
         ) {
           return;
         }
 
-        setMessages((previous) =>
-          previous.filter(
-            (item) =>
-              String(item.id) !==
-              String(undoneMessage._id)
-          )
+        const undoneId =
+          undoneMessage._id ||
+          undoneMessage.id ||
+          undoneMessage.messageId;
+
+        if (!undoneId) {
+          return;
+        }
+
+        setMessages(
+          (previous) =>
+            previous.filter(
+              (item) =>
+                String(item.id) !==
+                String(undoneId)
+            )
         );
+      };
+
+    socket.on(
+      "message-undone",
+      handleMessageUndone
+    );
+
+    // ========================================
+    // MESSAGE DELETED FOR ME
+    // ========================================
+
+    socket.on(
+      "message-deleted-for-me",
+      ({ messageId }) => {
+        if (!messageId) {
+          return;
+        }
+
+        setMessages(
+          (previous) =>
+            previous.filter(
+              (item) =>
+                String(item.id) !==
+                String(messageId)
+            )
+        );
+      }
+    );
+
+    // ========================================
+    // CONVERSATION DELETED
+    // ========================================
+
+    socket.on(
+      "conversation-deleted",
+      (data) => {
+        if (!data) {
+          return;
+        }
+
+        if (
+          data.conversationId &&
+          String(
+            data.conversationId
+          ) !==
+            String(conversationId)
+        ) {
+          return;
+        }
+
+        setMessages([]);
+
+        setUndoMessageId(null);
+        setUndoSeconds(0);
       }
     );
 
@@ -605,15 +945,22 @@ function PrivateChat({
 
     socket.on(
       "disappearing-setting-changed",
-      ({
-        conversationId:
-          incomingConversationId,
-        duration,
-      }) => {
+      (data) => {
+        if (!data) {
+          return;
+        }
+
+        const {
+          conversationId:
+            incomingConversationId,
+          duration,
+        } = data;
+
         if (
           String(
             incomingConversationId
-          ) !== String(conversationId)
+          ) !==
+          String(conversationId)
         ) {
           return;
         }
@@ -629,21 +976,13 @@ function PrivateChat({
           return;
         }
 
-        setDisappearingDuration(duration);
+        setDisappearingDuration(
+          duration
+        );
 
-        if (disappearingStorageKey) {
-          try {
-            localStorage.setItem(
-              disappearingStorageKey,
-              duration
-            );
-          } catch (error) {
-            console.error(
-              "Unable to save received disappearing setting:",
-              error
-            );
-          }
-        }
+        saveDisappearingSetting(
+          duration
+        );
       }
     );
 
@@ -658,19 +997,26 @@ function PrivateChat({
           return;
         }
 
-        setMessages((previous) =>
-          previous.map((item) =>
-            String(item.id) ===
-            String(messageId)
-              ? {
-                  ...item,
-                  status:
-                    item.status === "read"
-                      ? "read"
-                      : "delivered",
-                }
-              : item
-          )
+        setMessages(
+          (previous) =>
+            previous.map((item) =>
+              String(item.id) ===
+              String(messageId)
+                ? {
+                    ...item,
+
+                    status:
+                      item.status ===
+                      "read"
+                        ? "read"
+                        : "delivered",
+
+                    deliveredAt:
+                      item.deliveredAt ||
+                      new Date().toISOString(),
+                  }
+                : item
+            )
         );
       }
     );
@@ -686,19 +1032,29 @@ function PrivateChat({
           return;
         }
 
-        setMessages((previous) =>
-          previous.map((item) =>
-            String(item.id) ===
-            String(messageId)
-              ? {
-                  ...item,
-                  status: "read",
-                }
-              : item
-          )
+        setMessages(
+          (previous) =>
+            previous.map((item) =>
+              String(item.id) ===
+              String(messageId)
+                ? {
+                    ...item,
+
+                    status: "read",
+
+                    readAt:
+                      item.readAt ||
+                      new Date().toISOString(),
+                  }
+                : item
+            )
         );
       }
     );
+
+    // ========================================
+    // CLEANUP
+    // ========================================
 
     return () => {
       socket.emit(
@@ -706,17 +1062,82 @@ function PrivateChat({
         conversationId
       );
 
-      socket.removeAllListeners();
+      socket.off(
+        "connect"
+      );
+
+      socket.off(
+        "reconnect"
+      );
+
+      socket.off(
+        "connect_error"
+      );
+
+      socket.off(
+        "new-message",
+        handleIncomingMessage
+      );
+
+      socket.off(
+        "message",
+        handleIncomingMessage
+      );
+
+      socket.off(
+        "message-edited",
+        handleEditedMessage
+      );
+
+      socket.off(
+        "message-deleted-for-everyone",
+        handleDeletedForEveryone
+      );
+
+      socket.off(
+        "message-deleted",
+        handleDeletedForEveryone
+      );
+
+      socket.off(
+        "message-undone",
+        handleMessageUndone
+      );
+
+      socket.off(
+        "message-deleted-for-me"
+      );
+
+      socket.off(
+        "conversation-deleted"
+      );
+
+      socket.off(
+        "disappearing-setting-changed"
+      );
+
+      socket.off(
+        "message-delivered"
+      );
+
+      socket.off(
+        "message-read"
+      );
+
       socket.disconnect();
 
-      socketRef.current = null;
+      if (
+        socketRef.current === socket
+      ) {
+        socketRef.current = null;
+      }
     };
   }, [
     SOCKET_URL,
     conversationId,
     currentUserId,
     formatMessage,
-    disappearingStorageKey,
+    saveDisappearingSetting,
   ]);
 
   // ==========================================
@@ -724,146 +1145,212 @@ function PrivateChat({
   // ==========================================
 
   useEffect(() => {
-    const loadMessages = async () => {
-      if (!conversationId || !currentUserId) {
-        setIsLoadingMessages(false);
-        return;
-      }
+    let cancelled = false;
 
-      try {
-        setIsLoadingMessages(true);
-        setSendError("");
-
-        const response = await fetch(
-          `${API_URL}/api/messages/${encodeURIComponent(
-            conversationId
-          )}`
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data.message ||
-              "Failed to load messages."
-          );
+    const loadMessages =
+      async () => {
+        if (
+          !conversationId ||
+          !currentUserId
+        ) {
+          setIsLoadingMessages(false);
+          return;
         }
 
-        const formattedMessages =
-          (data.messages || [])
-            .map((item) =>
-              formatMessage(item)
+        try {
+          setIsLoadingMessages(true);
+
+          setSendError("");
+
+          const response =
+            await fetch(
+              `${API_URL}/api/messages/${encodeURIComponent(
+                conversationId
+              )}`
+            );
+
+          const data =
+            await response.json();
+
+          if (!response.ok) {
+            throw new Error(
+              data.message ||
+                "Failed to load messages."
+            );
+          }
+
+          if (cancelled) {
+            return;
+          }
+
+          const formattedMessages =
+            Array.isArray(
+              data.messages
             )
-            .filter(Boolean);
+              ? data.messages
+                  .map((item) =>
+                    formatMessage(item)
+                  )
+                  .filter(Boolean)
+              : [];
 
-        setMessages(formattedMessages);
-
-        const incomingMessages =
-          formattedMessages.filter(
-            (item) =>
-              item.sender === "them" &&
-              item.status !== "read"
+          setMessages(
+            formattedMessages
           );
 
-        for (const item of incomingMessages) {
-          try {
-            const responseDelivered =
-              await fetch(
-                `${API_URL}/api/messages/${item.id}/delivered`,
-                {
-                  method: "PATCH",
-                  headers: {
-                    "Content-Type":
-                      "application/json",
-                  },
-                  body: JSON.stringify({
-                    userId:
-                      currentUserId,
-                  }),
-                }
-              );
+          // ==================================
+          // MARK INCOMING MESSAGES DELIVERED
+          // ==================================
 
-            if (
-              responseDelivered.ok
-            ) {
-              socketRef.current?.emit(
-                "message-delivered",
-                {
-                  conversationId,
-                  messageId: item.id,
-                }
+          const incomingMessages =
+            formattedMessages.filter(
+              (item) =>
+                item.sender ===
+                  "them" &&
+                item.status !==
+                  "delivered" &&
+                item.status !==
+                  "read"
+            );
+
+          for (
+            const item of incomingMessages
+          ) {
+            try {
+              const responseDelivered =
+                await fetch(
+                  `${API_URL}/api/messages/${item.id}/delivered`,
+                  {
+                    method: "PATCH",
+
+                    headers: {
+                      "Content-Type":
+                        "application/json",
+                    },
+
+                    body: JSON.stringify({
+                      userId:
+                        currentUserId,
+                    }),
+                  }
+                );
+
+              if (
+                responseDelivered.ok
+              ) {
+                socketRef.current?.emit(
+                  "message-delivered",
+                  {
+                    conversationId,
+
+                    messageId:
+                      item.id,
+                  }
+                );
+              }
+            } catch (error) {
+              console.error(
+                "Delivered update error:",
+                error
               );
             }
-          } catch (error) {
-            console.error(
-              "Delivered update error:",
-              error
-            );
           }
-        }
 
-        for (const item of incomingMessages) {
-          try {
-            const responseRead =
-              await fetch(
-                `${API_URL}/api/messages/${item.id}/read`,
-                {
-                  method: "PATCH",
-                  headers: {
-                    "Content-Type":
-                      "application/json",
-                  },
-                  body: JSON.stringify({
-                    userId:
-                      currentUserId,
-                  }),
-                }
-              );
+          // ==================================
+          // MARK INCOMING MESSAGES READ
+          // ==================================
 
-            if (responseRead.ok) {
-              socketRef.current?.emit(
-                "message-read",
-                {
-                  conversationId,
-                  messageId: item.id,
-                }
+          for (
+            const item of incomingMessages
+          ) {
+            try {
+              const responseRead =
+                await fetch(
+                  `${API_URL}/api/messages/${item.id}/read`,
+                  {
+                    method: "PATCH",
+
+                    headers: {
+                      "Content-Type":
+                        "application/json",
+                    },
+
+                    body: JSON.stringify({
+                      userId:
+                        currentUserId,
+                    }),
+                  }
+                );
+
+              if (
+                responseRead.ok
+              ) {
+                socketRef.current?.emit(
+                  "message-read",
+                  {
+                    conversationId,
+
+                    messageId:
+                      item.id,
+                  }
+                );
+              }
+            } catch (error) {
+              console.error(
+                "Read update error:",
+                error
               );
             }
-          } catch (error) {
-            console.error(
-              "Read update error:",
-              error
+          }
+
+          if (!cancelled) {
+            setMessages(
+              (previous) =>
+                previous.map(
+                  (item) =>
+                    item.sender ===
+                    "them"
+                      ? {
+                          ...item,
+
+                          status:
+                            "read",
+
+                          readAt:
+                            item.readAt ||
+                            new Date().toISOString(),
+                        }
+                      : item
+                )
             );
           }
+        } catch (error) {
+          if (cancelled) {
+            return;
+          }
+
+          console.error(
+            "Load messages error:",
+            error
+          );
+
+          setSendError(
+            `Unable to load messages. ${
+              error.message || ""
+            }`
+          );
+        } finally {
+          if (!cancelled) {
+            setIsLoadingMessages(false);
+          }
         }
-
-        setMessages((previous) =>
-          previous.map((item) =>
-            item.sender === "them"
-              ? {
-                  ...item,
-                  status: "read",
-                }
-              : item
-          )
-        );
-      } catch (error) {
-        console.error(
-          "Load messages error:",
-          error
-        );
-
-        setSendError(
-          `Unable to load messages. ${
-            error.message || ""
-          }`
-        );
-      } finally {
-        setIsLoadingMessages(false);
-      }
-    };
+      };
 
     loadMessages();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     API_URL,
     conversationId,
@@ -877,40 +1364,49 @@ function PrivateChat({
 
   useEffect(() => {
     if (!messages.length) {
-      return;
+      return undefined;
     }
 
-    const removeExpiredMessages = () => {
-      const now = Date.now();
+    const removeExpiredMessages =
+      () => {
+        const now = Date.now();
 
-      setMessages((previous) =>
-        previous.filter((item) => {
-          if (!item.expiresAt) {
-            return true;
-          }
+        setMessages(
+          (previous) =>
+            previous.filter(
+              (item) => {
+                if (!item.expiresAt) {
+                  return true;
+                }
 
-          const expiration =
-            new Date(
-              item.expiresAt
-            ).getTime();
+                const expiration =
+                  new Date(
+                    item.expiresAt
+                  ).getTime();
 
-          if (
-            Number.isNaN(expiration)
-          ) {
-            return true;
-          }
+                if (
+                  Number.isNaN(
+                    expiration
+                  )
+                ) {
+                  return true;
+                }
 
-          return expiration > now;
-        })
-      );
-    };
+                return (
+                  expiration > now
+                );
+              }
+            )
+        );
+      };
 
     removeExpiredMessages();
 
-    const timer = setInterval(
-      removeExpiredMessages,
-      1000
-    );
+    const timer =
+      setInterval(
+        removeExpiredMessages,
+        1000
+      );
 
     return () =>
       clearInterval(timer);
@@ -927,20 +1423,24 @@ function PrivateChat({
     resizeMessageInput,
   ]);
 
+  // ==========================================
+  // EDIT INPUT FOCUS
+  // ==========================================
+
   useEffect(() => {
     if (!editingMessage) {
-      return;
+      return undefined;
     }
 
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       resizeEditInput();
 
       editTextareaRef.current?.focus();
 
       if (editTextareaRef.current) {
         const length =
-          editTextareaRef.current.value
-            .length;
+          editTextareaRef.current
+            .value.length;
 
         editTextareaRef.current.setSelectionRange(
           length,
@@ -948,6 +1448,9 @@ function PrivateChat({
         );
       }
     }, 0);
+
+    return () =>
+      clearTimeout(timer);
   }, [
     editingMessage,
     resizeEditInput,
@@ -959,12 +1462,15 @@ function PrivateChat({
 
   useEffect(() => {
     if (!showSearch) {
-      return;
+      return undefined;
     }
 
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       searchInputRef.current?.focus();
     }, 0);
+
+    return () =>
+      clearTimeout(timer);
   }, [showSearch]);
 
   // ==========================================
@@ -972,12 +1478,19 @@ function PrivateChat({
   // ==========================================
 
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      messageEndRef.current?.scrollIntoView({
-        behavior: "smooth",
-      });
+    if (
+      !searchQuery.trim()
+    ) {
+      messageEndRef.current?.scrollIntoView(
+        {
+          behavior: "smooth",
+        }
+      );
     }
-  }, [messages, searchQuery]);
+  }, [
+    messages,
+    searchQuery,
+  ]);
 
   // ==========================================
   // UNDO TIMER
@@ -985,22 +1498,27 @@ function PrivateChat({
 
   useEffect(() => {
     if (!undoMessageId) {
-      return;
+      return undefined;
     }
 
     if (undoSeconds <= 0) {
       setUndoMessageId(null);
+
       setUndoSeconds(0);
-      return;
+
+      return undefined;
     }
 
-    const timer = setTimeout(() => {
-      setUndoSeconds(
-        (previous) => previous - 1
-      );
-    }, 1000);
+    const timer =
+      setTimeout(() => {
+        setUndoSeconds(
+          (previous) =>
+            previous - 1
+        );
+      }, 1000);
 
-    return () => clearTimeout(timer);
+    return () =>
+      clearTimeout(timer);
   }, [
     undoMessageId,
     undoSeconds,
@@ -1010,512 +1528,637 @@ function PrivateChat({
   // SEND MESSAGE
   // ==========================================
 
-  const handleSendMessage = async (event) => {
-    event.preventDefault();
+  const handleSendMessage =
+    async (event) => {
+      event.preventDefault();
 
-    const trimmedMessage =
-      message.trim();
+      const trimmedMessage =
+        message.trim();
 
-    if (!trimmedMessage) {
-      return;
-    }
-
-    if (!currentUserId) {
-      setSendError(
-        "Your account information is missing."
-      );
-      return;
-    }
-
-    if (!otherUserId) {
-      setSendError(
-        "The selected contact could not be identified."
-      );
-      return;
-    }
-
-    if (!conversationId) {
-      setSendError(
-        "Conversation could not be identified."
-      );
-      return;
-    }
-
-    setSendError("");
-
-    const expirationMilliseconds =
-      getDisappearingMilliseconds(
-        disappearingDuration
-      );
-
-    const expiresAt =
-      expirationMilliseconds
-        ? new Date(
-            Date.now() +
-              expirationMilliseconds
-          ).toISOString()
-        : null;
-
-    const messageToSend = {
-      conversationId,
-      senderId: currentUserId,
-      receiverId: otherUserId,
-      text: trimmedMessage,
-      messageType: "text",
-      disappearingDuration,
-      expiresAt,
-    };
-
-    try {
-      const response = await fetch(
-        `${API_URL}/api/messages`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify(
-            messageToSend
-          ),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "Failed to send message."
-        );
+      if (!trimmedMessage) {
+        return;
       }
 
-      if (!data.message) {
-        throw new Error(
-          "The server did not return the saved message."
+      if (!currentUserId) {
+        setSendError(
+          "Your account information is missing."
         );
+
+        return;
       }
 
-      const savedMessage = {
-        ...data.message,
+      if (!otherUserId) {
+        setSendError(
+          "The selected contact could not be identified."
+        );
+
+        return;
+      }
+
+      if (!conversationId) {
+        setSendError(
+          "Conversation could not be identified."
+        );
+
+        return;
+      }
+
+      setSendError("");
+
+      // ========================================
+      // SAFE DISAPPEARING DURATION
+      // ========================================
+
+      const allowedDurations = [
+        "off",
+        "24h",
+        "7d",
+        "90d",
+      ];
+
+      const safeDisappearingDuration =
+        allowedDurations.includes(
+          disappearingDuration
+        )
+          ? disappearingDuration
+          : "off";
+
+      const expirationMilliseconds =
+        getDisappearingMilliseconds(
+          safeDisappearingDuration
+        );
+
+      const expiresAt =
+        expirationMilliseconds
+          ? new Date(
+              Date.now() +
+                expirationMilliseconds
+            ).toISOString()
+          : null;
+
+      const messageToSend = {
+        conversationId,
+
+        senderId:
+          currentUserId,
+
+        receiverId:
+          otherUserId,
+
+        text: trimmedMessage,
+
+        messageType: "text",
 
         disappearingDuration:
-          data.message
-            .disappearingDuration ||
-          disappearingDuration,
+          safeDisappearingDuration,
 
-        expiresAt:
-          data.message.expiresAt ||
-          expiresAt,
+        expiresAt,
       };
 
-      const formattedMessage =
-        formatMessage(savedMessage);
+      try {
+        const response =
+          await fetch(
+            `${API_URL}/api/messages`,
+            {
+              method: "POST",
 
-      if (!formattedMessage) {
-        throw new Error(
-          "Unable to format the saved message."
-        );
-      }
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
 
-      setMessages((previous) => {
-        const exists = previous.some(
-          (item) =>
-            String(item.id) ===
-            String(formattedMessage.id)
-        );
+              body: JSON.stringify(
+                messageToSend
+              ),
+            }
+          );
 
-        if (exists) {
-          return previous;
+        const data =
+          await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              "Failed to send message."
+          );
         }
 
-        return [
-          ...previous,
-          formattedMessage,
-        ];
-      });
+        if (!data.message) {
+          throw new Error(
+            "The server did not return the saved message."
+          );
+        }
 
-      if (
-        socketRef.current?.connected
-      ) {
-        socketRef.current.emit(
-          "send-message",
-          savedMessage
+        const savedMessage = {
+          ...data.message,
+
+          conversationId:
+            data.message
+              .conversationId ||
+            conversationId,
+
+          senderId:
+            data.message.senderId ||
+            currentUserId,
+
+          receiverId:
+            data.message.receiverId ||
+            otherUserId,
+
+          disappearingDuration:
+            data.message
+              .disappearingDuration ||
+            safeDisappearingDuration,
+
+          expiresAt:
+            data.message.expiresAt ||
+            expiresAt,
+        };
+
+        const formattedMessage =
+          formatMessage(
+            savedMessage
+          );
+
+        if (!formattedMessage) {
+          throw new Error(
+            "Unable to format the saved message."
+          );
+        }
+
+        // ====================================
+        // ADD TO LOCAL MESSAGE LIST
+        // ====================================
+
+        setMessages(
+          (previous) => {
+            const exists =
+              previous.some(
+                (item) =>
+                  String(item.id) ===
+                  String(
+                    formattedMessage.id
+                  )
+              );
+
+            if (exists) {
+              return previous;
+            }
+
+            return [
+              ...previous,
+              formattedMessage,
+            ];
+          }
+        );
+
+        // ====================================
+        // SOCKET BROADCAST
+        // ====================================
+
+        if (
+          socketRef.current?.connected
+        ) {
+          socketRef.current.emit(
+            "send-message",
+            savedMessage
+          );
+        }
+
+        // ====================================
+        // RESET INPUT
+        // ====================================
+
+        setMessage("");
+
+        resetMessageInput();
+
+        // ====================================
+        // START UNDO WINDOW
+        // ====================================
+
+        setUndoMessageId(
+          formattedMessage.id
+        );
+
+        setUndoSeconds(5);
+      } catch (error) {
+        console.error(
+          "Send message error:",
+          error
+        );
+
+        setSendError(
+          `Unable to send message. ${
+            error.message || ""
+          }`
         );
       }
-
-      setMessage("");
-      resetMessageInput();
-
-      setUndoMessageId(
-        formattedMessage.id
-      );
-
-      setUndoSeconds(5);
-    } catch (error) {
-      console.error(
-        "Send message error:",
-        error
-      );
-
-      setSendError(
-        `Unable to send message. ${
-          error.message || ""
-        }`
-      );
-    }
-  };
+    };
 
   // ==========================================
   // SELECT MESSAGE
   // ==========================================
 
-  const handleMessageSelect = (item) => {
-    setSelectedMessage(item);
-    setShowMessageMenu(true);
-    setShowChatMenu(false);
-    setShowDeleteMenu(false);
-    setShowEmojiPicker(false);
-  };
+  const handleMessageSelect =
+    (item) => {
+      setSelectedMessage(item);
 
-  const closeMessageMenu = () => {
-    setSelectedMessage(null);
-    setShowMessageMenu(false);
-  };
+      setShowMessageMenu(true);
+
+      setShowChatMenu(false);
+
+      setShowDeleteMenu(false);
+
+      setShowEmojiPicker(false);
+    };
+
+  // ==========================================
+  // CLOSE MESSAGE MENU
+  // ==========================================
+
+  const closeMessageMenu =
+    () => {
+      setSelectedMessage(null);
+
+      setShowMessageMenu(false);
+    };
 
   // ==========================================
   // START EDIT
   // ==========================================
 
-  const handleStartEdit = () => {
-    if (!selectedMessage) {
-      return;
-    }
+  const handleStartEdit =
+    () => {
+      if (!selectedMessage) {
+        return;
+      }
 
-    if (
-      selectedMessage.sender !==
-      "me"
-    ) {
-      return;
-    }
+      if (
+        selectedMessage.sender !==
+        "me"
+      ) {
+        return;
+      }
 
-    if (
-      selectedMessage.deletedForEveryone ||
-      selectedMessage.deleted
-    ) {
-      return;
-    }
+      if (
+        selectedMessage.deletedForEveryone ||
+        selectedMessage.deleted
+      ) {
+        return;
+      }
 
-    const originalText =
-      selectedMessage.text || "";
+      const originalText =
+        selectedMessage.text || "";
 
-    setEditingMessage({
-      ...selectedMessage,
-      originalText,
-    });
+      setEditingMessage({
+        ...selectedMessage,
 
-    setEditText(originalText);
+        originalText,
+      });
 
-    closeMessageMenu();
-    setShowEmojiPicker(false);
-    setSendError("");
-  };
+      setEditText(
+        originalText
+      );
+
+      closeMessageMenu();
+
+      setShowEmojiPicker(false);
+
+      setSendError("");
+    };
 
   // ==========================================
   // CANCEL EDIT
   // ==========================================
 
-  const handleCancelEdit = () => {
-    setEditingMessage(null);
-    setEditText("");
-    resetEditInput();
-  };
+  const handleCancelEdit =
+    () => {
+      setEditingMessage(null);
+
+      setEditText("");
+
+      resetEditInput();
+    };
 
   // ==========================================
   // SAVE EDIT
   // ==========================================
 
-  const handleSaveEdit = async () => {
-    if (!editingMessage) {
-      return;
-    }
-
-    const trimmedText =
-      editText.trim();
-
-    if (!trimmedText) {
-      setSendError(
-        "Edited message cannot be empty."
-      );
-      return;
-    }
-
-    try {
-      setSendError("");
-
-      const response = await fetch(
-        `${API_URL}/api/messages/${editingMessage.id}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            userId: currentUserId,
-            text: trimmedText,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "Failed to edit message."
-        );
+  const handleSaveEdit =
+    async () => {
+      if (!editingMessage) {
+        return;
       }
 
-      const updatedMessage = {
-        ...(data.message || {}),
-        _id:
-          data.message?._id ||
-          editingMessage.id,
-        conversationId,
-        senderId: currentUserId,
-        receiverId: otherUserId,
-        text: trimmedText,
-        edited: true,
-        updatedAt:
-          data.message?.updatedAt ||
-          new Date().toISOString(),
-      };
+      const trimmedText =
+        editText.trim();
 
-      // ========================================
-      // UPDATE LOCAL BROWSER
-      // ========================================
+      if (!trimmedText) {
+        setSendError(
+          "Edited message cannot be empty."
+        );
 
-      setMessages((previous) =>
-        previous.map((item) =>
-          String(item.id) ===
-          String(editingMessage.id)
-            ? {
-                ...item,
+        return;
+      }
+
+      if (!currentUserId) {
+        setSendError(
+          "Your account information is missing."
+        );
+
+        return;
+      }
+
+      try {
+        setSendError("");
+
+        const response =
+          await fetch(
+            `${API_URL}/api/messages/${editingMessage.id}/edit`,
+            {
+              method: "PATCH",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                userId:
+                  currentUserId,
+
                 text: trimmedText,
-                edited: true,
-                updatedAt:
-                  updatedMessage.updatedAt,
-              }
-            : item
-        )
-      );
+              }),
+            }
+          );
 
-      // ========================================
-      // UPDATE OTHER BROWSER
-      // ========================================
+        const data =
+          await response.json();
 
-      if (
-        socketRef.current?.connected
-      ) {
-        socketRef.current.emit(
-          "message-edited",
-          updatedMessage
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              "Failed to edit message."
+          );
+        }
+
+        const updatedMessage = {
+          ...(data.message || {}),
+
+          _id:
+            data.message?._id ||
+            editingMessage.id,
+
+          id:
+            data.message?._id ||
+            editingMessage.id,
+
+          conversationId,
+
+          senderId:
+            currentUserId,
+
+          receiverId:
+            otherUserId,
+
+          text: trimmedText,
+
+          edited: true,
+
+          updatedAt:
+            data.message?.updatedAt ||
+            new Date().toISOString(),
+        };
+
+        // ====================================
+        // UPDATE LOCAL MESSAGE
+        // ====================================
+
+        setMessages(
+          (previous) =>
+            previous.map((item) =>
+              String(item.id) ===
+              String(
+                editingMessage.id
+              )
+                ? {
+                    ...item,
+
+                    text:
+                      trimmedText,
+
+                    edited: true,
+
+                    updatedAt:
+                      updatedMessage.updatedAt,
+                  }
+                : item
+            )
+        );
+
+        // ====================================
+        // BROADCAST EDIT
+        // ====================================
+
+        if (
+          socketRef.current?.connected
+        ) {
+          socketRef.current.emit(
+            "message-edited",
+            updatedMessage
+          );
+        }
+
+        handleCancelEdit();
+      } catch (error) {
+        console.error(
+          "Edit message error:",
+          error
+        );
+
+        setSendError(
+          `Unable to edit message. ${
+            error.message || ""
+          }`
         );
       }
-
-      handleCancelEdit();
-    } catch (error) {
-      console.error(
-        "Edit message error:",
-        error
-      );
-
-      setSendError(
-        `Unable to edit message. ${
-          error.message || ""
-        }`
-      );
-    }
-  };
+    };
 
   // ==========================================
   // COPY
   // ==========================================
 
-  const handleCopyMessage = async () => {
-    if (!selectedMessage) {
-      return;
-    }
+  const handleCopyMessage =
+    async () => {
+      if (!selectedMessage) {
+        return;
+      }
 
-    const textToCopy =
-      selectedMessage.text || "";
+      const textToCopy =
+        selectedMessage.text || "";
 
-    if (!textToCopy) {
-      return;
-    }
+      if (!textToCopy) {
+        return;
+      }
 
-    try {
-      await navigator.clipboard.writeText(
-        textToCopy
-      );
+      try {
+        if (
+          navigator.clipboard &&
+          navigator.clipboard.writeText
+        ) {
+          await navigator.clipboard.writeText(
+            textToCopy
+          );
+        } else {
+          const temporaryTextarea =
+            document.createElement(
+              "textarea"
+            );
 
-      closeMessageMenu();
-    } catch (error) {
-      console.error(
-        "Copy message error:",
-        error
-      );
+          temporaryTextarea.value =
+            textToCopy;
 
-      setSendError(
-        "Unable to copy the message."
-      );
-    }
-  };
+          temporaryTextarea.style.position =
+            "fixed";
 
-  // ==========================================
-  // UNDO
-  // ==========================================
+          temporaryTextarea.style.opacity =
+            "0";
 
-  const handleUndoMessage = async () => {
-    if (!undoMessageId) {
-      return;
-    }
+          document.body.appendChild(
+            temporaryTextarea
+          );
 
-    const messageId =
-      undoMessageId;
+          temporaryTextarea.focus();
 
-    try {
-      setSendError("");
+          temporaryTextarea.select();
 
-      const response = await fetch(
-        `${API_URL}/api/messages/${messageId}/delete-for-everyone`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            userId: currentUserId,
-          }),
+          document.execCommand(
+            "copy"
+          );
+
+          document.body.removeChild(
+            temporaryTextarea
+          );
         }
-      );
 
-      const data = await response.json();
+        closeMessageMenu();
+      } catch (error) {
+        console.error(
+          "Copy message error:",
+          error
+        );
 
-      if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "Failed to undo message."
+        setSendError(
+          "Unable to copy the message."
         );
       }
+    };
 
-      setMessages((previous) =>
-        previous.filter(
-          (item) =>
-            String(item.id) !==
-            String(messageId)
-        )
-      );
+  // ==========================================
+  // UNDO MESSAGE
+  // ==========================================
 
-      setUndoMessageId(null);
-      setUndoSeconds(0);
+  const handleUndoMessage =
+    async () => {
+      if (!undoMessageId) {
+        return;
+      }
 
-      if (
-        socketRef.current?.connected
-      ) {
-        socketRef.current.emit(
-          "message-undone",
-          {
-            ...(data.message || {}),
-            _id:
-              data.message?._id ||
-              messageId,
-            conversationId,
-          }
+      const messageId =
+        undoMessageId;
+
+      try {
+        setSendError("");
+
+        const response =
+          await fetch(
+            `${API_URL}/api/messages/${messageId}/delete-for-everyone`,
+            {
+              method: "PATCH",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                userId:
+                  currentUserId,
+              }),
+            }
+          );
+
+        const data =
+          await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              "Failed to undo message."
+          );
+        }
+
+        // ====================================
+        // REMOVE LOCALLY
+        // ====================================
+
+        setMessages(
+          (previous) =>
+            previous.filter(
+              (item) =>
+                String(item.id) !==
+                String(messageId)
+            )
+        );
+
+        setUndoMessageId(null);
+
+        setUndoSeconds(0);
+
+        // ====================================
+        // BROADCAST UNDO
+        // ====================================
+
+        if (
+          socketRef.current?.connected
+        ) {
+          socketRef.current.emit(
+            "message-undone",
+            {
+              ...(data.message || {}),
+
+              _id:
+                data.message?._id ||
+                messageId,
+
+              id:
+                data.message?._id ||
+                messageId,
+
+              conversationId,
+            }
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Undo message error:",
+          error
+        );
+
+        setSendError(
+          `Unable to undo message. ${
+            error.message || ""
+          }`
         );
       }
-    } catch (error) {
-      console.error(
-        "Undo message error:",
-        error
-      );
-
-      setSendError(
-        `Unable to undo message. ${
-          error.message || ""
-        }`
-      );
-    }
-  };
+    };
 
   // ==========================================
   // DELETE FOR ME
   // ==========================================
 
-  const handleDeleteForMe = async () => {
-    if (!selectedMessage) {
-      return;
-    }
-
-    const messageId =
-      selectedMessage.id;
-
-    try {
-      setSendError("");
-
-      const response = await fetch(
-        `${API_URL}/api/messages/${messageId}/delete-for-me`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            userId: currentUserId,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "Failed to delete message."
-        );
-      }
-
-      setMessages((previous) =>
-        previous.filter(
-          (item) =>
-            String(item.id) !==
-            String(messageId)
-        )
-      );
-
-      closeMessageMenu();
-    } catch (error) {
-      console.error(
-        "Delete for me error:",
-        error
-      );
-
-      setSendError(
-        `Unable to delete message. ${
-          error.message || ""
-        }`
-      );
-    }
-  };
-
-  // ==========================================
-  // DELETE FOR EVERYONE
-  // ==========================================
-
-  const handleDeleteForEveryone =
+  const handleDeleteForMe =
     async () => {
       if (!selectedMessage) {
         return;
@@ -1527,21 +2170,125 @@ function PrivateChat({
       try {
         setSendError("");
 
-        const response = await fetch(
-          `${API_URL}/api/messages/${messageId}/delete-for-everyone`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-            body: JSON.stringify({
-              userId: currentUserId,
-            }),
-          }
+        const response =
+          await fetch(
+            `${API_URL}/api/messages/${messageId}/delete-for-me`,
+            {
+              method: "PATCH",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                userId:
+                  currentUserId,
+              }),
+            }
+          );
+
+        const data =
+          await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              "Failed to delete message."
+          );
+        }
+
+        // ====================================
+        // REMOVE FROM LOCAL VIEW
+        // ====================================
+
+        setMessages(
+          (previous) =>
+            previous.filter(
+              (item) =>
+                String(item.id) !==
+                String(messageId)
+            )
         );
 
-        const data = await response.json();
+        closeMessageMenu();
+
+        // ====================================
+        // SOCKET NOTIFICATION
+        // ====================================
+
+        if (
+          socketRef.current?.connected
+        ) {
+          socketRef.current.emit(
+            "message-deleted-for-me",
+            {
+              messageId,
+
+              conversationId,
+
+              userId:
+                currentUserId,
+            }
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Delete for me error:",
+          error
+        );
+
+        setSendError(
+          `Unable to delete message. ${
+            error.message || ""
+          }`
+        );
+      }
+    };
+
+  // ==========================================
+  // DELETE FOR EVERYONE
+  // ==========================================
+
+  const handleDeleteForEveryone =
+    async () => {
+      if (!selectedMessage) {
+        return;
+      }
+
+      if (
+        selectedMessage.sender !==
+        "me"
+      ) {
+        return;
+      }
+
+      const messageId =
+        selectedMessage.id;
+
+      try {
+        setSendError("");
+
+        const response =
+          await fetch(
+            `${API_URL}/api/messages/${messageId}/delete-for-everyone`,
+            {
+              method: "PATCH",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                userId:
+                  currentUserId,
+              }),
+            }
+          );
+
+        const data =
+          await response.json();
 
         if (!response.ok) {
           throw new Error(
@@ -1552,30 +2299,55 @@ function PrivateChat({
 
         const deletedMessage = {
           ...(data.message || {}),
+
           _id:
             data.message?._id ||
             messageId,
+
+          id:
+            data.message?._id ||
+            messageId,
+
           conversationId,
+
           text:
             "This message was deleted.",
-          deletedForEveryone: true,
+
+          deletedForEveryone:
+            true,
+
           deleted: true,
         };
 
-        setMessages((previous) =>
-          previous.map((item) =>
-            String(item.id) ===
-            String(messageId)
-              ? {
-                  ...item,
-                  text:
-                    "This message was deleted.",
-                  deletedForEveryone: true,
-                  deleted: true,
-                }
-              : item
-          )
+        // ====================================
+        // UPDATE LOCAL
+        // ====================================
+
+        setMessages(
+          (previous) =>
+            previous.map((item) =>
+              String(item.id) ===
+              String(messageId)
+                ? {
+                    ...item,
+
+                    text:
+                      "This message was deleted.",
+
+                    deletedForEveryone:
+                      true,
+
+                    deleted: true,
+
+                    edited: false,
+                  }
+                : item
+            )
         );
+
+        // ====================================
+        // SOCKET BROADCAST
+        // ====================================
 
         if (
           socketRef.current?.connected
@@ -1584,6 +2356,21 @@ function PrivateChat({
             "message-deleted-for-everyone",
             deletedMessage
           );
+        }
+
+        // ====================================
+        // CLEAR UNDO
+        // ====================================
+
+        if (
+          String(
+            undoMessageId
+          ) ===
+          String(messageId)
+        ) {
+          setUndoMessageId(null);
+
+          setUndoSeconds(0);
         }
 
         closeMessageMenu();
@@ -1602,24 +2389,216 @@ function PrivateChat({
     };
 
   // ==========================================
+  // DELETE ENTIRE CONVERSATION
+  // ==========================================
+
+  const handleDeleteChat =
+    () => {
+      setShowChatMenu(false);
+
+      setShowDeleteMenu(true);
+    };
+
+  // ==========================================
+  // CONFIRM DELETE CONVERSATION
+  // ==========================================
+
+  const handleConfirmDeleteConversation =
+    async () => {
+      if (!conversationId) {
+        setSendError(
+          "Conversation could not be identified."
+        );
+
+        return;
+      }
+
+      if (!currentUserId) {
+        setSendError(
+          "Your account information is missing."
+        );
+
+        return;
+      }
+
+      try {
+        setSendError("");
+
+        const response =
+          await fetch(
+            `${API_URL}/api/messages/conversation/${encodeURIComponent(
+              conversationId
+            )}/delete`,
+            {
+              method: "PATCH",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                userId:
+                  currentUserId,
+              }),
+            }
+          );
+
+        const data =
+          await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              "Failed to delete conversation."
+          );
+        }
+
+        // ====================================
+        // CLEAR ALL LOCAL MESSAGES
+        // ====================================
+
+        setMessages([]);
+
+        // ====================================
+        // CLEAR MESSAGE UI
+        // ====================================
+
+        setSelectedMessage(null);
+
+        setShowMessageMenu(false);
+
+        setShowDeleteMenu(false);
+
+        setShowChatMenu(false);
+
+        setShowEmojiPicker(false);
+
+        // ====================================
+        // CLEAR SEARCH
+        // ====================================
+
+        setSearchQuery("");
+
+        setShowSearch(false);
+
+        // ====================================
+        // CLEAR UNDO
+        // ====================================
+
+        setUndoMessageId(null);
+
+        setUndoSeconds(0);
+
+        // ====================================
+        // CLEAR EDIT
+        // ====================================
+
+        setEditingMessage(null);
+
+        setEditText("");
+
+        // ====================================
+        // CLEAR COMPOSER
+        // ====================================
+
+        setMessage("");
+
+        resetMessageInput();
+
+        resetEditInput();
+
+        // ====================================
+        // CLEAR DISAPPEARING STORAGE
+        // ====================================
+
+        if (
+          disappearingStorageKey
+        ) {
+          try {
+            localStorage.removeItem(
+              disappearingStorageKey
+            );
+          } catch (storageError) {
+            console.warn(
+              "Unable to clear disappearing-message setting:",
+              storageError
+            );
+          }
+        }
+
+        setDisappearingDuration(
+          "off"
+        );
+
+        // ====================================
+        // BROADCAST CONVERSATION DELETE
+        // ====================================
+
+        if (
+          socketRef.current?.connected
+        ) {
+          socketRef.current.emit(
+            "conversation-deleted",
+            {
+              conversationId,
+
+              userId:
+                currentUserId,
+            }
+          );
+
+          socketRef.current.emit(
+            "leave-conversation",
+            conversationId
+          );
+        }
+
+        // ====================================
+        // RETURN TO CHAT LIST
+        // ====================================
+
+        if (
+          typeof onBack ===
+          "function"
+        ) {
+          onBack();
+        }
+      } catch (error) {
+        console.error(
+          "Delete conversation error:",
+          error
+        );
+
+        setSendError(
+          `Unable to delete conversation. ${
+            error.message || ""
+          }`
+        );
+      }
+    };
+
+  // ==========================================
   // ATTACHMENT
   // ==========================================
 
-  const handleAttachment = () => {
-    alert(
-      "Attachments will be connected to Smart Files."
-    );
-  };
+  const handleAttachment =
+    () => {
+      alert(
+        "Attachments will be connected to Smart Files."
+      );
+    };
 
   // ==========================================
   // CAMERA
   // ==========================================
 
-  const handleCamera = () => {
-    alert(
-      "Camera will be connected to the ZenvaZapp media system."
-    );
-  };
+  const handleCamera =
+    () => {
+      alert(
+        "Camera will be connected to the ZenvaZapp media system."
+      );
+    };
 
   // ==========================================
   // EMOJI
@@ -1627,7 +2606,8 @@ function PrivateChat({
 
   const handleEmoji = () => {
     setShowEmojiPicker(
-      (previous) => !previous
+      (previous) =>
+        !previous
     );
   };
 
@@ -1648,39 +2628,54 @@ function PrivateChat({
   // VOICE
   // ==========================================
 
-  const handleVoice = () => {
-    alert(
-      "Voice recording will be connected to ZenvaZapp voice messaging."
-    );
-  };
+  const handleVoice =
+    () => {
+      alert(
+        "Voice recording will be connected to ZenvaZapp voice messaging."
+      );
+    };
 
   // ==========================================
   // CHAT MENU
   // ==========================================
 
-  const handleChatMenuToggle = () => {
-    setShowChatMenu(
-      (previous) => !previous
-    );
+  const handleChatMenuToggle =
+    () => {
+      setShowChatMenu(
+        (previous) =>
+          !previous
+      );
 
-    setShowDeleteMenu(false);
-    setShowMessageMenu(false);
-  };
+      setShowDeleteMenu(false);
+
+      setShowMessageMenu(false);
+
+      setShowEmojiPicker(false);
+    };
 
   // ==========================================
   // OPEN SEARCH
   // ==========================================
 
-  const handleOpenSearch = () => {
-    setShowChatMenu(false);
-    setShowSearch(true);
-    setSearchQuery("");
-  };
+  const handleOpenSearch =
+    () => {
+      setShowChatMenu(false);
 
-  const handleCloseSearch = () => {
-    setShowSearch(false);
-    setSearchQuery("");
-  };
+      setShowSearch(true);
+
+      setSearchQuery("");
+    };
+
+  // ==========================================
+  // CLOSE SEARCH
+  // ==========================================
+
+  const handleCloseSearch =
+    () => {
+      setShowSearch(false);
+
+      setSearchQuery("");
+    };
 
   // ==========================================
   // OPEN DISAPPEARING SETTINGS
@@ -1698,6 +2693,7 @@ function PrivateChat({
           chat,
           {
             conversationId,
+
             currentDuration:
               disappearingDuration,
           }
@@ -1712,31 +2708,27 @@ function PrivateChat({
     };
 
   // ==========================================
-  // DELETE CHAT
-  // ==========================================
-
-  const handleDeleteChat = () => {
-    setShowChatMenu(false);
-    setShowDeleteMenu(true);
-  };
-
-  // ==========================================
   // PAGE CLICK
   // ==========================================
 
-  const handlePageClick = () => {
-    if (showMessageMenu) {
-      closeMessageMenu();
-    }
+  const handlePageClick =
+    () => {
+      if (showMessageMenu) {
+        closeMessageMenu();
+      }
 
-    if (showChatMenu) {
-      setShowChatMenu(false);
-    }
+      if (showChatMenu) {
+        setShowChatMenu(false);
+      }
 
-    if (showDeleteMenu) {
-      setShowDeleteMenu(false);
-    }
-  };
+      if (showDeleteMenu) {
+        setShowDeleteMenu(false);
+      }
+
+      if (showEmojiPicker) {
+        setShowEmojiPicker(false);
+      }
+    };
 
   // ==========================================
   // SEARCH FILTER
@@ -1744,14 +2736,17 @@ function PrivateChat({
 
   const visibleMessages =
     searchQuery.trim()
-      ? messages.filter((item) =>
-          String(item.text || "")
-            .toLowerCase()
-            .includes(
-              searchQuery
-                .toLowerCase()
-                .trim()
+      ? messages.filter(
+          (item) =>
+            String(
+              item.text || ""
             )
+              .toLowerCase()
+              .includes(
+                searchQuery
+                  .toLowerCase()
+                  .trim()
+              )
         )
       : messages;
 
@@ -1802,6 +2797,7 @@ function PrivateChat({
 
             <p>
               <span className="online-dot" />
+
               Online
             </p>
           </div>
@@ -1904,7 +2900,9 @@ function PrivateChat({
                 <button
                   type="button"
                   onClick={() => {
-                    setShowChatMenu(false);
+                    setShowChatMenu(
+                      false
+                    );
 
                     alert(
                       "Chat notifications settings will be added later."
@@ -1925,7 +2923,9 @@ function PrivateChat({
                 <button
                   type="button"
                   onClick={() => {
-                    setShowChatMenu(false);
+                    setShowChatMenu(
+                      false
+                    );
 
                     alert(
                       "Contact information will be added later."
@@ -1964,7 +2964,7 @@ function PrivateChat({
       </header>
 
       {/* =====================================
-          PROFESSIONAL SEARCH BAR
+          SEARCH BAR
       ===================================== */}
 
       {showSearch && (
@@ -1991,7 +2991,9 @@ function PrivateChat({
             </span>
 
             <input
-              ref={searchInputRef}
+              ref={
+                searchInputRef
+              }
               type="text"
               value={searchQuery}
               onChange={(event) =>
@@ -2037,7 +3039,8 @@ function PrivateChat({
         searchQuery.trim() && (
           <div className="private-chat-search-result-count">
             {visibleMessages.length}{" "}
-            {visibleMessages.length === 1
+            {visibleMessages.length ===
+            1
               ? "message"
               : "messages"}{" "}
             found
@@ -2070,12 +3073,17 @@ function PrivateChat({
               Loading messages...
             </h2>
 
-            <p>Please wait.</p>
+            <p>
+              Please wait.
+            </p>
           </div>
-        ) : visibleMessages.length === 0 ? (
+        ) : visibleMessages.length ===
+          0 ? (
           <div className="private-chat-empty">
             <div className="private-chat-empty-icon">
-              {showSearch ? "⌕" : "💬"}
+              {showSearch
+                ? "⌕"
+                : "💬"}
             </div>
 
             <h2>
@@ -2091,67 +3099,82 @@ function PrivateChat({
             </p>
           </div>
         ) : (
-          visibleMessages.map((item) => (
-            <div
-              key={item.id}
-              className={`message-row ${
-                item.sender === "me"
-                  ? "message-row-outgoing"
-                  : "message-row-incoming"
-              }`}
-            >
-              <button
-                type="button"
-                className={`message-bubble ${
-                  item.sender === "me"
-                    ? "message-bubble-outgoing"
-                    : "message-bubble-incoming"
+          visibleMessages.map(
+            (item) => (
+              <div
+                key={item.id}
+                className={`message-row ${
+                  item.sender ===
+                  "me"
+                    ? "message-row-outgoing"
+                    : "message-row-incoming"
                 }`}
-                onClick={() =>
-                  handleMessageSelect(item)
-                }
               >
-                <p>{item.text}</p>
+                <button
+                  type="button"
+                  className={`message-bubble ${
+                    item.sender ===
+                    "me"
+                      ? "message-bubble-outgoing"
+                      : "message-bubble-incoming"
+                  }`}
+                  onClick={() =>
+                    handleMessageSelect(
+                      item
+                    )
+                  }
+                >
+                  <p>
+                    {item.text}
+                  </p>
 
-                <div className="message-meta">
-                  {item.edited && (
-                    <span className="message-edited-label">
-                      edited
+                  <div className="message-meta">
+                    {item.edited && (
+                      <span className="message-edited-label">
+                        edited
+                      </span>
+                    )}
+
+                    <span>
+                      {item.time}
                     </span>
-                  )}
 
-                  <span>
-                    {item.time}
-                  </span>
+                    {item.sender ===
+                      "me" && (
+                      <span
+                        className={`message-status ${
+                          item.status ||
+                          "sent"
+                        }`}
+                      >
+                        {item.status ===
+                        "read"
+                          ? "✓✓"
+                          : item.status ===
+                            "delivered"
+                          ? "✓✓"
+                          : "✓"}
+                      </span>
+                    )}
 
-                  {item.sender === "me" && (
-                    <span
-                      className={`message-status ${item.status || "sent"}`}
-                    >
-                      {item.status === "read"
-                        ? "✓✓"
-                        : item.status ===
-                          "delivered"
-                        ? "✓✓"
-                        : "✓"}
-                    </span>
-                  )}
-
-                  {item.expiresAt && (
-                    <span
-                      className="message-expiring-icon"
-                      title="Disappearing message"
-                    >
-                      ◷
-                    </span>
-                  )}
-                </div>
-              </button>
-            </div>
-          ))
+                    {item.expiresAt && (
+                      <span
+                        className="message-expiring-icon"
+                        title="Disappearing message"
+                      >
+                        ◷
+                      </span>
+                    )}
+                  </div>
+                </button>
+              </div>
+            )
+          )
         )}
 
-        <div ref={messageEndRef} />
+        <div
+          ref={messageEndRef}
+        />
       </main>
 
       {/* =====================================
@@ -2201,7 +3224,8 @@ function PrivateChat({
           }
         >
           <span>
-            Message sent ({undoSeconds}s)
+            Message sent (
+            {undoSeconds}s)
           </span>
 
           <button
@@ -2223,7 +3247,9 @@ function PrivateChat({
         selectedMessage && (
           <div
             className="message-action-overlay"
-            onClick={closeMessageMenu}
+            onClick={
+              closeMessageMenu
+            }
           >
             <div
               className="message-action-menu"
@@ -2259,20 +3285,23 @@ function PrivateChat({
 
               {/* COPY */}
 
-              <button
-                type="button"
-                onClick={
-                  handleCopyMessage
-                }
-              >
-                <span className="action-icon">
-                  □
-                </span>
+              {!selectedMessage.deleted &&
+                !selectedMessage.deletedForEveryone && (
+                  <button
+                    type="button"
+                    onClick={
+                      handleCopyMessage
+                    }
+                  >
+                    <span className="action-icon">
+                      □
+                    </span>
 
-                <span>
-                  Copy message
-                </span>
-              </button>
+                    <span>
+                      Copy message
+                    </span>
+                  </button>
+                )}
 
               {/* DELETE FOR ME */}
 
@@ -2336,7 +3365,9 @@ function PrivateChat({
         <div
           className="message-action-overlay"
           onClick={() =>
-            setShowDeleteMenu(false)
+            setShowDeleteMenu(
+              false
+            )
           }
         >
           <div
@@ -2346,15 +3377,23 @@ function PrivateChat({
             }
           >
             <h3>
-              Delete entire conversation?
+              Delete entire
+              conversation?
             </h3>
+
+            <p>
+              This will remove the
+              conversation from your
+              side. The other person
+              will still have their
+              messages.
+            </p>
 
             <button
               type="button"
-              onClick={() => {
-                setMessages([]);
-                setShowDeleteMenu(false);
-              }}
+              onClick={
+                handleConfirmDeleteConversation
+              }
             >
               Confirm Delete
             </button>
@@ -2362,7 +3401,9 @@ function PrivateChat({
             <button
               type="button"
               onClick={() =>
-                setShowDeleteMenu(false)
+                setShowDeleteMenu(
+                  false
+                )
               }
             >
               Cancel
@@ -2391,7 +3432,9 @@ function PrivateChat({
               </strong>
 
               <span>
-                {editingMessage.originalText}
+                {
+                  editingMessage.originalText
+                }
               </span>
             </div>
           </div>
@@ -2428,6 +3471,7 @@ function PrivateChat({
             editingMessage
               ? (event) => {
                   event.preventDefault();
+
                   handleSaveEdit();
                 }
               : handleSendMessage
@@ -2440,7 +3484,9 @@ function PrivateChat({
             <button
               type="button"
               className="composer-icon-btn"
-              onClick={handleEmoji}
+              onClick={
+                handleEmoji
+              }
               aria-label="Add emoji"
             >
               <span className="composer-symbol">
@@ -2488,15 +3534,19 @@ function PrivateChat({
               }
               rows={1}
               onChange={(event) => {
-                if (editingMessage) {
+                if (
+                  editingMessage
+                ) {
                   setEditText(
                     event.target.value
                   );
+
                   resizeEditInput();
                 } else {
                   setMessage(
                     event.target.value
                   );
+
                   resizeMessageInput();
                 }
               }}
@@ -2519,7 +3569,9 @@ function PrivateChat({
             <button
               type="button"
               className="composer-icon-btn"
-              onClick={handleCamera}
+              onClick={
+                handleCamera
+              }
               aria-label="Open camera"
             >
               <span className="camera-icon">
@@ -2552,7 +3604,9 @@ function PrivateChat({
             <button
               type="button"
               className="composer-icon-btn voice-button"
-              onClick={handleVoice}
+              onClick={
+                handleVoice
+              }
               aria-label="Record voice message"
               title="Voice message"
             >

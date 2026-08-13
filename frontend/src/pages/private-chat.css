@@ -1642,3 +1642,77 @@
     height: 34px;
   }
 }
+/* =========================================
+   FINAL CHAT OVERFLOW FIX
+========================================= */
+
+.private-chat-page {
+  width: 100%;
+  max-width: 100vw;
+  overflow: hidden;
+}
+
+.private-chat-messages {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.message-row {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.message-bubble {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: min(72%, 520px);
+}
+
+.message-bubble p {
+  max-width: 100%;
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Make outgoing messages stay inside the screen */
+.message-row-outgoing {
+  padding-left: 20px;
+  box-sizing: border-box;
+}
+
+.message-row-incoming {
+  padding-right: 20px;
+  box-sizing: border-box;
+}
+
+/* Desktop */
+@media (min-width: 601px) {
+  .private-chat-messages {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .message-bubble {
+    max-width: min(70%, 520px);
+  }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .message-row-outgoing {
+    padding-left: 8px;
+  }
+
+  .message-row-incoming {
+    padding-right: 8px;
+  }
+
+  .message-bubble {
+    max-width: 84%;
+  }
+}
