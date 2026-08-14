@@ -40,6 +40,10 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
+    // ======================================
+    // PROFILE
+    // ======================================
+
     profileCompleted: {
       type: Boolean,
       default: false,
@@ -75,10 +79,32 @@ const userSchema = new mongoose.Schema(
       ],
       default: "",
     },
+
+    // ======================================
+    // LOGIN OTP
+    // ======================================
+
+    loginOTP: {
+      type: String,
+      default: "",
+    },
+
+    loginOTPExpiresAt: {
+      type: Date,
+      default: null,
+    },
+
+    lastOTPVerifiedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-module.exports = mongoose.model("User", userSchema);
+module.exports = mongoose.model(
+  "User",
+  userSchema
+);
