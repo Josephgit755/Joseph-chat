@@ -9,12 +9,66 @@ const sendOTPEmail = require("../utils/sendOTPEmail");
 // OTP SETTINGS
 // ==========================================
 
-const OTP_EXPIRATION_MINUTES = 10;
+const OTP_EXPIRATION_MINUTES = Number(
+  process.env.OTP_EXPIRES_MINUTES || 5
+);
+
+const OTP_MAX_ATTEMPTS = 5;
+
+const OTP_RESEND_COOLDOWN_SECONDS = 60;
+
+// ==========================================
+// GENERATE OTP
+// ==========================================
 
 const generateOTP = () => {
   return crypto
     .randomInt(100000, 1000000)
     .toString();
+};
+
+// ==========================================
+// HASH OTP
+// ==========================================
+
+const hashOTP = (otp) => {
+  return crypto
+    .createHash("sha256")
+    .update(otp)
+    .digest("hex");
+};
+
+// ==========================================
+// SAFE USER
+// ==========================================
+
+const getSafeUser = (user) => {
+  return {
+    id: user._id,
+
+    fullName: user.fullName,
+
+    username: user.username,
+
+    email: user.email,
+
+    phone: user.phone,
+
+    profileCompleted:
+      user.profileCompleted,
+
+    profilePhoto:
+      user.profilePhoto,
+
+    displayName:
+      user.displayName,
+
+    bio:
+      user.bio,
+
+    gender:
+      user.gender,
+  };
 };
 
 // ==========================================
@@ -32,7 +86,10 @@ const registerUser = async (req, res) => {
       confirmPassword,
     } = req.body;
 
-    // 1. Required fields
+    // ==========================================
+    // REQUIRED FIELDS
+    // ==========================================
+
     if (
       !fullName ||
       !username ||
@@ -47,7 +104,10 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // 2. Clean information
+    // ==========================================
+    // CLEAN INFORMATION
+    // ==========================================
+
     const cleanedFullName =
       fullName.trim();
 
@@ -58,14 +118,19 @@ const registerUser = async (req, res) => {
         .toLowerCase();
 
     const cleanedEmail =
-      email.trim().toLowerCase();
+      email
+        .trim()
+        .toLowerCase();
 
     const cleanedPhone =
       phone
         .trim()
         .replace(/[\s()-]/g, "");
 
-    // 3. Full name validation
+    // ==========================================
+    // FULL NAME
+    // ==========================================
+
     const nameParts =
       cleanedFullName.split(/\s+/);
 
@@ -74,7 +139,9 @@ const registerUser = async (req, res) => {
 
     if (
       nameParts.length < 2 ||
-      !fullNameRegex.test(cleanedFullName)
+      !fullNameRegex.test(
+        cleanedFullName
+      )
     ) {
       return res.status(400).json({
         success: false,
@@ -83,7 +150,10 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // 4. Username validation
+    // ==========================================
+    // USERNAME
+    // ==========================================
+
     const usernameRegex =
       /^[a-zA-Z0-9_]{3,30}$/;
 
@@ -99,12 +169,17 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // 5. Email validation
+    // ==========================================
+    // EMAIL
+    // ==========================================
+
     const emailRegex =
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (
-      !emailRegex.test(cleanedEmail)
+      !emailRegex.test(
+        cleanedEmail
+      )
     ) {
       return res.status(400).json({
         success: false,
@@ -113,12 +188,17 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // 6. Phone validation
+    // ==========================================
+    // PHONE
+    // ==========================================
+
     const phoneRegex =
       /^\+?[1-9]\d{7,14}$/;
 
     if (
-      !phoneRegex.test(cleanedPhone)
+      !phoneRegex.test(
+        cleanedPhone
+      )
     ) {
       return res.status(400).json({
         success: false,
@@ -127,8 +207,14 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // 7. Password confirmation
-    if (password !== confirmPassword) {
+    // ==========================================
+    // PASSWORD CONFIRMATION
+    // ==========================================
+
+    if (
+      password !==
+      confirmPassword
+    ) {
       return res.status(400).json({
         success: false,
         message:
@@ -136,30 +222,16 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // 8. Password validation
-    const passwordRules = {
-      minLength:
-        password.length >= 8,
-
-      uppercase:
-        /[A-Z]/.test(password),
-
-      lowercase:
-        /[a-z]/.test(password),
-
-      number:
-        /[0-9]/.test(password),
-
-      special:
-        /[^A-Za-z0-9]/.test(password),
-    };
+    // ==========================================
+    // PASSWORD RULES
+    // ==========================================
 
     const passwordIsValid =
-      passwordRules.minLength &&
-      passwordRules.uppercase &&
-      passwordRules.lowercase &&
-      passwordRules.number &&
-      passwordRules.special;
+      password.length >= 8 &&
+      /[A-Z]/.test(password) &&
+      /[a-z]/.test(password) &&
+      /[0-9]/.test(password) &&
+      /[^A-Za-z0-9]/.test(password);
 
     if (!passwordIsValid) {
       return res.status(400).json({
@@ -169,10 +241,14 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // 9. Username check
+    // ==========================================
+    // EXISTING USERNAME
+    // ==========================================
+
     const existingUsername =
       await User.findOne({
-        username: cleanedUsername,
+        username:
+          cleanedUsername,
       });
 
     if (existingUsername) {
@@ -183,10 +259,14 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // 10. Email check
+    // ==========================================
+    // EXISTING EMAIL
+    // ==========================================
+
     const existingEmail =
       await User.findOne({
-        email: cleanedEmail,
+        email:
+          cleanedEmail,
       });
 
     if (existingEmail) {
@@ -197,10 +277,14 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // 11. Phone check
+    // ==========================================
+    // EXISTING PHONE
+    // ==========================================
+
     const existingPhone =
       await User.findOne({
-        phone: cleanedPhone,
+        phone:
+          cleanedPhone,
       });
 
     if (existingPhone) {
@@ -211,14 +295,20 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // 12. Hash password
+    // ==========================================
+    // HASH PASSWORD
+    // ==========================================
+
     const hashedPassword =
       await bcrypt.hash(
         password,
         12
       );
 
-    // 13. Create user
+    // ==========================================
+    // CREATE USER
+    // ==========================================
+
     const user =
       await User.create({
         fullName:
@@ -237,25 +327,14 @@ const registerUser = async (req, res) => {
           hashedPassword,
       });
 
-    // 14. Safe response
     return res.status(201).json({
       success: true,
+
       message:
         "Account created successfully.",
 
-      user: {
-        id: user._id,
-        fullName:
-          user.fullName,
-        username:
-          user.username,
-        email:
-          user.email,
-        phone:
-          user.phone,
-        profileCompleted:
-          user.profileCompleted,
-      },
+      user:
+        getSafeUser(user),
     });
   } catch (error) {
     console.error(
@@ -282,7 +361,6 @@ const loginUser = async (req, res) => {
       password,
     } = req.body;
 
-    // 1. Check fields
     if (
       !identifier ||
       !password
@@ -302,9 +380,11 @@ const loginUser = async (req, res) => {
     const cleanedPhone =
       identifier
         .trim()
-        .replace(/[\s()-]/g, "");
+        .replace(
+          /[\s()-]/g,
+          ""
+        );
 
-    // 2. Find user
     const user =
       await User.findOne({
         $or: [
@@ -331,7 +411,10 @@ const loginUser = async (req, res) => {
       });
     }
 
-    // 3. Check password
+    // ==========================================
+    // CHECK PASSWORD
+    // ==========================================
+
     const passwordIsCorrect =
       await bcrypt.compare(
         password,
@@ -346,12 +429,15 @@ const loginUser = async (req, res) => {
       });
     }
 
-    // ======================================
-    // 4. GENERATE OTP
-    // ======================================
+    // ==========================================
+    // GENERATE OTP
+    // ==========================================
 
     const otp =
       generateOTP();
+
+    const hashedOTP =
+      hashOTP(otp);
 
     const otpExpiresAt =
       new Date(
@@ -361,26 +447,35 @@ const loginUser = async (req, res) => {
             1000
       );
 
-    // ======================================
-    // 5. SAVE OTP
-    // ======================================
+    // ==========================================
+    // SAVE OTP
+    // ==========================================
 
-    user.loginOTP = otp;
+    user.loginOTP =
+      hashedOTP;
 
     user.loginOTPExpiresAt =
       otpExpiresAt;
 
+    user.otpAttempts = 0;
+
+    user.lastOTPRequestedAt =
+      new Date();
+
     await user.save();
 
-    // ======================================
-    // 6. SEND OTP TO GMAIL
-    // ======================================
+    // ==========================================
+    // SEND OTP EMAIL
+    // ==========================================
 
     try {
       await sendOTPEmail({
-        email: user.email,
+        email:
+          user.email,
+
         fullName:
           user.fullName,
+
         otp,
       });
     } catch (emailError) {
@@ -389,9 +484,14 @@ const loginUser = async (req, res) => {
         emailError
       );
 
-      // Clear OTP if email failed
       user.loginOTP = "";
+
       user.loginOTPExpiresAt =
+        null;
+
+      user.otpAttempts = 0;
+
+      user.lastOTPRequestedAt =
         null;
 
       await user.save();
@@ -403,40 +503,23 @@ const loginUser = async (req, res) => {
       });
     }
 
-    // ======================================
-    // 7. LOGIN ACCEPTED, OTP REQUIRED
-    // ======================================
+    // ==========================================
+    // OTP REQUIRED
+    // ==========================================
 
     return res.status(200).json({
       success: true,
+
       requiresOTP: true,
+
       message:
-        "Login credentials accepted. Verification code sent to your email.",
+        "Login credentials accepted. A verification code has been sent to your email.",
 
       destination:
         user.email,
 
-      user: {
-        id: user._id,
-        fullName:
-          user.fullName,
-        username:
-          user.username,
-        email:
-          user.email,
-        phone:
-          user.phone,
-        profileCompleted:
-          user.profileCompleted,
-        profilePhoto:
-          user.profilePhoto,
-        displayName:
-          user.displayName,
-        bio:
-          user.bio,
-        gender:
-          user.gender,
-      },
+      user:
+        getSafeUser(user),
     });
   } catch (error) {
     console.error(
@@ -466,14 +549,20 @@ const verifyLoginOTP = async (
       otp,
     } = req.body;
 
-    // 1. Check fields
-    if (!userId || !otp) {
+    if (
+      !userId ||
+      !otp
+    ) {
       return res.status(400).json({
         success: false,
         message:
           "User ID and OTP are required.",
       });
     }
+
+    // ==========================================
+    // CLEAN OTP
+    // ==========================================
 
     const cleanedOTP =
       String(otp)
@@ -490,7 +579,10 @@ const verifyLoginOTP = async (
       });
     }
 
-    // 2. Find user
+    // ==========================================
+    // FIND USER
+    // ==========================================
+
     const user =
       await User.findById(
         userId
@@ -504,7 +596,10 @@ const verifyLoginOTP = async (
       });
     }
 
-    // 3. Check OTP exists
+    // ==========================================
+    // NO ACTIVE OTP
+    // ==========================================
+
     if (!user.loginOTP) {
       return res.status(400).json({
         success: false,
@@ -513,7 +608,34 @@ const verifyLoginOTP = async (
       });
     }
 
-    // 4. Check expiration
+    // ==========================================
+    // MAX ATTEMPTS
+    // ==========================================
+
+    if (
+      user.otpAttempts >=
+      OTP_MAX_ATTEMPTS
+    ) {
+      user.loginOTP = "";
+
+      user.loginOTPExpiresAt =
+        null;
+
+      user.otpAttempts = 0;
+
+      await user.save();
+
+      return res.status(429).json({
+        success: false,
+        message:
+          "Too many incorrect attempts. Please request a new OTP.",
+      });
+    }
+
+    // ==========================================
+    // CHECK EXPIRATION
+    // ==========================================
+
     if (
       !user.loginOTPExpiresAt ||
       new Date() >
@@ -522,8 +644,11 @@ const verifyLoginOTP = async (
         )
     ) {
       user.loginOTP = "";
+
       user.loginOTPExpiresAt =
         null;
+
+      user.otpAttempts = 0;
 
       await user.save();
 
@@ -534,35 +659,68 @@ const verifyLoginOTP = async (
       });
     }
 
-    // 5. Check OTP
+    // ==========================================
+    // COMPARE OTP
+    // ==========================================
+
+    const submittedHash =
+      hashOTP(cleanedOTP);
+
     if (
-      cleanedOTP !==
+      submittedHash !==
       user.loginOTP
     ) {
+      user.otpAttempts += 1;
+
+      await user.save();
+
+      const remainingAttempts =
+        Math.max(
+          0,
+          OTP_MAX_ATTEMPTS -
+            user.otpAttempts
+        );
+
       return res.status(401).json({
         success: false,
         message:
-          "Incorrect verification code.",
+          remainingAttempts > 0
+            ? `Incorrect verification code. ${remainingAttempts} attempt(s) remaining.`
+            : "Too many incorrect attempts. Please request a new OTP.",
       });
     }
 
-    // ======================================
-    // 6. OTP VERIFIED
-    // ======================================
+    // ==========================================
+    // OTP VERIFIED
+    // ==========================================
 
     user.loginOTP = "";
 
     user.loginOTPExpiresAt =
       null;
 
+    user.otpAttempts = 0;
+
     user.lastOTPVerifiedAt =
       new Date();
 
     await user.save();
 
-    // ======================================
-    // 7. CREATE JWT AFTER OTP
-    // ======================================
+    // ==========================================
+    // CREATE JWT
+    // ==========================================
+
+    if (!process.env.JWT_SECRET) {
+      console.error(
+        "JWT_SECRET is not configured."
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Server authentication configuration is missing.",
+      });
+    }
 
     const token =
       jwt.sign(
@@ -576,38 +734,20 @@ const verifyLoginOTP = async (
         }
       );
 
-    // ======================================
-    // 8. SEND AUTHENTICATED RESPONSE
-    // ======================================
+    // ==========================================
+    // LOGIN COMPLETE
+    // ==========================================
 
     return res.status(200).json({
       success: true,
+
       message:
         "OTP verified successfully. Login complete.",
 
       token,
 
-      user: {
-        id: user._id,
-        fullName:
-          user.fullName,
-        username:
-          user.username,
-        email:
-          user.email,
-        phone:
-          user.phone,
-        profileCompleted:
-          user.profileCompleted,
-        profilePhoto:
-          user.profilePhoto,
-        displayName:
-          user.displayName,
-        bio:
-          user.bio,
-        gender:
-          user.gender,
-      },
+      user:
+        getSafeUser(user),
     });
   } catch (error) {
     console.error(
@@ -644,6 +784,10 @@ const resendLoginOTP = async (
       });
     }
 
+    // ==========================================
+    // FIND USER
+    // ==========================================
+
     const user =
       await User.findById(
         userId
@@ -657,12 +801,51 @@ const resendLoginOTP = async (
       });
     }
 
-    // ======================================
+    // ==========================================
+    // RESEND COOLDOWN
+    // ==========================================
+
+    if (
+      user.lastOTPRequestedAt
+    ) {
+      const secondsSinceLastRequest =
+        Math.floor(
+          (Date.now() -
+            new Date(
+              user.lastOTPRequestedAt
+            ).getTime()) /
+            1000
+        );
+
+      if (
+        secondsSinceLastRequest <
+        OTP_RESEND_COOLDOWN_SECONDS
+      ) {
+        const remaining =
+          OTP_RESEND_COOLDOWN_SECONDS -
+          secondsSinceLastRequest;
+
+        return res.status(429).json({
+          success: false,
+
+          message:
+            `Please wait ${remaining} seconds before requesting another OTP.`,
+
+          retryAfter:
+            remaining,
+        });
+      }
+    }
+
+    // ==========================================
     // GENERATE NEW OTP
-    // ======================================
+    // ==========================================
 
     const otp =
       generateOTP();
+
+    const hashedOTP =
+      hashOTP(otp);
 
     const otpExpiresAt =
       new Date(
@@ -672,22 +855,31 @@ const resendLoginOTP = async (
             1000
       );
 
-    user.loginOTP = otp;
+    user.loginOTP =
+      hashedOTP;
 
     user.loginOTPExpiresAt =
       otpExpiresAt;
 
+    user.otpAttempts = 0;
+
+    user.lastOTPRequestedAt =
+      new Date();
+
     await user.save();
 
-    // ======================================
+    // ==========================================
     // SEND NEW OTP
-    // ======================================
+    // ==========================================
 
     try {
       await sendOTPEmail({
-        email: user.email,
+        email:
+          user.email,
+
         fullName:
           user.fullName,
+
         otp,
       });
     } catch (emailError) {
@@ -697,7 +889,13 @@ const resendLoginOTP = async (
       );
 
       user.loginOTP = "";
+
       user.loginOTPExpiresAt =
+        null;
+
+      user.otpAttempts = 0;
+
+      user.lastOTPRequestedAt =
         null;
 
       await user.save();
@@ -711,10 +909,15 @@ const resendLoginOTP = async (
 
     return res.status(200).json({
       success: true,
+
       message:
         "A new verification code has been sent to your email.",
+
       destination:
         user.email,
+
+      expiresIn:
+        OTP_EXPIRATION_MINUTES,
     });
   } catch (error) {
     console.error(

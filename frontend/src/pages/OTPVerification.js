@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 function OTPVerification({
-  method = "email",
-  destination = "",
+  destination,
   onBack,
   user,
   onVerified,
@@ -19,7 +22,8 @@ function OTPVerification({
   const [secondsLeft, setSecondsLeft] =
     useState(60);
 
-  const [error, setError] = useState("");
+  const [error, setError] =
+    useState("");
 
   const [isVerifying, setIsVerifying] =
     useState(false);
@@ -27,14 +31,15 @@ function OTPVerification({
   const [isResending, setIsResending] =
     useState(false);
 
-  const inputRefs = useRef([]);
+  const inputRefs =
+    useRef([]);
 
   const API_URL =
     process.env.REACT_APP_API_URL ||
     "https://joseph-backend.onrender.com";
 
   // ==========================================
-  // FOCUS FIRST OTP INPUT
+  // FOCUS FIRST INPUT
   // ==========================================
 
   useEffect(() => {
@@ -42,7 +47,7 @@ function OTPVerification({
   }, []);
 
   // ==========================================
-  // OTP COUNTDOWN
+  // COUNTDOWN
   // ==========================================
 
   useEffect(() => {
@@ -51,20 +56,18 @@ function OTPVerification({
     }
 
     const timer = setInterval(() => {
-      setSecondsLeft((previous) =>
-        previous > 0
-          ? previous - 1
-          : 0
+      setSecondsLeft(
+        (previous) =>
+          previous - 1
       );
     }, 1000);
 
-    return () => {
+    return () =>
       clearInterval(timer);
-    };
   }, [secondsLeft]);
 
   // ==========================================
-  // HANDLE OTP INPUT
+  // INPUT CHANGE
   // ==========================================
 
   const handleChange = (
@@ -94,7 +97,7 @@ function OTPVerification({
   };
 
   // ==========================================
-  // KEYBOARD NAVIGATION
+  // KEYBOARD
   // ==========================================
 
   const handleKeyDown = (
@@ -102,7 +105,8 @@ function OTPVerification({
     event
   ) => {
     if (
-      event.key === "Backspace" &&
+      event.key ===
+        "Backspace" &&
       !otp[index] &&
       index > 0
     ) {
@@ -112,7 +116,8 @@ function OTPVerification({
     }
 
     if (
-      event.key === "ArrowLeft" &&
+      event.key ===
+        "ArrowLeft" &&
       index > 0
     ) {
       inputRefs.current[
@@ -121,7 +126,8 @@ function OTPVerification({
     }
 
     if (
-      event.key === "ArrowRight" &&
+      event.key ===
+        "ArrowRight" &&
       index < 5
     ) {
       inputRefs.current[
@@ -170,10 +176,11 @@ function OTPVerification({
     setOtp(updatedOtp);
     setError("");
 
-    const nextIndex = Math.min(
-      pastedValue.length,
-      5
-    );
+    const nextIndex =
+      Math.min(
+        pastedValue.length,
+        5
+      );
 
     inputRefs.current[
       nextIndex
@@ -184,224 +191,266 @@ function OTPVerification({
   // VERIFY OTP
   // ==========================================
 
-  const handleVerify = async (
-    event
-  ) => {
-    event.preventDefault();
+  const handleVerify =
+    async (event) => {
+      event.preventDefault();
 
-    setError("");
-
-    const code =
-      otp.join("");
-
-    if (code.length !== 6) {
-      setError(
-        "Please enter all 6 digits."
-      );
-      return;
-    }
-
-    if (!user?.id) {
-      setError(
-        "Your login session is missing. Please go back and log in again."
-      );
-      return;
-    }
-
-    setIsVerifying(true);
-
-    try {
-      const response =
-        await fetch(
-          `${API_URL}/api/auth/verify-otp`,
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-
-            body: JSON.stringify({
-              userId: user.id,
-              otp: code,
-            }),
-          }
-        );
-
-      let data;
-
-      try {
-        data =
-          await response.json();
-      } catch {
-        throw new Error(
-          "Invalid server response."
-        );
-      }
+      const code =
+        otp.join("");
 
       if (
-        !response.ok ||
-        !data.success
+        code.length !== 6
       ) {
         setError(
-          data.message ||
-            "Incorrect or expired OTP."
+          "Please enter all 6 digits."
         );
 
-        setIsVerifying(false);
         return;
       }
 
-      // ======================================
-      // OTP VERIFIED
-      // ======================================
-
-      setOtp([
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-      ]);
-
-      setIsVerifying(false);
-
-      if (onVerified) {
-        onVerified(
-          data.user
+      if (!user?.id) {
+        setError(
+          "Your login session is invalid. Please login again."
         );
+
+        return;
       }
-    } catch (error) {
-      console.error(
-        "OTP verification error:",
-        error
-      );
 
-      setError(
-        error.message ||
-          "Unable to verify the OTP. Please try again."
-      );
+      setError("");
+      setIsVerifying(true);
 
-      setIsVerifying(false);
-    }
-  };
+      try {
+        const response =
+          await fetch(
+            `${API_URL}/api/auth/verify-otp`,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                userId:
+                  user.id,
+
+                otp: code,
+              }),
+            }
+          );
+
+        let data;
+
+        try {
+          data =
+            await response.json();
+        } catch {
+          throw new Error(
+            "Invalid server response."
+          );
+        }
+
+        if (
+          !response.ok ||
+          !data.success
+        ) {
+          setError(
+            data.message ||
+              "OTP verification failed."
+          );
+
+          setOtp([
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+          ]);
+
+          inputRefs.current[0]?.focus();
+
+          setIsVerifying(false);
+
+          return;
+        }
+
+        // ======================================
+        // OTP VERIFIED
+        // ======================================
+
+        if (!data.token) {
+          setError(
+            "OTP was verified, but the login token was not received."
+          );
+
+          setIsVerifying(false);
+
+          return;
+        }
+
+        // ======================================
+        // SAVE JWT
+        // ======================================
+
+        localStorage.setItem(
+          "zenvazapp_token",
+          data.token
+        );
+
+        // ======================================
+        // SAVE USER
+        // ======================================
+
+        if (data.user) {
+          localStorage.setItem(
+            "zenvazappUser",
+            JSON.stringify(
+              data.user
+            )
+          );
+        }
+
+        setIsVerifying(false);
+
+        // ======================================
+        // CONTINUE APP FLOW
+        // ======================================
+
+        if (onVerified) {
+          onVerified(
+            data.user
+          );
+        }
+      } catch (requestError) {
+        console.error(
+          "OTP verification error:",
+          requestError
+        );
+
+        setError(
+          requestError.message ||
+            "Unable to connect to ZenvaZapp server."
+        );
+
+        setIsVerifying(false);
+      }
+    };
 
   // ==========================================
   // RESEND OTP
   // ==========================================
 
-  const handleResend = async () => {
-    if (
-      secondsLeft > 0 ||
-      isResending
-    ) {
-      return;
-    }
-
-    if (!user?.id) {
-      setError(
-        "Your login session is missing. Please go back and log in again."
-      );
-      return;
-    }
-
-    setError("");
-    setIsResending(true);
-
-    try {
-      const response =
-        await fetch(
-          `${API_URL}/api/auth/resend-otp`,
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-
-            body: JSON.stringify({
-              userId: user.id,
-            }),
-          }
-        );
-
-      let data;
-
-      try {
-        data =
-          await response.json();
-      } catch {
-        throw new Error(
-          "Invalid server response."
-        );
-      }
-
+  const handleResend =
+    async () => {
       if (
-        !response.ok ||
-        !data.success
+        secondsLeft > 0 ||
+        isResending
       ) {
-        setError(
-          data.message ||
-            "Unable to resend OTP."
-        );
-
-        setIsResending(false);
         return;
       }
 
-      setOtp([
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-      ]);
+      if (!user?.id) {
+        setError(
+          "Your login session is invalid. Please login again."
+        );
 
-      setSecondsLeft(60);
+        return;
+      }
 
-      setIsResending(false);
+      setError("");
+      setIsResending(true);
 
-      setTimeout(() => {
-        inputRefs.current[
-          0
-        ]?.focus();
-      }, 50);
-    } catch (error) {
-      console.error(
-        "Resend OTP error:",
-        error
-      );
+      try {
+        const response =
+          await fetch(
+            `${API_URL}/api/auth/resend-otp`,
+            {
+              method: "POST",
 
-      setError(
-        error.message ||
-          "Unable to resend the verification code."
-      );
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
 
-      setIsResending(false);
-    }
-  };
+              body: JSON.stringify({
+                userId:
+                  user.id,
+              }),
+            }
+          );
+
+        let data;
+
+        try {
+          data =
+            await response.json();
+        } catch {
+          throw new Error(
+            "Invalid server response."
+          );
+        }
+
+        if (
+          !response.ok ||
+          !data.success
+        ) {
+          setError(
+            data.message ||
+              "Unable to resend OTP."
+          );
+
+          if (
+            data.retryAfter
+          ) {
+            setSecondsLeft(
+              data.retryAfter
+            );
+          }
+
+          setIsResending(false);
+
+          return;
+        }
+
+        setOtp([
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+        ]);
+
+        setSecondsLeft(60);
+
+        inputRefs.current[0]?.focus();
+
+        setIsResending(false);
+      } catch (requestError) {
+        console.error(
+          "Resend OTP error:",
+          requestError
+        );
+
+        setError(
+          requestError.message ||
+            "Unable to connect to ZenvaZapp server."
+        );
+
+        setIsResending(false);
+      }
+    };
 
   // ==========================================
-  // FORMAT TIMER
+  // TIMER
   // ==========================================
 
   const formattedTime =
     `00:${String(
       secondsLeft
     ).padStart(2, "0")}`;
-
-  // ==========================================
-  // DELIVERY TEXT
-  // ==========================================
-
-  const deliveryText =
-    method === "phone"
-      ? "We've sent a 6-digit verification code to your phone"
-      : "We've sent a 6-digit verification code to your email";
 
   // ==========================================
   // UI
@@ -434,25 +483,31 @@ function OTPVerification({
           </h1>
 
           <p>
-            {deliveryText}
+            We've sent a 6-digit
+            verification code to
           </p>
 
           <strong className="otp-destination">
-            {destination}
+            {destination ||
+              user?.email ||
+              "your email"}
           </strong>
 
         </div>
 
         <form
-          onSubmit={handleVerify}
+          onSubmit={
+            handleVerify
+          }
           className="otp-form"
         >
 
           <div
             className="otp-inputs"
-            onPaste={handlePaste}
+            onPaste={
+              handlePaste
+            }
           >
-
             {otp.map(
               (
                 digit,
@@ -496,13 +551,11 @@ function OTPVerification({
                       : "off"
                   }
                   disabled={
-                    isVerifying ||
-                    isResending
+                    isVerifying
                   }
                 />
               )
             )}
-
           </div>
 
           {error && (
@@ -518,8 +571,7 @@ function OTPVerification({
             type="submit"
             className="primary-button"
             disabled={
-              isVerifying ||
-              isResending
+              isVerifying
             }
           >
             {isVerifying
@@ -533,7 +585,9 @@ function OTPVerification({
 
           {secondsLeft > 0 ? (
             <p>
-              Didn't receive the code?
+              Didn't receive
+              the code?
+
               <span>
                 {" "}
                 Resend in{" "}
@@ -542,7 +596,8 @@ function OTPVerification({
             </p>
           ) : (
             <p>
-              Didn't receive the code?{" "}
+              Didn't receive
+              the code?
 
               <button
                 type="button"
