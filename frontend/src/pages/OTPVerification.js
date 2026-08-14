@@ -1,27 +1,53 @@
 import { useEffect, useRef, useState } from "react";
 
 function OTPVerification({
-  method = "phone",
+  method = "email",
   destination = "",
   onBack,
   user,
   onVerified,
 }) {
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [secondsLeft, setSecondsLeft] = useState(60);
-  const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [isResending, setIsResending] = useState(false);
+  const [otp, setOtp] = useState([
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
+
+  const [secondsLeft, setSecondsLeft] =
+    useState(60);
+
+  const [error, setError] =
+    useState("");
+
+  const [successMessage, setSuccessMessage] =
+    useState("");
+
+  const [isVerifying, setIsVerifying] =
+    useState(false);
+
+  const [isResending, setIsResending] =
+    useState(false);
 
   const inputRefs = useRef([]);
 
   const API_URL =
-    process.env.REACT_APP_API_URL || "http://localhost:5000";
+    process.env.REACT_APP_API_URL ||
+    "https://joseph-backend.onrender.com";
+
+  // ==========================================
+  // FOCUS FIRST INPUT
+  // ==========================================
 
   useEffect(() => {
     inputRefs.current[0]?.focus();
   }, []);
+
+  // ==========================================
+  // COUNTDOWN
+  // ==========================================
 
   useEffect(() => {
     if (secondsLeft <= 0) {
@@ -29,59 +55,106 @@ function OTPVerification({
     }
 
     const timer = setInterval(() => {
-      setSecondsLeft((previous) => previous - 1);
+      setSecondsLeft(
+        (previous) =>
+          previous > 0
+            ? previous - 1
+            : 0
+      );
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+    };
   }, [secondsLeft]);
 
-  const handleChange = (index, value) => {
+  // ==========================================
+  // HANDLE OTP INPUT
+  // ==========================================
+
+  const handleChange = (
+    index,
+    value
+  ) => {
     setError("");
     setSuccessMessage("");
 
-    const digit = value.replace(/\D/g, "").slice(-1);
+    const digit = value
+      .replace(/\D/g, "")
+      .slice(-1);
 
-    const updatedOtp = [...otp];
+    const updatedOtp = [
+      ...otp,
+    ];
+
     updatedOtp[index] = digit;
 
     setOtp(updatedOtp);
 
-    if (digit && index < 5) {
-      inputRefs.current[index + 1]?.focus();
+    if (
+      digit &&
+      index < 5
+    ) {
+      inputRefs.current[
+        index + 1
+      ]?.focus();
     }
   };
 
-  const handleKeyDown = (index, event) => {
+  // ==========================================
+  // KEYBOARD NAVIGATION
+  // ==========================================
+
+  const handleKeyDown = (
+    index,
+    event
+  ) => {
     if (
       event.key === "Backspace" &&
       !otp[index] &&
       index > 0
     ) {
-      inputRefs.current[index - 1]?.focus();
+      inputRefs.current[
+        index - 1
+      ]?.focus();
     }
 
     if (
       event.key === "ArrowLeft" &&
       index > 0
     ) {
-      inputRefs.current[index - 1]?.focus();
+      inputRefs.current[
+        index - 1
+      ]?.focus();
     }
 
     if (
       event.key === "ArrowRight" &&
       index < 5
     ) {
-      inputRefs.current[index + 1]?.focus();
+      inputRefs.current[
+        index + 1
+      ]?.focus();
     }
   };
 
-  const handlePaste = (event) => {
+  // ==========================================
+  // PASTE OTP
+  // ==========================================
+
+  const handlePaste = (
+    event
+  ) => {
     event.preventDefault();
 
-    const pastedValue = event.clipboardData
-      .getData("text")
-      .replace(/\D/g, "")
-      .slice(0, 6);
+    setError("");
+    setSuccessMessage("");
+
+    const pastedValue =
+      event.clipboardData
+        .getData("text")
+        .replace(/\D/g, "")
+        .slice(0, 6);
 
     if (!pastedValue) {
       return;
@@ -96,67 +169,98 @@ function OTPVerification({
       "",
     ];
 
-    pastedValue.split("").forEach(
-      (digit, index) => {
-        updatedOtp[index] = digit;
-      }
-    );
+    pastedValue
+      .split("")
+      .forEach(
+        (digit, index) => {
+          updatedOtp[index] =
+            digit;
+        }
+      );
 
     setOtp(updatedOtp);
-    setError("");
-    setSuccessMessage("");
 
     const nextIndex = Math.min(
       pastedValue.length,
       5
     );
 
-    inputRefs.current[nextIndex]?.focus();
+    inputRefs.current[
+      nextIndex
+    ]?.focus();
   };
 
   // ==========================================
   // VERIFY OTP
   // ==========================================
 
-  const handleVerify = async (event) => {
+  const handleVerify = async (
+    event
+  ) => {
     event.preventDefault();
-
-    const code = otp.join("");
-
-    if (code.length !== 6) {
-      setError("Please enter all 6 digits.");
-      return;
-    }
-
-    if (!user?.id) {
-      setError(
-        "Your login session is missing. Please go back and login again."
-      );
-      return;
-    }
 
     setError("");
     setSuccessMessage("");
+
+    const code =
+      otp.join("");
+
+    // Check six digits
+    if (
+      code.length !== 6
+    ) {
+      setError(
+        "Please enter all 6 digits."
+      );
+      return;
+    }
+
+    // Make sure user exists
+    if (!user?.id) {
+      setError(
+        "Your login session is missing. Please go back and log in again."
+      );
+      return;
+    }
+
     setIsVerifying(true);
 
     try {
-      const response = await fetch(
-        `${API_URL}/api/auth/verify-otp`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId: user.id,
-            otp: code,
-          }),
-        }
-      );
+      const response =
+        await fetch(
+          `${API_URL}/api/auth/verify-otp`,
+          {
+            method: "POST",
 
-      const data = await response.json();
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
 
-      if (!response.ok || !data.success) {
+            body: JSON.stringify({
+              userId:
+                user.id,
+
+              otp: code,
+            }),
+          }
+        );
+
+      let data;
+
+      try {
+        data =
+          await response.json();
+      } catch {
+        throw new Error(
+          "Invalid server response."
+        );
+      }
+
+      if (
+        !response.ok ||
+        !data.success
+      ) {
         setError(
           data.message ||
             "OTP verification failed."
@@ -166,16 +270,25 @@ function OTPVerification({
         return;
       }
 
-      // Save the final JWT only AFTER OTP verification
-      localStorage.setItem(
-        "zenvazappToken",
-        data.token
-      );
+      // ======================================
+      // OTP IS REALLY VERIFIED
+      // ======================================
 
-      localStorage.setItem(
-        "zenvazappUser",
-        JSON.stringify(data.user)
-      );
+      if (data.token) {
+        localStorage.setItem(
+          "zenvazappToken",
+          data.token
+        );
+      }
+
+      if (data.user) {
+        localStorage.setItem(
+          "zenvazappUser",
+          JSON.stringify(
+            data.user
+          )
+        );
+      }
 
       setSuccessMessage(
         "OTP verified successfully."
@@ -183,9 +296,14 @@ function OTPVerification({
 
       setIsVerifying(false);
 
-      if (onVerified) {
-        onVerified(data.user);
-      }
+      // Give the user a moment to see success
+      setTimeout(() => {
+        if (onVerified) {
+          onVerified(
+            data.user || user
+          );
+        }
+      }, 500);
     } catch (error) {
       console.error(
         "OTP verification error:",
@@ -205,13 +323,16 @@ function OTPVerification({
   // ==========================================
 
   const handleResend = async () => {
-    if (secondsLeft > 0 || isResending) {
+    if (
+      secondsLeft > 0 ||
+      isResending
+    ) {
       return;
     }
 
     if (!user?.id) {
       setError(
-        "Your login session is missing. Please login again."
+        "Your login session is missing. Please log in again."
       );
       return;
     }
@@ -221,22 +342,39 @@ function OTPVerification({
     setIsResending(true);
 
     try {
-      const response = await fetch(
-        `${API_URL}/api/auth/resend-otp`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId: user.id,
-          }),
-        }
-      );
+      const response =
+        await fetch(
+          `${API_URL}/api/auth/resend-otp`,
+          {
+            method: "POST",
 
-      const data = await response.json();
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
 
-      if (!response.ok || !data.success) {
+            body: JSON.stringify({
+              userId:
+                user.id,
+            }),
+          }
+        );
+
+      let data;
+
+      try {
+        data =
+          await response.json();
+      } catch {
+        throw new Error(
+          "Invalid server response."
+        );
+      }
+
+      if (
+        !response.ok ||
+        !data.success
+      ) {
         setError(
           data.message ||
             "Unable to resend OTP."
@@ -246,6 +384,7 @@ function OTPVerification({
         return;
       }
 
+      // Clear old OTP
       setOtp([
         "",
         "",
@@ -255,6 +394,7 @@ function OTPVerification({
         "",
       ]);
 
+      // Restart countdown
       setSecondsLeft(60);
 
       setSuccessMessage(
@@ -263,7 +403,9 @@ function OTPVerification({
 
       setIsResending(false);
 
-      inputRefs.current[0]?.focus();
+      inputRefs.current[
+        0
+      ]?.focus();
     } catch (error) {
       console.error(
         "Resend OTP error:",
@@ -278,14 +420,27 @@ function OTPVerification({
     }
   };
 
-  const formattedTime = `00:${String(
-    secondsLeft
-  ).padStart(2, "0")}`;
+  // ==========================================
+  // FORMAT TIMER
+  // ==========================================
+
+  const formattedTime =
+    `00:${String(
+      secondsLeft
+    ).padStart(2, "0")}`;
+
+  // ==========================================
+  // DELIVERY TEXT
+  // ==========================================
 
   const deliveryText =
     method === "phone"
       ? "We've sent a 6-digit verification code to"
       : "We've sent a 6-digit verification code to your email";
+
+  // ==========================================
+  // UI
+  // ==========================================
 
   return (
     <main className="auth-page">
@@ -296,7 +451,8 @@ function OTPVerification({
           className="back-button"
           onClick={onBack}
           disabled={
-            isVerifying || isResending
+            isVerifying ||
+            isResending
           }
         >
           ← Back
@@ -317,24 +473,29 @@ function OTPVerification({
           </p>
 
           <strong className="otp-destination">
-            {destination ||
-              user?.email ||
-              "your email"}
+            {destination}
           </strong>
 
         </div>
 
         <form
-          onSubmit={handleVerify}
+          onSubmit={
+            handleVerify
+          }
           className="otp-form"
         >
 
           <div
             className="otp-inputs"
-            onPaste={handlePaste}
+            onPaste={
+              handlePaste
+            }
           >
             {otp.map(
-              (digit, index) => (
+              (
+                digit,
+                index
+              ) => (
                 <input
                   key={index}
                   ref={(element) => {
@@ -347,13 +508,18 @@ function OTPVerification({
                   pattern="[0-9]*"
                   maxLength={1}
                   value={digit}
-                  onChange={(event) =>
+                  onChange={(
+                    event
+                  ) =>
                     handleChange(
                       index,
-                      event.target.value
+                      event.target
+                        .value
                     )
                   }
-                  onKeyDown={(event) =>
+                  onKeyDown={(
+                    event
+                  ) =>
                     handleKeyDown(
                       index,
                       event
@@ -368,8 +534,7 @@ function OTPVerification({
                       : "off"
                   }
                   disabled={
-                    isVerifying ||
-                    isResending
+                    isVerifying
                   }
                 />
               )
@@ -413,25 +578,32 @@ function OTPVerification({
 
           {secondsLeft > 0 ? (
             <p>
-              Didn't receive the code?
+              Didn't receive
+              the code?
               <span>
                 {" "}
-                Resend in {formattedTime}
+                Resend in{" "}
+                {formattedTime}
               </span>
             </p>
           ) : (
             <p>
-              Didn't receive the code?
+              Didn't receive
+              the code?
 
               <button
                 type="button"
                 className="inline-link"
-                onClick={handleResend}
-                disabled={isResending}
+                onClick={
+                  handleResend
+                }
+                disabled={
+                  isResending
+                }
               >
                 {isResending
-                  ? "Sending..."
-                  : "Resend OTP"}
+                  ss? " Sending..."
+                  : " Resend OTP"}
               </button>
             </p>
           )}
