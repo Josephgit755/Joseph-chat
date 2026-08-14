@@ -1,5 +1,7 @@
+
 /* =========================================
-   STUDENT MODE
+   ZENVAZAPP STUDENT MODE
+   PLUM / PURPLE-MAGENTA THEME
 ========================================= */
 
 .student-mode-page {
@@ -10,9 +12,9 @@
 
   padding-bottom: 40px;
 
-  background: #100a06;
+  background: #120914;
 
-  color: #fff8ed;
+  color: #fff7fc;
 
   font-family:
     Arial,
@@ -35,7 +37,7 @@
   padding: 18px 18px 14px;
 
   border-bottom: 1px solid
-    rgba(224, 181, 106, 0.08);
+    rgba(218, 112, 170, 0.10);
 }
 
 .student-back-button {
@@ -48,17 +50,28 @@
   justify-content: center;
 
   border: 1px solid
-    rgba(224, 181, 106, 0.12);
+    rgba(218, 112, 170, 0.16);
 
   border-radius: 10px;
 
-  background: #1b120b;
+  background: #241020;
 
-  color: #e0b56a;
+  color: #e9a6d0;
 
   font-size: 18px;
 
   cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.student-back-button:hover {
+  background: #32152b;
+
+  border-color:
+    rgba(233, 166, 208, 0.28);
 }
 
 .student-header-icon {
@@ -73,7 +86,9 @@
   border-radius: 12px;
 
   background:
-    rgba(224, 181, 106, 0.10);
+    rgba(218, 112, 170, 0.11);
+
+  color: #e9a6d0;
 
   font-size: 19px;
 }
@@ -85,7 +100,7 @@
 .student-header-info h1 {
   margin: 0;
 
-  color: #fff8ed;
+  color: #fff7fc;
 
   font-size: 17px;
 }
@@ -93,7 +108,7 @@
 .student-header-info p {
   margin: 4px 0 0;
 
-  color: #806d5b;
+  color: #a98a9e;
 
   font-size: 9px;
 }
@@ -115,11 +130,14 @@
   padding: 17px;
 
   border: 1px solid
-    rgba(224, 181, 106, 0.10);
+    rgba(218, 112, 170, 0.12);
 
   border-radius: 16px;
 
-  background: #1b120b;
+  background: #241020;
+
+  box-shadow:
+    0 8px 25px rgba(0, 0, 0, 0.18);
 }
 
 .student-hero-icon {
@@ -136,7 +154,9 @@
   border-radius: 14px;
 
   background:
-    rgba(224, 181, 106, 0.10);
+    rgba(218, 112, 170, 0.12);
+
+  color: #e9a6d0;
 
   font-size: 23px;
 }
@@ -144,13 +164,15 @@
 .student-hero h2 {
   margin: 0 0 5px;
 
+  color: #fff7fc;
+
   font-size: 14px;
 }
 
 .student-hero p {
   margin: 0;
 
-  color: #806d5b;
+  color: #a98a9e;
 
   font-size: 9px;
 
@@ -186,20 +208,36 @@
   padding: 11px;
 
   border: 1px solid
-    rgba(224, 181, 106, 0.10);
+    rgba(218, 112, 170, 0.11);
 
   border-radius: 13px;
 
-  background: #1b120b;
+  background: #241020;
 
-  color: #fff8ed;
+  color: #fff7fc;
 
   text-align: left;
 
   cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.15s ease;
+}
+
+.student-ai-card:hover {
+  background: #30142a;
+
+  border-color:
+    rgba(233, 166, 208, 0.24);
+
+  transform: translateY(-1px);
 }
 
 .student-ai-card-icon {
+  color: #e9a6d0;
+
   font-size: 17px;
 }
 
@@ -214,13 +252,15 @@
 }
 
 .student-ai-card strong {
+  color: #fff7fc;
+
   font-size: 9px;
 }
 
 .student-ai-card small {
   overflow: hidden;
 
-  color: #806d5b;
+  color: #a98a9e;
 
   font-size: 7px;
 
@@ -232,7 +272,7 @@
 .student-ai-card b {
   margin-left: auto;
 
-  color: #e0b56a;
+  color: #e9a6d0;
 
   font-size: 12px;
 }
@@ -277,9 +317,14 @@
 
   background: transparent;
 
-  color: #806d5b;
+  color: #a98a9e;
 
   cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
 }
 
 .student-section-button span {
@@ -292,12 +337,12 @@
 
 .student-section-button.active {
   border-color:
-    rgba(224, 181, 106, 0.14);
+    rgba(233, 166, 208, 0.22);
 
   background:
-    rgba(224, 181, 106, 0.08);
+    rgba(218, 112, 170, 0.10);
 
-  color: #e0b56a;
+  color: #e9a6d0;
 }
 
 
@@ -324,13 +369,15 @@
 .student-section-header h2 {
   margin: 0 0 4px;
 
+  color: #fff7fc;
+
   font-size: 13px;
 }
 
 .student-section-header p {
   margin: 0;
 
-  color: #806d5b;
+  color: #a98a9e;
 
   font-size: 8px;
 }
@@ -344,15 +391,31 @@
 
   border-radius: 9px;
 
-  background: #e0b56a;
+  background:
+    linear-gradient(
+      135deg,
+      #e9a6d0,
+      #c85a9e
+    );
 
-  color: #24170e;
+  color: #351127;
 
   font-size: 8px;
 
   font-weight: 800;
 
   cursor: pointer;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.create-room-button:hover {
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 6px 18px rgba(200, 90, 158, 0.20);
 }
 
 
@@ -380,11 +443,22 @@
   padding: 11px;
 
   border: 1px solid
-    rgba(224, 181, 106, 0.08);
+    rgba(218, 112, 170, 0.09);
 
   border-radius: 13px;
 
-  background: #1b120b;
+  background: #241020;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.student-room-card:hover {
+  background: #30142a;
+
+  border-color:
+    rgba(233, 166, 208, 0.18);
 }
 
 .room-avatar {
@@ -403,15 +477,18 @@
   background:
     linear-gradient(
       135deg,
-      #c58a3a,
-      #8a5a20
+      #c85a9e,
+      #5e2046
     );
 
-  color: #fff8ed;
+  color: #fff7fc;
 
   font-size: 13px;
 
   font-weight: 800;
+
+  box-shadow:
+    0 5px 15px rgba(94, 32, 70, 0.28);
 }
 
 .room-information {
@@ -425,6 +502,8 @@
 
   margin: 0 0 3px;
 
+  color: #fff7fc;
+
   font-size: 10px;
 
   white-space: nowrap;
@@ -435,13 +514,13 @@
 .room-information p {
   margin: 0 0 4px;
 
-  color: #a8896b;
+  color: #c99ab8;
 
   font-size: 8px;
 }
 
 .room-information small {
-  color: #756657;
+  color: #8f7185;
 
   font-size: 7px;
 }
@@ -468,16 +547,20 @@
   flex-shrink: 0;
 
   border: 1px solid
-    rgba(224, 181, 106, 0.15);
+    rgba(233, 166, 208, 0.18);
 
   border-radius: 9px;
 
   background:
-    rgba(224, 181, 106, 0.08);
+    rgba(218, 112, 170, 0.08);
 
-  color: #e0b56a;
+  color: #e9a6d0;
 
   cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
 }
 
 .room-invite-button {
@@ -502,7 +585,10 @@
 .room-invite-button:hover,
 .room-link-button:hover {
   background:
-    rgba(224, 181, 106, 0.16);
+    rgba(218, 112, 170, 0.16);
+
+  border-color:
+    rgba(233, 166, 208, 0.28);
 }
 
 
@@ -514,21 +600,28 @@
   padding: 45px 20px;
 
   border: 1px dashed
-    rgba(224, 181, 106, 0.10);
+    rgba(218, 112, 170, 0.16);
 
   border-radius: 15px;
 
   text-align: center;
+
+  background:
+    rgba(218, 112, 170, 0.025);
 }
 
 .student-empty-state > div {
   margin-bottom: 10px;
+
+  color: #e9a6d0;
 
   font-size: 30px;
 }
 
 .student-empty-state h3 {
   margin: 0 0 6px;
+
+  color: #fff7fc;
 
   font-size: 11px;
 }
@@ -538,7 +631,7 @@
 
   margin: auto;
 
-  color: #756657;
+  color: #8f7185;
 
   font-size: 8px;
 
@@ -572,17 +665,28 @@
   gap: 7px;
 
   border: 1px solid
-    rgba(224, 181, 106, 0.10);
+    rgba(218, 112, 170, 0.10);
 
   border-radius: 11px;
 
-  background: #1b120b;
+  background: #241020;
 
-  color: #e0b56a;
+  color: #e9a6d0;
 
   font-size: 9px;
 
   cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.student-file-actions button:hover {
+  background: #30142a;
+
+  border-color:
+    rgba(233, 166, 208, 0.22);
 }
 
 
@@ -594,11 +698,11 @@
   padding: 35px 20px;
 
   border: 1px solid
-    rgba(224, 181, 106, 0.10);
+    rgba(218, 112, 170, 0.10);
 
   border-radius: 16px;
 
-  background: #1b120b;
+  background: #241020;
 
   text-align: center;
 }
@@ -606,11 +710,15 @@
 .student-ai-panel-icon {
   margin-bottom: 10px;
 
+  color: #e9a6d0;
+
   font-size: 35px;
 }
 
 .student-ai-panel h2 {
   margin: 0 0 8px;
+
+  color: #fff7fc;
 
   font-size: 15px;
 }
@@ -620,7 +728,7 @@
 
   margin: 0 auto 18px;
 
-  color: #806d5b;
+  color: #a98a9e;
 
   font-size: 9px;
 
@@ -637,9 +745,14 @@
 
   border-radius: 9px;
 
-  background: #e0b56a;
+  background:
+    linear-gradient(
+      135deg,
+      #e9a6d0,
+      #c85a9e
+    );
 
-  color: #24170e;
+  color: #351127;
 
   font-size: 8px;
 
@@ -660,12 +773,12 @@
 
 .quiz-actions button:first-child {
   border: 1px solid
-    rgba(224, 181, 106, 0.15);
+    rgba(233, 166, 208, 0.18);
 
   background:
-    rgba(224, 181, 106, 0.08);
+    rgba(218, 112, 170, 0.08);
 
-  color: #e0b56a;
+  color: #e9a6d0;
 }
 
 
@@ -691,7 +804,7 @@
   box-sizing: border-box;
 
   background:
-    rgba(0, 0, 0, 0.72);
+    rgba(10, 4, 9, 0.78);
 }
 
 .student-modal {
@@ -710,13 +823,16 @@
   padding: 24px 18px;
 
   border: 1px solid
-    rgba(224, 181, 106, 0.12);
+    rgba(233, 166, 208, 0.15);
 
   border-radius: 18px;
 
-  background: #160d08;
+  background: #1b0e18;
 
   text-align: center;
+
+  box-shadow:
+    0 20px 55px rgba(0, 0, 0, 0.45);
 }
 
 .student-modal-close {
@@ -733,9 +849,9 @@
 
   border-radius: 50%;
 
-  background: #25170e;
+  background: #32152b;
 
-  color: #a8896b;
+  color: #c99ab8;
 
   font-size: 17px;
 
@@ -756,7 +872,9 @@
   border-radius: 14px;
 
   background:
-    rgba(224, 181, 106, 0.10);
+    rgba(218, 112, 170, 0.11);
+
+  color: #e9a6d0;
 
   font-size: 22px;
 }
@@ -764,13 +882,15 @@
 .student-modal h2 {
   margin: 0 0 7px;
 
+  color: #fff7fc;
+
   font-size: 15px;
 }
 
 .student-modal > p {
   margin: 0 0 14px;
 
-  color: #806d5b;
+  color: #a98a9e;
 
   font-size: 9px;
 
@@ -789,25 +909,29 @@
   padding: 0 12px;
 
   border: 1px solid
-    rgba(224, 181, 106, 0.12);
+    rgba(218, 112, 170, 0.13);
 
   border-radius: 10px;
 
   outline: none;
 
-  background: #1b120b;
+  background: #241020;
 
-  color: #fff8ed;
+  color: #fff7fc;
 
   font-size: 9px;
 }
 
 .student-modal input:focus {
-  border-color: #e0b56a;
+  border-color: #e9a6d0;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(218, 112, 170, 0.08);
 }
 
 .student-modal input::placeholder {
-  color: #635447;
+  color: #72566a;
 }
 
 .create-room-submit {
@@ -819,9 +943,14 @@
 
   border-radius: 10px;
 
-  background: #e0b56a;
+  background:
+    linear-gradient(
+      135deg,
+      #e9a6d0,
+      #c85a9e
+    );
 
-  color: #24170e;
+  color: #351127;
 
   font-size: 9px;
 
@@ -844,7 +973,7 @@
 
   margin-bottom: 15px;
 
-  color: #e0b56a;
+  color: #e9a6d0;
 
   font-size: 10px;
 }
@@ -870,14 +999,16 @@
   padding: 0 12px;
 
   border: 1px solid
-    rgba(224, 181, 106, 0.10);
+    rgba(218, 112, 170, 0.11);
 
   border-radius: 11px;
 
-  background: #1b120b;
+  background: #241020;
 }
 
 .student-contact-search span {
+  color: #e9a6d0;
+
   font-size: 13px;
 }
 
@@ -896,7 +1027,7 @@
 
   background: transparent;
 
-  color: #fff8ed;
+  color: #fff7fc;
 
   font-size: 10px;
 }
@@ -941,25 +1072,29 @@
 
   border-radius: 11px;
 
-  background: #1b120b;
+  background: #241020;
 
-  color: #fff8ed;
+  color: #fff7fc;
 
   text-align: left;
 
   cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
 }
 
 .student-contact:hover {
-  background: #2a1b10;
+  background: #30142a;
 }
 
 .student-contact.selected {
   border-color:
-    rgba(224, 181, 106, 0.20);
+    rgba(233, 166, 208, 0.22);
 
   background:
-    rgba(224, 181, 106, 0.08);
+    rgba(218, 112, 170, 0.09);
 }
 
 .student-contact-avatar {
@@ -978,11 +1113,11 @@
   background:
     linear-gradient(
       135deg,
-      #c58a3a,
-      #8a5a20
+      #c85a9e,
+      #5e2046
     );
 
-  color: #fff8ed;
+  color: #fff7fc;
 
   font-size: 12px;
 
@@ -1000,11 +1135,13 @@
 }
 
 .student-contact-info strong {
+  color: #fff7fc;
+
   font-size: 10px;
 }
 
 .student-contact-info small {
-  color: #756657;
+  color: #8f7185;
 
   font-size: 8px;
 }
@@ -1021,11 +1158,11 @@
   margin-left: auto;
 
   border: 1px solid
-    rgba(224, 181, 106, 0.18);
+    rgba(233, 166, 208, 0.20);
 
   border-radius: 50%;
 
-  color: #24170e;
+  color: #351127;
 
   font-size: 11px;
 
@@ -1033,15 +1170,20 @@
 }
 
 .student-check.selected {
-  border-color: #e0b56a;
+  border-color: #e9a6d0;
 
-  background: #e0b56a;
+  background:
+    linear-gradient(
+      135deg,
+      #e9a6d0,
+      #c85a9e
+    );
 }
 
 .selected-students-count {
   margin: 5px 0 8px;
 
-  color: #e0b56a;
+  color: #e9a6d0;
 
   text-align: center;
 
@@ -1077,11 +1219,11 @@
   padding: 13px;
 
   border: 1px solid
-    rgba(224, 181, 106, 0.12);
+    rgba(218, 112, 170, 0.12);
 
   border-radius: 13px;
 
-  background: #1b120b;
+  background: #241020;
 
   text-align: left;
 }
@@ -1100,7 +1242,9 @@
   border-radius: 12px;
 
   background:
-    rgba(224, 181, 106, 0.12);
+    rgba(218, 112, 170, 0.12);
+
+  color: #e9a6d0;
 
   font-size: 20px;
 }
@@ -1114,13 +1258,13 @@
 }
 
 .invite-preview strong {
-  color: #fff8ed;
+  color: #fff7fc;
 
   font-size: 10px;
 }
 
 .invite-preview span {
-  color: #756657;
+  color: #8f7185;
 
   font-size: 8px;
 }
@@ -1140,11 +1284,11 @@
   padding: 12px;
 
   border: 1px solid
-    rgba(224, 181, 106, 0.15);
+    rgba(218, 112, 170, 0.15);
 
   border-radius: 10px;
 
-  background: #120c07;
+  background: #160b12;
 
   overflow: hidden;
 
@@ -1156,7 +1300,7 @@
 
   overflow: hidden;
 
-  color: #e0b56a;
+  color: #e9a6d0;
 
   font-size: 8px;
 
@@ -1196,25 +1340,30 @@
 
 .invite-copy-button {
   border: 1px solid
-    rgba(224, 181, 106, 0.18);
+    rgba(233, 166, 208, 0.18);
 
   background:
-    rgba(224, 181, 106, 0.08);
+    rgba(218, 112, 170, 0.08);
 
-  color: #e0b56a;
+  color: #e9a6d0;
 }
 
 .invite-share-button {
   border: 0;
 
-  background: #e0b56a;
+  background:
+    linear-gradient(
+      135deg,
+      #e9a6d0,
+      #c85a9e
+    );
 
-  color: #24170e;
+  color: #351127;
 }
 
 .invite-copy-button:hover {
   background:
-    rgba(224, 181, 106, 0.15);
+    rgba(218, 112, 170, 0.15);
 }
 
 .invite-share-button:hover {
@@ -1224,7 +1373,7 @@
 .invite-link-note {
   margin-top: 13px !important;
 
-  color: #756657 !important;
+  color: #8f7185 !important;
 
   font-size: 8px !important;
 

@@ -1,3 +1,7 @@
+/* =========================================
+   ZENVAZAPP REGISTER
+========================================= */
+
 import { useState } from "react";
 
 function Register({ onBack }) {
@@ -108,23 +112,31 @@ function Register({ onBack }) {
         return;
       }
 
+      /*
+       * =========================================
+       * REGISTRATION SUCCESS
+       * =========================================
+       *
+       * The account has now been created.
+       *
+       * Instead of making the user click "Sign in",
+       * automatically return to the Login page.
+       *
+       * OTP will be handled from the Login flow later.
+       */
+
       setSuccessMessage(
-        "Account created successfully!"
+        "Account created successfully! Taking you to login..."
       );
 
       console.log("Registered user:", data.user);
 
-      setFormData({
-        fullName: "",
-        username: "",
-        email: "",
-        phone: "",
-        password: "",
-        confirmPassword: "",
-      });
+      // Give the success message a moment to appear,
+      // then automatically return to Login.
+      setTimeout(() => {
+        onBack();
+      }, 1200);
 
-      setAgreedToTerms(false);
-      setUsernameStatus("idle");
     } catch (error) {
       console.error("Registration error:", error);
 

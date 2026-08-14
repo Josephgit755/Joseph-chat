@@ -1,5 +1,6 @@
 /* =========================================
    ZENVA BREATH
+   PURPLE / MAGENTA THEME
 ========================================= */
 
 .zenva-breath-page {
@@ -13,12 +14,17 @@
   background:
     radial-gradient(
       circle at 50% 25%,
-      rgba(197, 138, 58, 0.14),
+      rgba(217, 91, 183, 0.18),
       transparent 35%
     ),
-    #1b120b;
+    radial-gradient(
+      circle at bottom right,
+      rgba(143, 60, 120, 0.16),
+      transparent 40%
+    ),
+    #5e2046;
 
-  color: #fff8ed;
+  color: #ffffff;
 }
 
 
@@ -36,7 +42,7 @@
   padding: 18px 20px;
 
   border-bottom: 1px solid
-    rgba(224, 181, 106, 0.10);
+    rgba(255, 255, 255, 0.10);
 }
 
 .zenva-back-button {
@@ -49,17 +55,35 @@
   justify-content: center;
 
   border: 1px solid
-    rgba(224, 181, 106, 0.12);
+    rgba(255, 255, 255, 0.14);
 
   border-radius: 12px;
 
-  background: #24170e;
+  background:
+    rgba(255, 255, 255, 0.08);
 
-  color: #e0b56a;
+  color: #ffffff;
 
   font-size: 20px;
 
   cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.15s ease;
+}
+
+.zenva-back-button:hover {
+  background:
+    rgba(236, 116, 207, 0.12);
+
+  border-color:
+    rgba(236, 116, 207, 0.30);
+}
+
+.zenva-back-button:active {
+  transform: scale(0.96);
 }
 
 .zenva-breath-header h1 {
@@ -71,7 +95,8 @@
 .zenva-breath-header p {
   margin: 4px 0 0;
 
-  color: #756657;
+  color:
+    rgba(255, 255, 255, 0.68);
 
   font-size: 11px;
 }
@@ -105,13 +130,25 @@
   border-radius: 18px;
 
   background:
-    rgba(224, 181, 106, 0.12);
+    linear-gradient(
+      135deg,
+      #d95bb7,
+      #8f3c78
+    );
+
+  color: #ffffff;
 
   font-size: 28px;
+
+  box-shadow:
+    0 10px 28px
+    rgba(217, 91, 183, 0.18);
 }
 
 .zenva-breath-intro h2 {
   margin: 0;
+
+  color: #ffffff;
 
   font-size: 22px;
 }
@@ -121,7 +158,8 @@
 
   margin: 9px auto 0;
 
-  color: #958372;
+  color:
+    rgba(255, 255, 255, 0.68);
 
   font-size: 12px;
 
@@ -159,25 +197,30 @@
   background:
     radial-gradient(
       circle,
-      rgba(224, 181, 106, 0.28),
-      rgba(197, 138, 58, 0.08) 60%,
+      rgba(236, 116, 207, 0.30),
+      rgba(217, 91, 183, 0.12) 60%,
       transparent 70%
     );
 
   border: 1px solid
-    rgba(224, 181, 106, 0.25);
+    rgba(236, 116, 207, 0.30);
 
   transition:
     transform 4s ease,
     box-shadow 4s ease;
 }
 
+
+/* =========================================
+   BREATHING PHASES
+========================================= */
+
 .breathing-circle.breathing-in {
   transform: scale(1.16);
 
   box-shadow:
     0 0 60px
-    rgba(224, 181, 106, 0.18);
+    rgba(236, 116, 207, 0.24);
 }
 
 .breathing-circle.breathing-hold {
@@ -185,7 +228,7 @@
 
   box-shadow:
     0 0 45px
-    rgba(224, 181, 106, 0.14);
+    rgba(217, 91, 183, 0.20);
 }
 
 .breathing-circle.breathing-out {
@@ -193,8 +236,13 @@
 
   box-shadow:
     0 0 25px
-    rgba(224, 181, 106, 0.08);
+    rgba(217, 91, 183, 0.12);
 }
+
+
+/* =========================================
+   INNER CIRCLE
+========================================= */
 
 .breathing-circle-inner {
   width: 170px;
@@ -209,21 +257,29 @@
 
   border-radius: 50%;
 
-  background: #24170e;
+  background:
+    rgba(255, 255, 255, 0.075);
 
   border: 1px solid
-    rgba(224, 181, 106, 0.14);
+    rgba(255, 255, 255, 0.14);
+
+  box-shadow:
+    inset 0 0 30px
+    rgba(60, 10, 45, 0.18);
 }
 
 .breathing-phase {
-  color: #e0b56a;
+  color: #f19bd9;
 
   font-size: 14px;
+
   font-weight: 700;
 }
 
 .breathing-circle-inner strong {
   margin-top: 4px;
+
+  color: #ffffff;
 
   font-size: 52px;
 
@@ -233,13 +289,16 @@
 .breathing-circle-inner small {
   margin-top: 5px;
 
-  color: #756657;
+  color:
+    rgba(255, 255, 255, 0.55);
 
   font-size: 10px;
 }
 
 .breathing-area h3 {
   margin: 0;
+
+  color: #ffffff;
 
   font-size: 15px;
 
@@ -249,7 +308,8 @@
 .breathing-cycle {
   margin: 7px 0 0;
 
-  color: #756657;
+  color:
+    rgba(255, 255, 255, 0.55);
 
   font-size: 10px;
 
@@ -285,27 +345,42 @@
   background:
     linear-gradient(
       135deg,
-      #e0b56a,
-      #c58a3a
+      #e86bc7,
+      #c64ca5
     );
 
-  color: #24170e;
+  color: #ffffff;
 
   font-weight: 800;
 
   cursor: pointer;
 
+  box-shadow:
+    0 10px 25px
+    rgba(217, 91, 183, 0.18);
+
   transition:
     transform 0.15s ease,
-    opacity 0.15s ease;
+    opacity 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .breath-primary-button:hover {
   opacity: 0.92;
+
+  box-shadow:
+    0 14px 30px
+    rgba(217, 91, 183, 0.25);
 }
 
 .breath-primary-button:active {
   transform: scale(0.98);
+}
+
+.breath-primary-button:disabled {
+  opacity: 0.35;
+
+  cursor: not-allowed;
 }
 
 .breath-reset-button {
@@ -313,11 +388,19 @@
 
   background: transparent;
 
-  color: #958372;
+  color:
+    rgba(255, 255, 255, 0.60);
 
   font-size: 12px;
 
   cursor: pointer;
+
+  transition:
+    color 0.18s ease;
+}
+
+.breath-reset-button:hover {
+  color: #f19bd9;
 }
 
 
@@ -338,13 +421,14 @@
 
   margin-bottom: 7px;
 
-  color: #756657;
+  color:
+    rgba(255, 255, 255, 0.58);
 
   font-size: 11px;
 }
 
 .breath-progress-header strong {
-  color: #e0b56a;
+  color: #f19bd9;
 }
 
 .breath-progress-bar {
@@ -354,7 +438,8 @@
 
   border-radius: 10px;
 
-  background: #302014;
+  background:
+    rgba(255, 255, 255, 0.12);
 }
 
 .breath-progress-fill {
@@ -365,9 +450,14 @@
   background:
     linear-gradient(
       90deg,
-      #8a5a20,
-      #e0b56a
+      #8f3c78,
+      #d95bb7,
+      #ed78ce
     );
+
+  box-shadow:
+    0 0 12px
+    rgba(237, 120, 206, 0.25);
 
   transition: width 0.4s ease;
 }
@@ -390,23 +480,28 @@
 
   padding: 14px;
 
+  box-sizing: border-box;
+
   border: 1px solid
-    rgba(224, 181, 106, 0.08);
+    rgba(255, 255, 255, 0.10);
 
   border-radius: 14px;
 
   background:
-    rgba(197, 138, 58, 0.05);
+    rgba(217, 91, 183, 0.07);
 }
 
 .breath-message span {
+  color: #f19bd9;
+
   font-size: 16px;
 }
 
 .breath-message p {
   margin: 0;
 
-  color: #756657;
+  color:
+    rgba(255, 255, 255, 0.62);
 
   font-size: 11px;
 
@@ -436,5 +531,10 @@
 
   .breathing-circle-inner strong {
     font-size: 46px;
+  }
+
+  .breath-controls {
+    padding-left: 18px;
+    padding-right: 18px;
   }
 }

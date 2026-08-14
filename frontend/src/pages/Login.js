@@ -1,23 +1,39 @@
-
 import { useState } from "react";
 import OTPVerification from "./OTPVerification";
 import Register from "./Register";
 
-function Login({ onAuthenticated }) {
-  const [method, setMethod] = useState("phone");
-  const [showPassword, setShowPassword] = useState(false);
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
+function Login({
+  onAuthenticated,
+}) {
+  const [method, setMethod] =
+    useState("phone");
 
-  const [showOTP, setShowOTP] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
+  const [showPassword, setShowPassword] =
+    useState(false);
 
-  const [identifier, setIdentifier] = useState("");
-  const [password, setPassword] = useState("");
+  const [agreedToTerms, setAgreedToTerms] =
+    useState(false);
 
-  const [loginError, setLoginError] = useState("");
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [showOTP, setShowOTP] =
+    useState(false);
 
-  const [loggedInUser, setLoggedInUser] = useState(null);
+  const [showRegister, setShowRegister] =
+    useState(false);
+
+  const [identifier, setIdentifier] =
+    useState("");
+
+  const [password, setPassword] =
+    useState("");
+
+  const [loginError, setLoginError] =
+    useState("");
+
+  const [isLoggingIn, setIsLoggingIn] =
+    useState(false);
+
+  const [loggedInUser, setLoggedInUser] =
+    useState(null);
 
   const API_URL =
     process.env.REACT_APP_API_URL ||
@@ -27,97 +43,121 @@ function Login({ onAuthenticated }) {
   // LOGIN
   // ==========================================
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleSubmit =
+    async (event) => {
+      event.preventDefault();
 
-    setLoginError("");
+      setLoginError("");
 
-    if (!agreedToTerms) {
-      setLoginError(
-        "Please agree to the Terms of Service and Privacy Policy."
-      );
-      return;
-    }
-
-    if (!identifier.trim()) {
-      setLoginError(
-        method === "phone"
-          ? "Please enter your phone number."
-          : "Please enter your email address."
-      );
-      return;
-    }
-
-    if (!password) {
-      setLoginError("Please enter your password.");
-      return;
-    }
-
-    setIsLoggingIn(true);
-
-    try {
-      const response = await fetch(
-        `${API_URL}/api/auth/login`,
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type": "application/json",
-          },
-
-          body: JSON.stringify({
-            identifier: identifier.trim(),
-            password,
-          }),
-        }
-      );
-
-      let data;
-
-      try {
-        data = await response.json();
-      } catch {
-        throw new Error("Invalid server response.");
-      }
-
-      if (!response.ok || !data.success) {
+      if (!agreedToTerms) {
         setLoginError(
-          data.message || "Login failed."
+          "Please agree to the Terms of Service and Privacy Policy."
         );
 
-        setIsLoggingIn(false);
         return;
       }
 
-      // ======================================
-      // IMPORTANT SECURITY FLOW
-      // ======================================
-      // DO NOT save JWT here.
-      //
-      // At this stage:
-      // 1. Email/phone is verified
-      // 2. Password is verified
-      // 3. OTP has been sent to Gmail
-      // 4. User must still enter OTP
-      //
-      // JWT is created only after OTP verification.
+      if (!identifier.trim()) {
+        setLoginError(
+          method === "phone"
+            ? "Please enter your phone number."
+            : "Please enter your email address."
+        );
 
-      setLoggedInUser(data.user);
+        return;
+      }
 
-      setIsLoggingIn(false);
+      if (!password) {
+        setLoginError(
+          "Please enter your password."
+        );
 
-      setShowOTP(true);
-    } catch (error) {
-      console.error("Login error:", error);
+        return;
+      }
 
-      setLoginError(
-        error.message ||
-          "Unable to connect to ZenvaZapp server."
-      );
+      setIsLoggingIn(true);
 
-      setIsLoggingIn(false);
-    }
-  };
+      try {
+        const response =
+          await fetch(
+            `${API_URL}/api/auth/login`,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body:
+                JSON.stringify({
+                  identifier:
+                    identifier.trim(),
+
+                  password,
+                }),
+            }
+          );
+
+        let data;
+
+        try {
+          data =
+            await response.json();
+        } catch {
+          throw new Error(
+            "Invalid server response."
+          );
+        }
+
+        if (
+          !response.ok ||
+          !data.success
+        ) {
+          setLoginError(
+            data.message ||
+              "Login failed."
+          );
+
+          setIsLoggingIn(false);
+
+          return;
+        }
+
+        // ======================================
+        // PASSWORD CORRECT
+        // OTP REQUIRED
+        // ======================================
+
+        if (
+          data.requiresOTP
+        ) {
+          setLoggedInUser(
+            data.user
+          );
+
+          setShowOTP(true);
+        } else {
+          setLoginError(
+            "Login verification could not be started."
+          );
+        }
+
+        setIsLoggingIn(false);
+      } catch (error) {
+        console.error(
+          "Login error:",
+          error
+        );
+
+        setLoginError(
+          error.message ||
+            "Unable to connect to ZenvaZapp server."
+        );
+
+        setIsLoggingIn(false);
+      }
+    };
 
   // ==========================================
   // REGISTER
@@ -126,28 +166,42 @@ function Login({ onAuthenticated }) {
   if (showRegister) {
     return (
       <Register
-        onBack={() => setShowRegister(false)}
+        onBack={() =>
+          setShowRegister(
+            false
+          )
+        }
       />
     );
   }
 
   // ==========================================
-  // OTP VERIFICATION
+  // OTP
   // ==========================================
 
   if (showOTP) {
     return (
       <OTPVerification
-        method={method}
-        destination={loggedInUser?.email || identifier}
-        user={loggedInUser}
-        onBack={() => {
-          setShowOTP(false);
-          setLoginError("");
-        }}
-        onVerified={(verifiedUser) => {
-          if (onAuthenticated) {
-            onAuthenticated(verifiedUser);
+        destination={
+          loggedInUser?.email
+        }
+        user={
+          loggedInUser
+        }
+        onBack={() =>
+          setShowOTP(
+            false
+          )
+        }
+        onVerified={(
+          verifiedUser
+        ) => {
+          if (
+            onAuthenticated
+          ) {
+            onAuthenticated(
+              verifiedUser
+            );
           }
         }}
       />
@@ -162,8 +216,8 @@ function Login({ onAuthenticated }) {
     <main className="auth-page">
       <section className="auth-card">
 
-        {/* HEADER */}
         <div className="auth-header">
+
           <div className="auth-logo">
             Zz
           </div>
@@ -173,17 +227,19 @@ function Login({ onAuthenticated }) {
           </h1>
 
           <p>
-            Sign in to continue to ZenvaZapp
+            Sign in to continue
+            to ZenvaZapp
           </p>
+
         </div>
 
-        {/* PHONE / EMAIL */}
         <div className="auth-methods">
 
           <button
             type="button"
             className={
-              method === "phone"
+              method ===
+              "phone"
                 ? "active"
                 : ""
             }
@@ -199,7 +255,8 @@ function Login({ onAuthenticated }) {
           <button
             type="button"
             className={
-              method === "email"
+              method ===
+              "email"
                 ? "active"
                 : ""
             }
@@ -214,17 +271,18 @@ function Login({ onAuthenticated }) {
 
         </div>
 
-        {/* LOGIN FORM */}
         <form
           className="auth-form"
-          onSubmit={handleSubmit}
+          onSubmit={
+            handleSubmit
+          }
         >
 
-          {/* IDENTIFIER */}
           <div className="form-group">
 
             <label htmlFor="identifier">
-              {method === "phone"
+              {method ===
+              "phone"
                 ? "Phone number"
                 : "Email address"}
             </label>
@@ -232,32 +290,42 @@ function Login({ onAuthenticated }) {
             <input
               id="identifier"
               type={
-                method === "phone"
+                method ===
+                "phone"
                   ? "tel"
                   : "email"
               }
               placeholder={
-                method === "phone"
+                method ===
+                "phone"
                   ? "Enter your phone number"
                   : "Enter your email address"
               }
               autoComplete={
-                method === "phone"
+                method ===
+                "phone"
                   ? "tel"
                   : "email"
               }
-              value={identifier}
-              onChange={(event) => {
+              value={
+                identifier
+              }
+              onChange={(
+                event
+              ) => {
                 setIdentifier(
-                  event.target.value
+                  event.target
+                    .value
                 );
-                setLoginError("");
+
+                setLoginError(
+                  ""
+                );
               }}
             />
 
           </div>
 
-          {/* PASSWORD */}
           <div className="form-group">
 
             <label htmlFor="password">
@@ -275,12 +343,20 @@ function Login({ onAuthenticated }) {
                 }
                 placeholder="Enter your password"
                 autoComplete="current-password"
-                value={password}
-                onChange={(event) => {
+                value={
+                  password
+                }
+                onChange={(
+                  event
+                ) => {
                   setPassword(
-                    event.target.value
+                    event.target
+                      .value
                   );
-                  setLoginError("");
+
+                  setLoginError(
+                    ""
+                  );
                 }}
               />
 
@@ -302,7 +378,6 @@ function Login({ onAuthenticated }) {
 
           </div>
 
-          {/* LOGIN ERROR */}
           {loginError && (
             <p
               className="otp-error"
@@ -312,15 +387,19 @@ function Login({ onAuthenticated }) {
             </p>
           )}
 
-          {/* TERMS */}
           <label className="terms-checkbox">
 
             <input
               type="checkbox"
-              checked={agreedToTerms}
-              onChange={(event) =>
+              checked={
+                agreedToTerms
+              }
+              onChange={(
+                event
+              ) =>
                 setAgreedToTerms(
-                  event.target.checked
+                  event.target
+                    .checked
                 )
               }
             />
@@ -332,7 +411,9 @@ function Login({ onAuthenticated }) {
                 type="button"
                 className="inline-link"
               >
-                ZenvaZapp Terms of Service
+                ZenvaZapp
+                Terms of
+                Service
               </button>{" "}
 
               and{" "}
@@ -341,14 +422,14 @@ function Login({ onAuthenticated }) {
                 type="button"
                 className="inline-link"
               >
-                Privacy Policy
+                Privacy
+                Policy
               </button>
               .
             </span>
 
           </label>
 
-          {/* CONTINUE */}
           <button
             type="submit"
             className="primary-button"
@@ -364,7 +445,6 @@ function Login({ onAuthenticated }) {
 
         </form>
 
-        {/* FORGOT PASSWORD */}
         <button
           type="button"
           className="forgot-password"
@@ -372,14 +452,12 @@ function Login({ onAuthenticated }) {
           Forgot password?
         </button>
 
-        {/* SOCIAL DIVIDER */}
         <div className="social-divider">
           <span>
             or continue with
           </span>
         </div>
 
-        {/* SOCIAL LOGIN */}
         <div className="social-buttons">
 
           <button
@@ -390,7 +468,8 @@ function Login({ onAuthenticated }) {
               G
             </span>
 
-            Continue with Google
+            Continue with
+            Google
           </button>
 
           <button
@@ -401,23 +480,26 @@ function Login({ onAuthenticated }) {
               ●
             </span>
 
-            Continue with Apple
+            Continue with
+            Apple
           </button>
 
         </div>
 
-        {/* REGISTER */}
         <div className="register-prompt">
 
           <span>
-            Don't have an account?
+            Don't have an
+            account?
           </span>
 
           <button
             type="button"
             className="inline-link"
             onClick={() =>
-              setShowRegister(true)
+              setShowRegister(
+                true
+              )
             }
           >
             Create account

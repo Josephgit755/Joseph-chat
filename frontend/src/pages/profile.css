@@ -1,6 +1,8 @@
+
 /* =========================================
    ZENVAZAPP PROFILE SETUP
-   GOLDEN-BROWN THEME
+   PURPLE / MAGENTA THEME
+   Primary: #5E2046
 ========================================= */
 
 .profile-page {
@@ -15,20 +17,20 @@
 
   box-sizing: border-box;
 
-  color: #fff8ed;
+  color: #fff7fb;
 
   background:
     radial-gradient(
       circle at top left,
-      rgba(197, 138, 58, 0.12),
+      rgba(184, 77, 134, 0.13),
       transparent 35%
     ),
     radial-gradient(
       circle at bottom right,
-      rgba(138, 90, 32, 0.10),
+      rgba(94, 32, 70, 0.18),
       transparent 35%
     ),
-    #1b120b;
+    #160b13;
 }
 
 
@@ -50,14 +52,15 @@
     linear-gradient(
       145deg,
       rgba(255, 255, 255, 0.045),
-      rgba(197, 138, 58, 0.035)
+      rgba(184, 77, 134, 0.035)
     ),
-    #2a1b10;
+    #2a1522;
 
-  border: 1px solid rgba(224, 181, 106, 0.16);
+  border: 1px solid
+    rgba(212, 126, 170, 0.16);
 
   box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.42);
+    0 24px 70px rgba(0, 0, 0, 0.45);
 }
 
 
@@ -86,12 +89,13 @@
   background:
     linear-gradient(
       135deg,
-      #e0b56a,
-      #8a5a20
+      #d47eaa,
+      #5e2046
     );
 
   box-shadow:
-    0 10px 30px rgba(197, 138, 58, 0.18);
+    0 10px 30px
+    rgba(184, 77, 134, 0.20);
 }
 
 .logo-z-upper {
@@ -100,7 +104,7 @@
 
   line-height: 1;
 
-  color: #24170e;
+  color: #ffffff;
 }
 
 .logo-z-lower {
@@ -109,7 +113,7 @@
 
   line-height: 1;
 
-  color: #4a2d13;
+  color: #f0b2cf;
 
   margin-left: -3px;
 }
@@ -122,7 +126,7 @@
 
   font-weight: 750;
 
-  color: #fff8ed;
+  color: #fff7fb;
 }
 
 .profile-header p {
@@ -133,7 +137,7 @@
   font-size: 15px;
   line-height: 1.6;
 
-  color: #958372;
+  color: #a9879b;
 }
 
 
@@ -148,9 +152,11 @@
 
   border-radius: 12px;
 
-  background: rgba(255, 107, 95, 0.10);
+  background:
+    rgba(255, 107, 95, 0.10);
 
-  border: 1px solid rgba(255, 107, 95, 0.25);
+  border:
+    1px solid rgba(255, 107, 95, 0.25);
 
   color: #ff9389;
 
@@ -172,7 +178,7 @@
   margin-bottom: 36px;
 
   border-bottom: 1px solid
-    rgba(224, 181, 106, 0.13);
+    rgba(212, 126, 170, 0.13);
 }
 
 .profile-photo-wrapper {
@@ -188,14 +194,15 @@
   background:
     linear-gradient(
       135deg,
-      #e0b56a,
-      #8a5a20
+      #d47eaa,
+      #5e2046
     );
 
   box-sizing: border-box;
 
   box-shadow:
-    0 10px 28px rgba(197, 138, 58, 0.14);
+    0 10px 28px
+    rgba(184, 77, 134, 0.17);
 }
 
 .profile-photo {
@@ -208,7 +215,7 @@
 
   border-radius: 50%;
 
-  background: #24170e;
+  background: #25121e;
 }
 
 .photo-text h3 {
@@ -216,7 +223,7 @@
 
   font-size: 18px;
 
-  color: #fff8ed;
+  color: #fff7fb;
 }
 
 .photo-text p {
@@ -224,7 +231,7 @@
 
   font-size: 14px;
 
-  color: #958372;
+  color: #a9879b;
 }
 
 
@@ -244,11 +251,12 @@
 
 .secondary-button {
   border: 1px solid
-    rgba(224, 181, 106, 0.16);
+    rgba(212, 126, 170, 0.16);
 
-  background: rgba(255, 255, 255, 0.045);
+  background:
+    rgba(255, 255, 255, 0.045);
 
-  color: #fff8ed;
+  color: #fff7fb;
 
   padding: 10px 14px;
 
@@ -267,10 +275,11 @@
 .secondary-button:hover {
   transform: translateY(-1px);
 
-  background: rgba(197, 138, 58, 0.12);
+  background:
+    rgba(184, 77, 134, 0.12);
 
   border-color:
-    rgba(224, 181, 106, 0.32);
+    rgba(212, 126, 170, 0.32);
 }
 
 
@@ -299,13 +308,13 @@
 
   font-weight: 650;
 
-  color: #cdbfae;
+  color: #d8bdcc;
 }
 
 .profile-field small {
   font-size: 12px;
 
-  color: #756657;
+  color: #806475;
 }
 
 
@@ -321,13 +330,13 @@
   box-sizing: border-box;
 
   border: 1px solid
-    rgba(224, 181, 106, 0.15);
+    rgba(212, 126, 170, 0.15);
 
   border-radius: 13px;
 
-  background: #24170e;
+  background: #25121e;
 
-  color: #fff8ed;
+  color: #fff7fb;
 
   padding: 14px 15px;
 
@@ -361,19 +370,19 @@
 
 .profile-field input::placeholder,
 .profile-field textarea::placeholder {
-  color: #756657;
+  color: #806475;
 }
 
 .profile-field input:focus,
 .profile-field textarea:focus,
 .profile-field select:focus {
-  border-color: #c58a3a;
+  border-color: #b84d86;
 
-  background: #2d1d11;
+  background: #2b1422;
 
   box-shadow:
     0 0 0 3px
-    rgba(197, 138, 58, 0.08);
+    rgba(184, 77, 134, 0.10);
 }
 
 
@@ -382,9 +391,9 @@
 ========================================= */
 
 .profile-field select option {
-  background: #2a1b10;
+  background: #2a1522;
 
-  color: #fff8ed;
+  color: #fff7fb;
 }
 
 
@@ -403,7 +412,7 @@
 .field-heading span {
   font-size: 12px;
 
-  color: #756657;
+  color: #806475;
 }
 
 
@@ -425,11 +434,11 @@
   background:
     linear-gradient(
       135deg,
-      #e0b56a,
-      #c58a3a
+      #d47eaa,
+      #8f3768
     );
 
-  color: #24170e;
+  color: #ffffff;
 
   font-size: 15px;
 
@@ -438,7 +447,8 @@
   cursor: pointer;
 
   box-shadow:
-    0 10px 25px rgba(197, 138, 58, 0.14);
+    0 10px 25px
+    rgba(184, 77, 134, 0.16);
 
   transition:
     transform 0.18s ease,
@@ -450,7 +460,8 @@
   transform: translateY(-2px);
 
   box-shadow:
-    0 12px 30px rgba(197, 138, 58, 0.22);
+    0 12px 30px
+    rgba(184, 77, 134, 0.25);
 }
 
 .complete-profile-button:active:not(:disabled) {

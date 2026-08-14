@@ -2,6 +2,10 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
   {
+    // ==========================================
+    // ACCOUNT
+    // ==========================================
+
     fullName: {
       type: String,
       required: true,
@@ -40,9 +44,9 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
-    // ======================================
+    // ==========================================
     // PROFILE
-    // ======================================
+    // ==========================================
 
     profileCompleted: {
       type: Boolean,
@@ -80,9 +84,9 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
-    // ======================================
+    // ==========================================
     // LOGIN OTP
-    // ======================================
+    // ==========================================
 
     loginOTP: {
       type: String,
@@ -94,17 +98,29 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
+    otpAttempts: {
+      type: Number,
+      default: 0,
+    },
+
     lastOTPVerifiedAt: {
       type: Date,
       default: null,
     },
+
+    lastOTPRequestedAt: {
+      type: Date,
+      default: null,
+    },
   },
+
   {
     timestamps: true,
   }
 );
 
-module.exports = mongoose.model(
-  "User",
-  userSchema
-);
+module.exports =
+  mongoose.model(
+    "User",
+    userSchema
+  );

@@ -1,25 +1,26 @@
 /* =========================================
-   ZENVAZAPP GOLDEN-BROWN THEME
+   ZENVAZAPP PURPLE / MAGENTA THEME
 ========================================= */
 
 :root {
-  --zenva-bg: #1b120b;
-  --zenva-bg-secondary: #24170e;
-  --zenva-card: #2a1b10;
-  --zenva-card-light: #332115;
+  --zenva-bg: #3f1630;
+  --zenva-bg-secondary: #4d1b3b;
+  --zenva-card: #552040;
+  --zenva-card-light: #65264d;
 
-  --zenva-gold: #c58a3a;
-  --zenva-gold-light: #e0b56a;
-  --zenva-gold-dark: #8a5a20;
+  --zenva-purple: #c64ca5;
+  --zenva-purple-light: #e86bc7;
+  --zenva-purple-bright: #f19bd9;
+  --zenva-purple-dark: #8f3c78;
 
-  --zenva-text: #fff8ed;
-  --zenva-text-secondary: #cdbfae;
-  --zenva-text-muted: #958372;
+  --zenva-text: #ffffff;
+  --zenva-text-secondary: #ead4e3;
+  --zenva-text-muted: #c09caf;
 
-  --zenva-border: rgba(224, 181, 106, 0.16);
-  --zenva-border-strong: rgba(224, 181, 106, 0.30);
+  --zenva-border: rgba(236, 116, 207, 0.16);
+  --zenva-border-strong: rgba(236, 116, 207, 0.30);
 
-  --zenva-danger: #ff6b5f;
+  --zenva-danger: #ff6b7a;
 }
 
 
@@ -38,12 +39,12 @@
   background:
     radial-gradient(
       circle at top left,
-      rgba(197, 138, 58, 0.13),
+      rgba(217, 91, 183, 0.18),
       transparent 34%
     ),
     radial-gradient(
       circle at bottom right,
-      rgba(138, 90, 32, 0.12),
+      rgba(143, 60, 120, 0.16),
       transparent 35%
     ),
     var(--zenva-bg);
@@ -74,14 +75,14 @@
     linear-gradient(
       145deg,
       rgba(255, 255, 255, 0.045),
-      rgba(197, 138, 58, 0.035)
+      rgba(217, 91, 183, 0.035)
     ),
     var(--zenva-card);
 
   border: 1px solid var(--zenva-border);
 
   box-shadow:
-    0 28px 70px rgba(0, 0, 0, 0.42);
+    0 28px 70px rgba(25, 5, 20, 0.42);
 }
 
 
@@ -110,17 +111,17 @@
   background:
     linear-gradient(
       135deg,
-      var(--zenva-gold-light),
-      var(--zenva-gold-dark)
+      var(--zenva-purple-light),
+      var(--zenva-purple-dark)
     );
 
-  color: #24170e;
+  color: #ffffff;
 
   font-size: 34px;
   font-weight: 800;
 
   box-shadow:
-    0 12px 30px rgba(197, 138, 58, 0.18);
+    0 12px 30px rgba(217, 91, 183, 0.20);
 }
 
 .auth-header h1 {
@@ -144,6 +145,7 @@
 
 .auth-methods {
   display: grid;
+
   grid-template-columns: 1fr 1fr;
 
   padding: 4px;
@@ -159,6 +161,7 @@
 
 .auth-methods button {
   border: 0;
+
   border-radius: 11px;
 
   padding: 12px;
@@ -178,14 +181,14 @@
   background:
     linear-gradient(
       135deg,
-      var(--zenva-gold-light),
-      var(--zenva-gold)
+      var(--zenva-purple-light),
+      var(--zenva-purple)
     );
 
-  color: #24170e;
+  color: #ffffff;
 
   box-shadow:
-    0 5px 15px rgba(197, 138, 58, 0.16);
+    0 5px 15px rgba(217, 91, 183, 0.18);
 }
 
 
@@ -195,6 +198,7 @@
 
 .auth-form {
   display: flex;
+
   flex-direction: column;
 
   gap: 18px;
@@ -202,6 +206,7 @@
 
 .form-group {
   display: flex;
+
   flex-direction: column;
 
   gap: 8px;
@@ -211,6 +216,7 @@
   color: var(--zenva-text-secondary);
 
   font-size: 14px;
+
   font-weight: 600;
 }
 
@@ -238,16 +244,16 @@
 }
 
 .form-group input::placeholder {
-  color: #756657;
+  color: #a77d9a;
 }
 
 .form-group input:focus {
-  border-color: var(--zenva-gold);
+  border-color: var(--zenva-purple);
 
   background: var(--zenva-card-light);
 
   box-shadow:
-    0 0 0 3px rgba(197, 138, 58, 0.08);
+    0 0 0 3px rgba(217, 91, 183, 0.10);
 }
 
 
@@ -275,9 +281,10 @@
 
   background: transparent;
 
-  color: var(--zenva-gold-light);
+  color: var(--zenva-purple-bright);
 
   font-size: 13px;
+
   font-weight: 600;
 
   cursor: pointer;
@@ -290,6 +297,7 @@
 
 .terms-checkbox {
   display: flex;
+
   align-items: flex-start;
 
   gap: 10px;
@@ -297,6 +305,7 @@
   color: var(--zenva-text-muted);
 
   font-size: 13px;
+
   line-height: 1.5;
 
   cursor: pointer;
@@ -310,7 +319,7 @@
 
   flex-shrink: 0;
 
-  accent-color: var(--zenva-gold);
+  accent-color: var(--zenva-purple);
 }
 
 .inline-link {
@@ -320,9 +329,10 @@
 
   background: transparent;
 
-  color: var(--zenva-gold-light);
+  color: var(--zenva-purple-bright);
 
   font-size: inherit;
+
   font-weight: 600;
 
   cursor: pointer;
@@ -345,18 +355,18 @@
   background:
     linear-gradient(
       135deg,
-      var(--zenva-gold-light),
-      var(--zenva-gold)
+      var(--zenva-purple-light),
+      var(--zenva-purple)
     );
 
-  color: #24170e;
+  color: #ffffff;
 
   font-weight: 700;
 
   cursor: pointer;
 
   box-shadow:
-    0 10px 25px rgba(197, 138, 58, 0.12);
+    0 10px 25px rgba(217, 91, 183, 0.14);
 
   transition:
     transform 0.15s ease,
@@ -368,7 +378,7 @@
   opacity: 0.94;
 
   box-shadow:
-    0 14px 30px rgba(197, 138, 58, 0.20);
+    0 14px 30px rgba(217, 91, 183, 0.22);
 }
 
 .primary-button:active:not(:disabled) {
@@ -395,7 +405,7 @@
 
   background: transparent;
 
-  color: var(--zenva-gold-light);
+  color: var(--zenva-purple-bright);
 
   font-size: 14px;
 
@@ -409,6 +419,7 @@
 
 .social-divider {
   display: flex;
+
   align-items: center;
 
   gap: 12px;
@@ -484,6 +495,7 @@
   height: 22px;
 
   display: flex;
+
   align-items: center;
   justify-content: center;
 
@@ -502,6 +514,7 @@
 
 .register-prompt {
   display: flex;
+
   align-items: center;
   justify-content: center;
 
@@ -531,6 +544,7 @@
   color: var(--zenva-text-muted);
 
   font-size: 14px;
+
   font-weight: 600;
 
   margin-bottom: 24px;
@@ -539,7 +553,7 @@
 }
 
 .back-button:hover {
-  color: var(--zenva-gold-light);
+  color: var(--zenva-purple-bright);
 }
 
 .otp-destination {
@@ -590,6 +604,7 @@
   text-align: center;
 
   font-size: 24px;
+
   font-weight: 700;
 
   transition:
@@ -598,10 +613,10 @@
 }
 
 .otp-inputs input:focus {
-  border-color: var(--zenva-gold);
+  border-color: var(--zenva-purple);
 
   box-shadow:
-    0 0 0 3px rgba(197, 138, 58, 0.08);
+    0 0 0 3px rgba(217, 91, 183, 0.10);
 }
 
 .otp-error {
@@ -652,7 +667,7 @@
 }
 
 .register-card::-webkit-scrollbar-thumb {
-  background: var(--zenva-gold-dark);
+  background: var(--zenva-purple-dark);
 
   border-radius: 10px;
 }
@@ -668,7 +683,7 @@
 }
 
 .username-status.available {
-  color: var(--zenva-gold-light);
+  color: var(--zenva-purple-bright);
 }
 
 .username-status.unavailable {
@@ -692,13 +707,13 @@
 
   gap: 6px;
 
-  color: #756657;
+  color: #a77d9a;
 
   font-size: 11px;
 }
 
 .password-rule.valid {
-  color: var(--zenva-gold-light);
+  color: var(--zenva-purple-bright);
 }
 
 .password-match {
@@ -708,7 +723,7 @@
 }
 
 .password-match.valid {
-  color: var(--zenva-gold-light);
+  color: var(--zenva-purple-bright);
 }
 
 .password-match.invalid {
