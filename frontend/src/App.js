@@ -25,14 +25,50 @@ function App() {
     useState(null);
 
   // ==========================================
-  // AFTER LOGIN
+  // AFTER LOGIN + OTP VERIFICATION
   // ==========================================
 
   const handleAuthenticated = (
     authenticatedUser
   ) => {
     setUser(authenticatedUser);
+
+    // After successful OTP verification,
+    // the user goes to profile setup.
     setCurrentScreen("profile");
+  };
+
+  // ==========================================
+  // AFTER PROFILE IS COMPLETED
+  // ==========================================
+
+  const handleProfileCompleted = (
+    updatedUser
+  ) => {
+    console.log(
+      "Profile completed successfully:",
+      updatedUser
+    );
+
+    setUser(updatedUser);
+
+    // Make sure the latest user is available
+    // locally as well.
+    try {
+      localStorage.setItem(
+        "zenvazapp_user",
+        JSON.stringify(updatedUser)
+      );
+    } catch (error) {
+      console.error(
+        "Unable to save user locally:",
+        error
+      );
+    }
+
+    // IMPORTANT:
+    // Immediately enter the ChatList.
+    setCurrentScreen("chatlist");
   };
 
   // ==========================================
@@ -229,10 +265,9 @@ function App() {
     return (
       <ProfileSetup
         user={user}
-        onComplete={(updatedUser) => {
-          setUser(updatedUser);
-          setCurrentScreen("chatlist");
-        }}
+        onProfileCompleted={
+          handleProfileCompleted
+        }
       />
     );
   }
