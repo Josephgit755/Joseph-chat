@@ -19,11 +19,7 @@ function OTPVerification({
   const [secondsLeft, setSecondsLeft] =
     useState(60);
 
-  const [error, setError] =
-    useState("");
-
-  const [successMessage, setSuccessMessage] =
-    useState("");
+  const [error, setError] = useState("");
 
   const [isVerifying, setIsVerifying] =
     useState(false);
@@ -38,7 +34,7 @@ function OTPVerification({
     "https://joseph-backend.onrender.com";
 
   // ==========================================
-  // FOCUS FIRST INPUT
+  // FOCUS FIRST OTP INPUT
   // ==========================================
 
   useEffect(() => {
@@ -46,7 +42,7 @@ function OTPVerification({
   }, []);
 
   // ==========================================
-  // COUNTDOWN
+  // OTP COUNTDOWN
   // ==========================================
 
   useEffect(() => {
@@ -55,11 +51,10 @@ function OTPVerification({
     }
 
     const timer = setInterval(() => {
-      setSecondsLeft(
-        (previous) =>
-          previous > 0
-            ? previous - 1
-            : 0
+      setSecondsLeft((previous) =>
+        previous > 0
+          ? previous - 1
+          : 0
       );
     }, 1000);
 
@@ -77,15 +72,12 @@ function OTPVerification({
     value
   ) => {
     setError("");
-    setSuccessMessage("");
 
     const digit = value
       .replace(/\D/g, "")
       .slice(-1);
 
-    const updatedOtp = [
-      ...otp,
-    ];
+    const updatedOtp = [...otp];
 
     updatedOtp[index] = digit;
 
@@ -147,9 +139,6 @@ function OTPVerification({
   ) => {
     event.preventDefault();
 
-    setError("");
-    setSuccessMessage("");
-
     const pastedValue =
       event.clipboardData
         .getData("text")
@@ -179,6 +168,7 @@ function OTPVerification({
       );
 
     setOtp(updatedOtp);
+    setError("");
 
     const nextIndex = Math.min(
       pastedValue.length,
@@ -200,22 +190,17 @@ function OTPVerification({
     event.preventDefault();
 
     setError("");
-    setSuccessMessage("");
 
     const code =
       otp.join("");
 
-    // Check six digits
-    if (
-      code.length !== 6
-    ) {
+    if (code.length !== 6) {
       setError(
         "Please enter all 6 digits."
       );
       return;
     }
 
-    // Make sure user exists
     if (!user?.id) {
       setError(
         "Your login session is missing. Please go back and log in again."
@@ -238,9 +223,7 @@ function OTPVerification({
             },
 
             body: JSON.stringify({
-              userId:
-                user.id,
-
+              userId: user.id,
               otp: code,
             }),
           }
@@ -263,7 +246,7 @@ function OTPVerification({
       ) {
         setError(
           data.message ||
-            "OTP verification failed."
+            "Incorrect or expired OTP."
         );
 
         setIsVerifying(false);
@@ -271,39 +254,25 @@ function OTPVerification({
       }
 
       // ======================================
-      // OTP IS REALLY VERIFIED
+      // OTP VERIFIED
       // ======================================
 
-      if (data.token) {
-        localStorage.setItem(
-          "zenvazappToken",
-          data.token
-        );
-      }
-
-      if (data.user) {
-        localStorage.setItem(
-          "zenvazappUser",
-          JSON.stringify(
-            data.user
-          )
-        );
-      }
-
-      setSuccessMessage(
-        "OTP verified successfully."
-      );
+      setOtp([
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ]);
 
       setIsVerifying(false);
 
-      // Give the user a moment to see success
-      setTimeout(() => {
-        if (onVerified) {
-          onVerified(
-            data.user || user
-          );
-        }
-      }, 500);
+      if (onVerified) {
+        onVerified(
+          data.user
+        );
+      }
     } catch (error) {
       console.error(
         "OTP verification error:",
@@ -311,7 +280,8 @@ function OTPVerification({
       );
 
       setError(
-        "Unable to connect to ZenvaZapp server."
+        error.message ||
+          "Unable to verify the OTP. Please try again."
       );
 
       setIsVerifying(false);
@@ -332,13 +302,12 @@ function OTPVerification({
 
     if (!user?.id) {
       setError(
-        "Your login session is missing. Please log in again."
+        "Your login session is missing. Please go back and log in again."
       );
       return;
     }
 
     setError("");
-    setSuccessMessage("");
     setIsResending(true);
 
     try {
@@ -354,8 +323,7 @@ function OTPVerification({
             },
 
             body: JSON.stringify({
-              userId:
-                user.id,
+              userId: user.id,
             }),
           }
         );
@@ -384,7 +352,6 @@ function OTPVerification({
         return;
       }
 
-      // Clear old OTP
       setOtp([
         "",
         "",
@@ -394,18 +361,15 @@ function OTPVerification({
         "",
       ]);
 
-      // Restart countdown
       setSecondsLeft(60);
-
-      setSuccessMessage(
-        "A new OTP has been sent to your email."
-      );
 
       setIsResending(false);
 
-      inputRefs.current[
-        0
-      ]?.focus();
+      setTimeout(() => {
+        inputRefs.current[
+          0
+        ]?.focus();
+      }, 50);
     } catch (error) {
       console.error(
         "Resend OTP error:",
@@ -413,7 +377,8 @@ function OTPVerification({
       );
 
       setError(
-        "Unable to connect to ZenvaZapp server."
+        error.message ||
+          "Unable to resend the verification code."
       );
 
       setIsResending(false);
@@ -435,7 +400,7 @@ function OTPVerification({
 
   const deliveryText =
     method === "phone"
-      ? "We've sent a 6-digit verification code to"
+      ? "We've sent a 6-digit verification code to your phone"
       : "We've sent a 6-digit verification code to your email";
 
   // ==========================================
@@ -461,7 +426,7 @@ function OTPVerification({
         <div className="auth-header">
 
           <div className="auth-logo">
-            Z
+            Zz
           </div>
 
           <h1>
@@ -479,18 +444,15 @@ function OTPVerification({
         </div>
 
         <form
-          onSubmit={
-            handleVerify
-          }
+          onSubmit={handleVerify}
           className="otp-form"
         >
 
           <div
             className="otp-inputs"
-            onPaste={
-              handlePaste
-            }
+            onPaste={handlePaste}
           >
+
             {otp.map(
               (
                 digit,
@@ -534,11 +496,13 @@ function OTPVerification({
                       : "off"
                   }
                   disabled={
-                    isVerifying
+                    isVerifying ||
+                    isResending
                   }
                 />
               )
             )}
+
           </div>
 
           {error && (
@@ -547,15 +511,6 @@ function OTPVerification({
               role="alert"
             >
               {error}
-            </p>
-          )}
-
-          {successMessage && (
-            <p
-              className="otp-success"
-              role="status"
-            >
-              {successMessage}
             </p>
           )}
 
@@ -578,8 +533,7 @@ function OTPVerification({
 
           {secondsLeft > 0 ? (
             <p>
-              Didn't receive
-              the code?
+              Didn't receive the code?
               <span>
                 {" "}
                 Resend in{" "}
@@ -588,8 +542,7 @@ function OTPVerification({
             </p>
           ) : (
             <p>
-              Didn't receive
-              the code?
+              Didn't receive the code?{" "}
 
               <button
                 type="button"
@@ -602,8 +555,8 @@ function OTPVerification({
                 }
               >
                 {isResending
-                  ss? " Sending..."
-                  : " Resend OTP"}
+                  ? "Sending..."
+                  : "Resend OTP"}
               </button>
             </p>
           )}

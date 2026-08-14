@@ -9,37 +9,25 @@ const {
 
 const router = express.Router();
 
-// ==========================================
-// REGISTRATION
-// ==========================================
-
+// Registration
 router.post(
   "/register",
   registerUser
 );
 
-// ==========================================
-// LOGIN
-// ==========================================
-
+// Login
 router.post(
   "/login",
   loginUser
 );
 
-// ==========================================
-// VERIFY LOGIN OTP
-// ==========================================
-
+// Verify login OTP
 router.post(
   "/verify-otp",
   verifyLoginOTP
 );
 
-// ==========================================
-// RESEND LOGIN OTP
-// ==========================================
-
+// Resend login OTP
 router.post(
   "/resend-otp",
   resendLoginOTP
