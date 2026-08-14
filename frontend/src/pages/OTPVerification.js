@@ -1,16 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 
-function OTPVerification({ method = "phone",
-  destination = "+237 ••••••1234",
+function OTPVerification({
+  method = "phone",
+  destination = "",
   onBack,
   user,
-  onVerified, }) {
+  onVerified,
+}) {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [secondsLeft, setSecondsLeft] = useState(60);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   const inputRefs = useRef([]);
+
+  const API_URL =
+    process.env.REACT_APP_API_URL || "http://localhost:5000";
 
   useEffect(() => {
     inputRefs.current[0]?.focus();
@@ -30,6 +37,7 @@ function OTPVerification({ method = "phone",
 
   const handleChange = (index, value) => {
     setError("");
+    setSuccessMessage("");
 
     const digit = value.replace(/\D/g, "").slice(-1);
 
@@ -44,15 +52,25 @@ function OTPVerification({ method = "phone",
   };
 
   const handleKeyDown = (index, event) => {
-    if (event.key === "Backspace" && !otp[index] && index > 0) {
+    if (
+      event.key === "Backspace" &&
+      !otp[index] &&
+      index > 0
+    ) {
       inputRefs.current[index - 1]?.focus();
     }
 
-    if (event.key === "ArrowLeft" && index > 0) {
+    if (
+      event.key === "ArrowLeft" &&
+      index > 0
+    ) {
       inputRefs.current[index - 1]?.focus();
     }
 
-    if (event.key === "ArrowRight" && index < 5) {
+    if (
+      event.key === "ArrowRight" &&
+      index < 5
+    ) {
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -69,17 +87,36 @@ function OTPVerification({ method = "phone",
       return;
     }
 
-    const updatedOtp = ["", "", "", "", "", ""];
+    const updatedOtp = [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+    ];
 
-    pastedValue.split("").forEach((digit, index) => {
-      updatedOtp[index] = digit;
-    });
+    pastedValue.split("").forEach(
+      (digit, index) => {
+        updatedOtp[index] = digit;
+      }
+    );
 
     setOtp(updatedOtp);
+    setError("");
+    setSuccessMessage("");
 
-    const nextIndex = Math.min(pastedValue.length, 5);
+    const nextIndex = Math.min(
+      pastedValue.length,
+      5
+    );
+
     inputRefs.current[nextIndex]?.focus();
   };
+
+  // ==========================================
+  // VERIFY OTP
+  // ==========================================
 
   const handleVerify = async (event) => {
     event.preventDefault();
@@ -91,43 +128,159 @@ function OTPVerification({ method = "phone",
       return;
     }
 
-    setError("");
-    setIsVerifying(true);
-
-    /*
-      Backend OTP verification will be connected later.
-
-      Example future request:
-
-      POST /api/auth/verify-otp
-    */
-
-    setTimeout(() => {
-      setIsVerifying(false);
-      if (onVerified) {
-        onVerified(user);
-      }
-    }, 1000);
-  };
-
-  const handleResend = () => {
-    if (secondsLeft > 0) {
+    if (!user?.id) {
+      setError(
+        "Your login session is missing. Please go back and login again."
+      );
       return;
     }
 
-    setOtp(["", "", "", "", "", ""]);
     setError("");
-    setSecondsLeft(60);
+    setSuccessMessage("");
+    setIsVerifying(true);
 
-    inputRefs.current[0]?.focus();
+    try {
+      const response = await fetch(
+        `${API_URL}/api/auth/verify-otp`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            otp: code,
+          }),
+        }
+      );
 
-    /*
-      Real SMS/email OTP resend will be connected
-      to the backend later.
-    */
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setError(
+          data.message ||
+            "OTP verification failed."
+        );
+
+        setIsVerifying(false);
+        return;
+      }
+
+      // Save the final JWT only AFTER OTP verification
+      localStorage.setItem(
+        "zenvazappToken",
+        data.token
+      );
+
+      localStorage.setItem(
+        "zenvazappUser",
+        JSON.stringify(data.user)
+      );
+
+      setSuccessMessage(
+        "OTP verified successfully."
+      );
+
+      setIsVerifying(false);
+
+      if (onVerified) {
+        onVerified(data.user);
+      }
+    } catch (error) {
+      console.error(
+        "OTP verification error:",
+        error
+      );
+
+      setError(
+        "Unable to connect to ZenvaZapp server."
+      );
+
+      setIsVerifying(false);
+    }
   };
 
-  const formattedTime = `00:${String(secondsLeft).padStart(2, "0")}`;
+  // ==========================================
+  // RESEND OTP
+  // ==========================================
+
+  const handleResend = async () => {
+    if (secondsLeft > 0 || isResending) {
+      return;
+    }
+
+    if (!user?.id) {
+      setError(
+        "Your login session is missing. Please login again."
+      );
+      return;
+    }
+
+    setError("");
+    setSuccessMessage("");
+    setIsResending(true);
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/auth/resend-otp`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: user.id,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setError(
+          data.message ||
+            "Unable to resend OTP."
+        );
+
+        setIsResending(false);
+        return;
+      }
+
+      setOtp([
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ]);
+
+      setSecondsLeft(60);
+
+      setSuccessMessage(
+        "A new OTP has been sent to your email."
+      );
+
+      setIsResending(false);
+
+      inputRefs.current[0]?.focus();
+    } catch (error) {
+      console.error(
+        "Resend OTP error:",
+        error
+      );
+
+      setError(
+        "Unable to connect to ZenvaZapp server."
+      );
+
+      setIsResending(false);
+    }
+  };
+
+  const formattedTime = `00:${String(
+    secondsLeft
+  ).padStart(2, "0")}`;
 
   const deliveryText =
     method === "phone"
@@ -137,88 +290,154 @@ function OTPVerification({ method = "phone",
   return (
     <main className="auth-page">
       <section className="auth-card otp-card">
+
         <button
           type="button"
           className="back-button"
           onClick={onBack}
+          disabled={
+            isVerifying || isResending
+          }
         >
           ← Back
         </button>
 
         <div className="auth-header">
-          <div className="auth-logo">Z</div>
 
-          <h1>Verify your account</h1>
+          <div className="auth-logo">
+            Z
+          </div>
 
-          <p>{deliveryText}</p>
+          <h1>
+            Verify your account
+          </h1>
+
+          <p>
+            {deliveryText}
+          </p>
 
           <strong className="otp-destination">
-            {destination}
+            {destination ||
+              user?.email ||
+              "your email"}
           </strong>
+
         </div>
 
-        <form onSubmit={handleVerify} className="otp-form">
+        <form
+          onSubmit={handleVerify}
+          className="otp-form"
+        >
+
           <div
             className="otp-inputs"
             onPaste={handlePaste}
           >
-            {otp.map((digit, index) => (
-              <input
-                key={index}
-                ref={(element) => {
-                  inputRefs.current[index] = element;
-                }}
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={1}
-                value={digit}
-                onChange={(event) =>
-                  handleChange(index, event.target.value)
-                }
-                onKeyDown={(event) =>
-                  handleKeyDown(index, event)
-                }
-                aria-label={`OTP digit ${index + 1}`}
-                autoComplete={index === 0 ? "one-time-code" : "off"}
-              />
-            ))}
+            {otp.map(
+              (digit, index) => (
+                <input
+                  key={index}
+                  ref={(element) => {
+                    inputRefs.current[
+                      index
+                    ] = element;
+                  }}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(event) =>
+                    handleChange(
+                      index,
+                      event.target.value
+                    )
+                  }
+                  onKeyDown={(event) =>
+                    handleKeyDown(
+                      index,
+                      event
+                    )
+                  }
+                  aria-label={`OTP digit ${
+                    index + 1
+                  }`}
+                  autoComplete={
+                    index === 0
+                      ? "one-time-code"
+                      : "off"
+                  }
+                  disabled={
+                    isVerifying ||
+                    isResending
+                  }
+                />
+              )
+            )}
           </div>
 
           {error && (
-            <p className="otp-error" role="alert">
+            <p
+              className="otp-error"
+              role="alert"
+            >
               {error}
+            </p>
+          )}
+
+          {successMessage && (
+            <p
+              className="otp-success"
+              role="status"
+            >
+              {successMessage}
             </p>
           )}
 
           <button
             type="submit"
             className="primary-button"
-            disabled={isVerifying}
+            disabled={
+              isVerifying ||
+              isResending
+            }
           >
-            {isVerifying ? "Verifying..." : "Verify OTP"}
+            {isVerifying
+              ? "Verifying..."
+              : "Verify OTP"}
           </button>
+
         </form>
 
         <div className="otp-resend">
+
           {secondsLeft > 0 ? (
             <p>
               Didn't receive the code?
-              <span> Resend in {formattedTime}</span>
+              <span>
+                {" "}
+                Resend in {formattedTime}
+              </span>
             </p>
           ) : (
             <p>
               Didn't receive the code?
+
               <button
                 type="button"
                 className="inline-link"
                 onClick={handleResend}
+                disabled={isResending}
               >
-                Resend OTP
+                {isResending
+                  ? "Sending..."
+                  : "Resend OTP"}
               </button>
             </p>
           )}
+
         </div>
+
       </section>
     </main>
   );

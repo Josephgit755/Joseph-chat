@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import OTPVerification from "./OTPVerification";
 import Register from "./Register";
@@ -6,6 +7,7 @@ function Login({ onAuthenticated }) {
   const [method, setMethod] = useState("phone");
   const [showPassword, setShowPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+
   const [showOTP, setShowOTP] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
 
@@ -16,6 +18,10 @@ function Login({ onAuthenticated }) {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const [loggedInUser, setLoggedInUser] = useState(null);
+
+  const API_URL =
+    process.env.REACT_APP_API_URL ||
+    "https://joseph-backend.onrender.com";
 
   // ==========================================
   // LOGIN
@@ -51,12 +57,14 @@ function Login({ onAuthenticated }) {
 
     try {
       const response = await fetch(
-       `${process.env.REACT_APP_API_URL}/api/auth/login`,
+        `${API_URL}/api/auth/login`,
         {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json",
           },
+
           body: JSON.stringify({
             identifier: identifier.trim(),
             password,
@@ -64,39 +72,47 @@ function Login({ onAuthenticated }) {
         }
       );
 
-      const data = await response.json();
+      let data;
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error("Invalid server response.");
+      }
 
       if (!response.ok || !data.success) {
         setLoginError(
           data.message || "Login failed."
         );
+
         setIsLoggingIn(false);
         return;
       }
 
-      // Save JWT
-      localStorage.setItem(
-        "zenvazappToken",
-        data.token
-      );
-
-      // Save user information
-      localStorage.setItem(
-        "zenvazappUser",
-        JSON.stringify(data.user)
-      );
+      // ======================================
+      // IMPORTANT SECURITY FLOW
+      // ======================================
+      // DO NOT save JWT here.
+      //
+      // At this stage:
+      // 1. Email/phone is verified
+      // 2. Password is verified
+      // 3. OTP has been sent to Gmail
+      // 4. User must still enter OTP
+      //
+      // JWT is created only after OTP verification.
 
       setLoggedInUser(data.user);
 
       setIsLoggingIn(false);
 
-      // Move to OTP screen
       setShowOTP(true);
     } catch (error) {
       console.error("Login error:", error);
 
       setLoginError(
-        "Unable to connect to ZenvaZapp server."
+        error.message ||
+          "Unable to connect to ZenvaZapp server."
       );
 
       setIsLoggingIn(false);
@@ -104,7 +120,7 @@ function Login({ onAuthenticated }) {
   };
 
   // ==========================================
-  // REGISTER SCREEN
+  // REGISTER
   // ==========================================
 
   if (showRegister) {
@@ -116,23 +132,22 @@ function Login({ onAuthenticated }) {
   }
 
   // ==========================================
-  // OTP SCREEN
+  // OTP VERIFICATION
   // ==========================================
 
   if (showOTP) {
     return (
       <OTPVerification
         method={method}
-        destination={
-          method === "phone"
-            ? identifier
-            : identifier
-        }
+        destination={loggedInUser?.email || identifier}
         user={loggedInUser}
-        onBack={() => setShowOTP(false)}
-        onVerified={() => {
+        onBack={() => {
+          setShowOTP(false);
+          setLoginError("");
+        }}
+        onVerified={(verifiedUser) => {
           if (onAuthenticated) {
-            onAuthenticated(loggedInUser);
+            onAuthenticated(verifiedUser);
           }
         }}
       />
@@ -147,18 +162,22 @@ function Login({ onAuthenticated }) {
     <main className="auth-page">
       <section className="auth-card">
 
-        {/* Header */}
+        {/* HEADER */}
         <div className="auth-header">
-          <div className="auth-logo">Zz</div>
+          <div className="auth-logo">
+            Zz
+          </div>
 
-          <h1>Welcome back</h1>
+          <h1>
+            Welcome back
+          </h1>
 
           <p>
             Sign in to continue to ZenvaZapp
           </p>
         </div>
 
-        {/* Phone / Email selector */}
+        {/* PHONE / EMAIL */}
         <div className="auth-methods">
 
           <button
@@ -168,7 +187,11 @@ function Login({ onAuthenticated }) {
                 ? "active"
                 : ""
             }
-            onClick={() => setMethod("phone")}
+            onClick={() => {
+              setMethod("phone");
+              setIdentifier("");
+              setLoginError("");
+            }}
           >
             Phone
           </button>
@@ -180,20 +203,24 @@ function Login({ onAuthenticated }) {
                 ? "active"
                 : ""
             }
-            onClick={() => setMethod("email")}
+            onClick={() => {
+              setMethod("email");
+              setIdentifier("");
+              setLoginError("");
+            }}
           >
             Email
           </button>
 
         </div>
 
-        {/* Login form */}
+        {/* LOGIN FORM */}
         <form
           className="auth-form"
           onSubmit={handleSubmit}
         >
 
-          {/* Identifier */}
+          {/* IDENTIFIER */}
           <div className="form-group">
 
             <label htmlFor="identifier">
@@ -220,16 +247,17 @@ function Login({ onAuthenticated }) {
                   : "email"
               }
               value={identifier}
-              onChange={(event) =>
+              onChange={(event) => {
                 setIdentifier(
                   event.target.value
-                )
-              }
+                );
+                setLoginError("");
+              }}
             />
 
           </div>
 
-          {/* Password */}
+          {/* PASSWORD */}
           <div className="form-group">
 
             <label htmlFor="password">
@@ -248,11 +276,12 @@ function Login({ onAuthenticated }) {
                 placeholder="Enter your password"
                 autoComplete="current-password"
                 value={password}
-                onChange={(event) =>
+                onChange={(event) => {
                   setPassword(
                     event.target.value
-                  )
-                }
+                  );
+                  setLoginError("");
+                }}
               />
 
               <button
@@ -270,9 +299,10 @@ function Login({ onAuthenticated }) {
               </button>
 
             </div>
+
           </div>
 
-          {/* Error */}
+          {/* LOGIN ERROR */}
           {loginError && (
             <p
               className="otp-error"
@@ -282,7 +312,7 @@ function Login({ onAuthenticated }) {
             </p>
           )}
 
-          {/* Terms */}
+          {/* TERMS */}
           <label className="terms-checkbox">
 
             <input
@@ -297,13 +327,16 @@ function Login({ onAuthenticated }) {
 
             <span>
               I agree to the{" "}
+
               <button
                 type="button"
                 className="inline-link"
               >
                 ZenvaZapp Terms of Service
               </button>{" "}
+
               and{" "}
+
               <button
                 type="button"
                 className="inline-link"
@@ -315,7 +348,7 @@ function Login({ onAuthenticated }) {
 
           </label>
 
-          {/* Continue */}
+          {/* CONTINUE */}
           <button
             type="submit"
             className="primary-button"
@@ -331,7 +364,7 @@ function Login({ onAuthenticated }) {
 
         </form>
 
-        {/* Forgot password */}
+        {/* FORGOT PASSWORD */}
         <button
           type="button"
           className="forgot-password"
@@ -339,14 +372,14 @@ function Login({ onAuthenticated }) {
           Forgot password?
         </button>
 
-        {/* Divider */}
+        {/* SOCIAL DIVIDER */}
         <div className="social-divider">
           <span>
             or continue with
           </span>
         </div>
 
-        {/* Social authentication */}
+        {/* SOCIAL LOGIN */}
         <div className="social-buttons">
 
           <button
@@ -373,7 +406,7 @@ function Login({ onAuthenticated }) {
 
         </div>
 
-        {/* Register */}
+        {/* REGISTER */}
         <div className="register-prompt">
 
           <span>
