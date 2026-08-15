@@ -1,15 +1,233 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import "./chatlist.css";
 
-function ChatList({ user, onOpenChat, onNavigate }) {
-  const [activeFilter, setActiveFilter] = useState("all");
+// ==========================================
+// CREATE CONSISTENT CONVERSATION ID
+// ==========================================
 
-  const [showPlusMenu, setShowPlusMenu] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+const createConversationId = (
+  participantOne,
+  participantTwo
+) => {
+  if (!participantOne || !participantTwo) {
+    return "";
+  }
+
+  return [
+    String(participantOne),
+    String(participantTwo),
+  ]
+    .sort()
+    .join("_");
+};
+
+// ==========================================
+// FORMAT MESSAGE TIME
+// ==========================================
+
+const formatMessageTime = (dateValue) => {
+  if (!dateValue) {
+    return "";
+  }
+
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const now = new Date();
+
+  const isToday =
+    date.toDateString() ===
+    now.toDateString();
+
+  if (isToday) {
+    return date.toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }
+
+  const yesterday = new Date(now);
+
+  yesterday.setDate(
+    now.getDate() - 1
+  );
+
+  if (
+    date.toDateString() ===
+    yesterday.toDateString()
+  ) {
+    return "Yesterday";
+  }
+
+  const difference =
+    now.getTime() -
+    date.getTime();
+
+  const sevenDays =
+    7 * 24 * 60 * 60 * 1000;
+
+  if (
+    difference >= 0 &&
+    difference < sevenDays
+  ) {
+    return date.toLocaleDateString([], {
+      weekday: "short",
+    });
+  }
+
+  return date.toLocaleDateString([], {
+    month: "short",
+    day: "numeric",
+  });
+};
+
+// ==========================================
+// GET MESSAGE PREVIEW
+// ==========================================
+
+const getMessagePreview = (message) => {
+  if (!message) {
+    return "Start a conversation";
+  }
+
+  if (
+    message.deletedForEveryone ||
+    message.text ===
+      "This message was deleted."
+  ) {
+    return "This message was deleted.";
+  }
+
+  const messageType =
+    message.messageType || "text";
+
+  if (messageType === "image") {
+    return "📷 Photo";
+  }
+
+  if (messageType === "video") {
+    return "🎥 Video";
+  }
+
+  if (
+    messageType === "audio" ||
+    messageType === "voice"
+  ) {
+    return "🎤 Voice message";
+  }
+
+  if (
+    messageType === "file" ||
+    messageType === "document"
+  ) {
+    return "📎 Document";
+  }
+
+  if (messageType === "location") {
+    return "📍 Location";
+  }
+
+  if (messageType === "contact") {
+    return "👤 Contact";
+  }
+
+  if (
+    message.text &&
+    message.text.trim()
+  ) {
+    return message.text.trim();
+  }
+
+  return "Message";
+};
+
+// ==========================================
+// CHECK WHETHER MESSAGE IS UNREAD
+// ==========================================
+
+const isMessageUnread = (
+  message,
+  currentUserId
+) => {
+  if (!message) {
+    return false;
+  }
+
+  if (
+    message.deletedForReceiver ||
+    message.deletedForEveryone
+  ) {
+    return false;
+  }
+
+  const receiverId =
+    message.receiverId;
+
+  if (
+    !receiverId ||
+    !currentUserId
+  ) {
+    return false;
+  }
+
+  if (
+    String(receiverId) !==
+    String(currentUserId)
+  ) {
+    return false;
+  }
+
+  return message.status !== "read";
+};
+
+// ==========================================
+// CALCULATE UNREAD COUNT
+// ==========================================
+
+const calculateUnreadCount = (
+  messages,
+  currentUserId
+) => {
+  if (!Array.isArray(messages)) {
+    return 0;
+  }
+
+  return messages.filter(
+    (message) =>
+      isMessageUnread(
+        message,
+        currentUserId
+      )
+  ).length;
+};
+
+function ChatList({
+  user,
+  onOpenChat,
+  onNavigate,
+}) {
+  const [activeFilter, setActiveFilter] =
+    useState("all");
+
+  const [showPlusMenu, setShowPlusMenu] =
+    useState(false);
+
+  const [showSearch, setShowSearch] =
+    useState(false);
+
+  const [searchQuery, setSearchQuery] =
+    useState("");
 
   // ==========================================
-  // REAL CHAT DATA
+  // CHAT DATA
   // ==========================================
 
   const [chats, setChats] = useState([]);
@@ -19,6 +237,15 @@ function ChatList({ user, onOpenChat, onNavigate }) {
 
   const [chatLoadError, setChatLoadError] =
     useState("");
+
+  // ==========================================
+  // BACKGROUND MESSAGE LOADING
+  // ==========================================
+
+  const [
+    loadingConversationIds,
+    setLoadingConversationIds,
+  ] = useState(new Set());
 
   // ==========================================
   // API URL
@@ -57,590 +284,570 @@ function ChatList({ user, onOpenChat, onNavigate }) {
   };
 
   // ==========================================
-  // CREATE CONSISTENT CONVERSATION ID
+  // LOAD ONE CONVERSATION IN BACKGROUND
   // ==========================================
 
-  const createConversationId = (
-    participantOne,
-    participantTwo
-  ) => {
-    if (
-      !participantOne ||
-      !participantTwo
-    ) {
-      return "";
-    }
-
-    return [
-      String(participantOne),
-      String(participantTwo),
-    ]
-      .sort()
-      .join("_");
-  };
-
-  // ==========================================
- 
-  // ==========================================
-  
-  // 
-// LOAD REGISTERED USERS + REAL MESSAGES
-// ==========================================
-
-useEffect(() => {
-  let isMounted = true;
-
-  // ========================================
-  // FORMAT MESSAGE TIME
-  // ========================================
-
-  const formatMessageTime = (dateValue) => {
-    if (!dateValue) {
-      return "";
-    }
-
-    const date = new Date(dateValue);
-
-    if (Number.isNaN(date.getTime())) {
-      return "";
-    }
-
-    const now = new Date();
-
-    const isToday =
-      date.toDateString() ===
-      now.toDateString();
-
-    if (isToday) {
-      return date.toLocaleTimeString([], {
-        hour: "numeric",
-        minute: "2-digit",
-      });
-    }
-
-    const yesterday = new Date(now);
-
-    yesterday.setDate(
-      now.getDate() - 1
-    );
-
-    if (
-      date.toDateString() ===
-      yesterday.toDateString()
-    ) {
-      return "Yesterday";
-    }
-
-    const difference =
-      now.getTime() -
-      date.getTime();
-
-    const sevenDays =
-      7 * 24 * 60 * 60 * 1000;
-
-    if (
-      difference >= 0 &&
-      difference < sevenDays
-    ) {
-      return date.toLocaleDateString([], {
-        weekday: "short",
-      });
-    }
-
-    return date.toLocaleDateString([], {
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  // ========================================
-  // GET MESSAGE PREVIEW
-  // ========================================
-
-  const getMessagePreview = (message) => {
-    if (!message) {
-      return "Start a conversation";
-    }
-
-    if (
-      message.deletedForEveryone ||
-      message.text ===
-        "This message was deleted."
-    ) {
-      return "This message was deleted.";
-    }
-
-    const messageType =
-      message.messageType || "text";
-
-    if (messageType === "image") {
-      return "📷 Photo";
-    }
-
-    if (messageType === "video") {
-      return "🎥 Video";
-    }
-
-    if (
-      messageType === "audio" ||
-      messageType === "voice"
-    ) {
-      return "🎤 Voice message";
-    }
-
-    if (
-      messageType === "file" ||
-      messageType === "document"
-    ) {
-      return "📎 Document";
-    }
-
-    if (messageType === "location") {
-      return "📍 Location";
-    }
-
-    if (messageType === "contact") {
-      return "👤 Contact";
-    }
-
-    if (
-      message.text &&
-      message.text.trim()
-    ) {
-      return message.text.trim();
-    }
-
-    return "Message";
-  };
-
-  // ========================================
-  // LOAD ONE CONVERSATION
-  // ========================================
-
-  const loadConversationData = async (
-    conversation
-  ) => {
-    try {
-      if (
-        !conversation?.conversationId
-      ) {
-        return {
-          ...conversation,
-          message:
-            "Start a conversation",
-          time: "",
-          unread: 0,
-        };
-      }
-
-      const response = await fetch(
-        `${API_URL}/api/messages/${encodeURIComponent(
-          conversation.conversationId
-        )}`
-      );
-
-      let data;
-
-      try {
-        data = await response.json();
-      } catch {
-        throw new Error(
-          "Invalid message response."
-        );
-      }
-
-      if (
-        !response.ok ||
-        !data?.success
-      ) {
-        throw new Error(
-          data?.message ||
-            "Failed to load conversation."
-        );
-      }
-
-      const messages =
-        Array.isArray(data.messages)
-          ? data.messages
-          : [];
-
-      // ====================================
-      // FIND LATEST MESSAGE
-      // ====================================
-
-      const latestMessage =
-        messages.length > 0
-          ? messages[
-              messages.length - 1
-            ]
-          : null;
-
-      // ====================================
-      // COUNT UNREAD MESSAGES
-      // ====================================
-
-      const unreadCount =
-        messages.filter((message) => {
-          const receiverId =
-            message?.receiverId;
-
-          return (
-            receiverId &&
-            String(receiverId) ===
-              String(currentUserId) &&
-            message?.status !== "read" &&
-            !message?.deletedForReceiver &&
-            !message?.deletedForEveryone
-          );
-        }).length;
-
-      return {
-        ...conversation,
-
-        message:
-          getMessagePreview(
-            latestMessage
-          ),
-
-        time:
-          formatMessageTime(
-            latestMessage?.createdAt ||
-              latestMessage?.updatedAt
-          ),
-
-        unread: unreadCount,
-
-        latestMessage,
-      };
-    } catch (error) {
-      console.error(
-        `Failed to load conversation ${conversation?.conversationId}:`,
-        error
-      );
-
-      return {
-        ...conversation,
-
-        message:
-          "Start a conversation",
-
-        time: "",
-
-        unread: 0,
-      };
-    }
-  };
-
-  // ========================================
-  // LOAD REGISTERED USERS
-  // ========================================
-
-  const loadUsers = async () => {
-    if (!currentUserId) {
-      console.log(
-        "Cannot load chat users: current user ID missing."
-      );
-
-      if (isMounted) {
-        setIsLoadingChats(false);
-      }
-
-      return;
-    }
-
-    try {
-      if (isMounted) {
-        setIsLoadingChats(true);
-        setChatLoadError("");
-      }
-
-      console.log(
-        "=========================================="
-      );
-
-      console.log(
-        "Loading registered ZenvaZapp users..."
-      );
-
-      console.log(
-        "Current user ID:",
-        currentUserId
-      );
-
-      console.log(
-        "Users API:",
-        `${API_URL}/api/users`
-      );
-
-      const response = await fetch(
-        `${API_URL}/api/users`
-      );
-
-      console.log(
-        "Users API status:",
-        response.status
-      );
-
-      let data;
-
-      try {
-        data = await response.json();
-      } catch {
-        throw new Error(
-          "The server returned an invalid response."
-        );
-      }
-
-      console.log(
-        "Users API response:",
-        data
-      );
-
-      if (
-        !response.ok ||
-        !data?.success
-      ) {
-        throw new Error(
-          data?.message ||
-            "Failed to load registered users."
-        );
-      }
-
-      // ====================================
-      // CREATE BASE CHAT ITEMS
-      // ====================================
-
-      const registeredUsers =
-        (data.users || [])
-          .filter((account) => {
-            const accountId =
-              account?._id ||
-              account?.id ||
-              account?.userId;
-
-            return (
-              accountId &&
-              String(accountId) !==
-                String(currentUserId)
+  const loadConversationData =
+    useCallback(
+      async (conversation) => {
+        if (
+          !conversation?.conversationId
+        ) {
+          return;
+        }
+
+        const conversationId =
+          conversation.conversationId;
+
+        setLoadingConversationIds(
+          (previous) => {
+            const next = new Set(
+              previous
             );
-          })
-          .map((account) => {
-            const accountId =
-              account?._id ||
-              account?.id ||
-              account?.userId;
 
-            const displayName =
-              account?.displayName ||
-              account?.fullName ||
-              account?.username ||
-              "User";
+            next.add(
+              conversationId
+            );
 
-            const profilePhoto =
-              account?.profilePhoto ||
-              account?.avatar ||
-              "";
+            return next;
+          }
+        );
 
-            const conversationId =
-              createConversationId(
-                currentUserId,
-                accountId
+        try {
+          const response =
+            await fetch(
+              `${API_URL}/api/messages/${encodeURIComponent(
+                conversationId
+              )}`
+            );
+
+          let data = {};
+
+          try {
+            data =
+              await response.json();
+          } catch {
+            throw new Error(
+              "Invalid message response."
+            );
+          }
+
+          if (
+            !response.ok ||
+            !data?.success
+          ) {
+            throw new Error(
+              data?.message ||
+                "Failed to load conversation."
+            );
+          }
+
+          const messages =
+            Array.isArray(
+              data.messages
+            )
+              ? data.messages
+              : [];
+
+          // ========================================
+          // LATEST MESSAGE
+          // ========================================
+
+          const latestMessage =
+            messages.length > 0
+              ? messages[
+                  messages.length - 1
+                ]
+              : null;
+
+          // ========================================
+          // SYNCHRONIZED UNREAD COUNT
+          // ========================================
+
+          const unreadCount =
+            calculateUnreadCount(
+              messages,
+              currentUserId
+            );
+
+          // ========================================
+          // UPDATED CHAT
+          // ========================================
+
+          const updatedChat = {
+            ...conversation,
+
+            message:
+              getMessagePreview(
+                latestMessage
+              ),
+
+            time:
+              formatMessageTime(
+                latestMessage?.createdAt ||
+                  latestMessage?.updatedAt
+              ),
+
+            unread:
+              unreadCount,
+
+            latestMessage,
+          };
+
+          // ========================================
+          // UPDATE ONLY THIS CHAT
+          // ========================================
+
+          setChats(
+            (previousChats) => {
+              const updatedChats =
+                previousChats.map(
+                  (chat) =>
+                    chat.conversationId ===
+                    conversationId
+                      ? updatedChat
+                      : chat
+                );
+
+              updatedChats.sort(
+                (a, b) => {
+                  const dateA =
+                    a?.latestMessage
+                      ?.createdAt
+                      ? new Date(
+                          a.latestMessage.createdAt
+                        ).getTime()
+                      : 0;
+
+                  const dateB =
+                    b?.latestMessage
+                      ?.createdAt
+                      ? new Date(
+                          b.latestMessage.createdAt
+                        ).getTime()
+                      : 0;
+
+                  return dateB - dateA;
+                }
               );
 
-            return {
-              id: accountId,
+              return updatedChats;
+            }
+          );
+        } catch (error) {
+          console.error(
+            `Failed to load conversation ${conversationId}:`,
+            error
+          );
 
-              conversationId,
+          setChats(
+            (previousChats) =>
+              previousChats.map(
+                (chat) =>
+                  chat.conversationId ===
+                  conversationId
+                    ? {
+                        ...chat,
+                        message:
+                          chat.message ||
+                          "Start a conversation",
+                        time:
+                          chat.time ||
+                          "",
+                        unread:
+                          Number(
+                            chat.unread ||
+                              0
+                          ),
+                      }
+                    : chat
+              )
+          );
+        } finally {
+          setLoadingConversationIds(
+            (previous) => {
+              const next = new Set(
+                previous
+              );
 
-              name: displayName,
+              next.delete(
+                conversationId
+              );
 
-              username:
-                account?.username || "",
+              return next;
+            }
+          );
+        }
+      },
+      [
+        API_URL,
+        currentUserId,
+      ]
+    );
 
-              fullName:
-                account?.fullName || "",
+  // ==========================================
+  // REFRESH ALL UNREAD COUNTS
+  // ==========================================
 
-              profilePhoto,
+  const refreshUnreadCounts =
+    useCallback(
+      async () => {
+        if (
+          !currentUserId ||
+          chats.length === 0
+        ) {
+          return;
+        }
 
-              profileCompleted:
-                account?.profileCompleted,
+        const conversations =
+          [...chats];
 
-              message:
-                "Start a conversation",
-
-              time: "",
-
-              unread: 0,
-
-              favorite:
-                Boolean(
-                  account?.favorite
-                ),
-
-              group: false,
-
-              avatar:
-                profilePhoto ||
-                displayName
-                  .charAt(0)
-                  .toUpperCase(),
-            };
-          });
-
-      console.log(
-        "Registered users:",
-        registeredUsers
-      );
-
-      // ====================================
-      // LOAD REAL CONVERSATION DATA
-      // ====================================
-
-      const enrichedChats =
         await Promise.all(
-          registeredUsers.map(
+          conversations.map(
             (chat) =>
               loadConversationData(
                 chat
               )
           )
         );
+      },
+      [
+        currentUserId,
+        chats,
+        loadConversationData,
+      ]
+    );
 
-      // ====================================
-      // SORT BY MOST RECENT MESSAGE
-      // ====================================
+  // ==========================================
+  // LOAD REGISTERED USERS
+  // ==========================================
 
-      enrichedChats.sort(
-        (a, b) => {
-          const dateA =
-            a?.latestMessage
-              ?.createdAt
-              ? new Date(
-                  a.latestMessage.createdAt
-                ).getTime()
-              : 0;
+  useEffect(() => {
+    let isMounted = true;
 
-          const dateB =
-            b?.latestMessage
-              ?.createdAt
-              ? new Date(
-                  b.latestMessage.createdAt
-                ).getTime()
-              : 0;
-
-          return dateB - dateA;
-        }
-      );
-
-      console.log(
-        "Final ZenvaZapp chats:",
-        enrichedChats
-      );
-
-      if (isMounted) {
-        setChats(enrichedChats);
-      }
-    } catch (error) {
-      console.error(
-        "Load registered users error:",
-        error
-      );
-
-      if (isMounted) {
-        setChatLoadError(
-          error?.message ||
-            "Unable to load registered users."
+    const loadUsers = async () => {
+      if (!currentUserId) {
+        console.log(
+          "Cannot load chat users: current user ID missing."
         );
 
-        setChats([]);
+        if (isMounted) {
+          setIsLoadingChats(false);
+        }
+
+        return;
       }
-    } finally {
-      if (isMounted) {
-        setIsLoadingChats(false);
+
+      try {
+        setIsLoadingChats(true);
+        setChatLoadError("");
+
+        const response =
+          await fetch(
+            `${API_URL}/api/users`
+          );
+
+        let data = {};
+
+        try {
+          data =
+            await response.json();
+        } catch {
+          throw new Error(
+            "The server returned an invalid response."
+          );
+        }
+
+        if (
+          !response.ok ||
+          !data?.success
+        ) {
+          throw new Error(
+            data?.message ||
+              "Failed to load registered users."
+          );
+        }
+
+        const registeredUsers =
+          Array.isArray(
+            data.users
+          )
+            ? data.users
+            : [];
+
+        const baseChats =
+          registeredUsers
+            .filter((account) => {
+              const accountId =
+                account?._id ||
+                account?.id ||
+                account?.userId;
+
+              return (
+                accountId &&
+                String(accountId) !==
+                  String(
+                    currentUserId
+                  )
+              );
+            })
+            .map((account) => {
+              const accountId =
+                account?._id ||
+                account?.id ||
+                account?.userId;
+
+              const displayName =
+                account?.displayName ||
+                account?.fullName ||
+                account?.username ||
+                "User";
+
+              const profilePhoto =
+                account?.profilePhoto ||
+                account?.avatar ||
+                "";
+
+              const conversationId =
+                createConversationId(
+                  currentUserId,
+                  accountId
+                );
+
+              return {
+                id: accountId,
+
+                conversationId,
+
+                name: displayName,
+
+                username:
+                  account?.username ||
+                  "",
+
+                fullName:
+                  account?.fullName ||
+                  "",
+
+                profilePhoto,
+
+                profileCompleted:
+                  account?.profileCompleted,
+
+                message:
+                  "Start a conversation",
+
+                time: "",
+
+                unread: 0,
+
+                favorite:
+                  Boolean(
+                    account?.favorite
+                  ),
+
+                group: false,
+
+                avatar:
+                  profilePhoto ||
+                  displayName
+                    .charAt(0)
+                    .toUpperCase(),
+              };
+            });
+
+        // ======================================
+        // DISPLAY USERS IMMEDIATELY
+        // ======================================
+
+        if (isMounted) {
+          setChats(baseChats);
+          setIsLoadingChats(false);
+        }
+
+        // ======================================
+        // BACKGROUND MESSAGE SYNCHRONIZATION
+        // ======================================
+
+        baseChats.forEach(
+          (chat) => {
+            loadConversationData(
+              chat
+            );
+          }
+        );
+      } catch (error) {
+        console.error(
+          "Load registered users error:",
+          error
+        );
+
+        if (isMounted) {
+          setChatLoadError(
+            error?.message ||
+              "Unable to load registered users."
+          );
+
+          setChats([]);
+
+          setIsLoadingChats(false);
+        }
       }
+    };
+
+    loadUsers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    API_URL,
+    currentUserId,
+    loadConversationData,
+  ]);
+
+  // ==========================================
+  // UNREAD SYNCHRONIZATION WHEN APP RETURNS
+  // ==========================================
+
+  useEffect(() => {
+    const handleVisibilityChange =
+      () => {
+        if (
+          document.visibilityState ===
+          "visible"
+        ) {
+          refreshUnreadCounts();
+        }
+      };
+
+    const handleFocus = () => {
+      refreshUnreadCounts();
+    };
+
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange
+    );
+
+    window.addEventListener(
+      "focus",
+      handleFocus
+    );
+
+    return () => {
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange
+      );
+
+      window.removeEventListener(
+        "focus",
+        handleFocus
+      );
+    };
+  }, [
+    refreshUnreadCounts,
+  ]);
+
+  // ==========================================
+  // PERIODIC UNREAD SYNCHRONIZATION
+  // ==========================================
+
+  useEffect(() => {
+    if (
+      !currentUserId ||
+      chats.length === 0
+    ) {
+      return undefined;
     }
-  };
 
-  loadUsers();
+    const interval =
+      setInterval(() => {
+        refreshUnreadCounts();
+      }, 15000);
 
-  return () => {
-    isMounted = false;
-  };
-}, [
-  API_URL,
-  currentUserId,
-]);
-
-  
-
-   
+    return () => {
+      clearInterval(interval);
+    };
+  }, [
+    currentUserId,
+    chats.length,
+    refreshUnreadCounts,
+  ]);
 
   // ==========================================
   // SEARCH + FILTER
   // ==========================================
 
-  const filteredChats = useMemo(() => {
-    const query =
-      searchQuery
-        .toLowerCase()
-        .trim();
+  const filteredChats =
+    useMemo(() => {
+      const query =
+        searchQuery
+          .toLowerCase()
+          .trim();
 
-    return chats.filter((chat) => {
-      const name =
-        chat?.name
-          ?.toLowerCase() || "";
+      return chats.filter(
+        (chat) => {
+          const name =
+            chat?.name?.toLowerCase() ||
+            "";
 
-      const username =
-        chat?.username
-          ?.toLowerCase() || "";
+          const username =
+            chat?.username?.toLowerCase() ||
+            "";
 
-      const message =
-        chat?.message
-          ?.toLowerCase() || "";
+          const message =
+            chat?.message?.toLowerCase() ||
+            "";
 
-      const matchesSearch =
-        !query ||
-        name.includes(query) ||
-        username.includes(query) ||
-        message.includes(query);
+          const matchesSearch =
+            !query ||
+            name.includes(query) ||
+            username.includes(query) ||
+            message.includes(query);
 
-      if (!matchesSearch) {
-        return false;
-      }
+          if (!matchesSearch) {
+            return false;
+          }
 
-      if (
-        activeFilter === "unread"
-      ) {
-        return (
-          Number(
-            chat?.unread || 0
-          ) > 0
-        );
-      }
+          if (
+            activeFilter ===
+            "unread"
+          ) {
+            return (
+              Number(
+                chat?.unread || 0
+              ) > 0
+            );
+          }
 
-      if (
-        activeFilter === "favorites"
-      ) {
-        return Boolean(
-          chat?.favorite
-        );
-      }
+          if (
+            activeFilter ===
+            "favorites"
+          ) {
+            return Boolean(
+              chat?.favorite
+            );
+          }
 
-      if (
-        activeFilter === "groups"
-      ) {
-        return Boolean(
-          chat?.group
-        );
-      }
+          if (
+            activeFilter ===
+            "groups"
+          ) {
+            return Boolean(
+              chat?.group
+            );
+          }
 
-      return true;
-    });
-  }, [
-    chats,
-    searchQuery,
-    activeFilter,
-  ]);
+          return true;
+        }
+      );
+    }, [
+      chats,
+      searchQuery,
+      activeFilter,
+    ]);
 
   // ==========================================
   // OPEN CHAT
@@ -649,76 +856,34 @@ useEffect(() => {
   const handleOpenChat = (
     chat
   ) => {
-    console.log(
-      "=========================================="
-    );
-
-    console.log(
-      "Opening ZenvaZapp conversation:"
-    );
-
-    console.log(
-      "Current user ID:",
-      currentUserId
-    );
-
-    console.log(
-      "Selected user:",
-      chat
-    );
-
-    console.log(
-      "Selected user REAL ID:",
-      chat?.id
-    );
-
-    console.log(
-      "Conversation ID:",
-      chat?.conversationId
-    );
-
-    console.log(
-      "Selected username:",
-      chat?.username
-    );
-
-    console.log(
-      "Latest message:",
-      chat?.latestMessage
-    );
-
-    console.log(
-      "=========================================="
-    );
-
     if (onOpenChat) {
       onOpenChat(chat);
     }
   };
 
   // ==========================================
-  // STATUS NAVIGATION
+  // STATUS
   // ==========================================
 
-  const handleYourStatus = () => {
-    if (onNavigate) {
-      onNavigate("status");
-    }
-  };
+  const handleYourStatus =
+    () => {
+      if (onNavigate) {
+        onNavigate("status");
+      }
+    };
 
   // ==========================================
-  // PLUS MENU NAVIGATION
+  // PLUS MENU
   // ==========================================
 
-  const handlePlusNavigation = (
-    destination
-  ) => {
-    setShowPlusMenu(false);
+  const handlePlusNavigation =
+    (destination) => {
+      setShowPlusMenu(false);
 
-    if (onNavigate) {
-      onNavigate(destination);
-    }
-  };
+      if (onNavigate) {
+        onNavigate(destination);
+      }
+    };
 
   // ==========================================
   // RENDER
@@ -727,9 +892,7 @@ useEffect(() => {
   return (
     <div className="chatlist-page">
 
-      {/* =====================================
-          HEADER
-      ===================================== */}
+      {/* HEADER */}
 
       <header className="chatlist-header">
 
@@ -775,7 +938,9 @@ useEffect(() => {
             className="header-icon-button"
             aria-label="Profile"
             onClick={() =>
-              onNavigate?.("profile")
+              onNavigate?.(
+                "profile"
+              )
             }
           >
             👤
@@ -785,9 +950,7 @@ useEffect(() => {
 
       </header>
 
-      {/* =====================================
-          SEARCH BAR
-      ===================================== */}
+      {/* SEARCH */}
 
       {showSearch && (
         <div className="chat-search-container">
@@ -829,9 +992,7 @@ useEffect(() => {
         </div>
       )}
 
-      {/* =====================================
-          STATUS
-      ===================================== */}
+      {/* STATUS */}
 
       <section className="status-section">
 
@@ -845,7 +1006,9 @@ useEffect(() => {
             type="button"
             className="view-status-button"
             onClick={() =>
-              onNavigate?.("status")
+              onNavigate?.(
+                "status"
+              )
             }
           >
             View all
@@ -855,25 +1018,29 @@ useEffect(() => {
 
         <div className="status-list">
 
-          {/* YOUR STATUS */}
-
           <button
             type="button"
             className="status-item add-status"
-            onClick={handleYourStatus}
+            onClick={
+              handleYourStatus
+            }
           >
 
             <div className="status-avatar">
 
               {user?.profilePhoto ? (
                 <img
-                  src={user.profilePhoto}
+                  src={
+                    user.profilePhoto
+                  }
                   alt="Your profile"
                   style={{
                     width: "100%",
                     height: "100%",
-                    borderRadius: "50%",
-                    objectFit: "cover",
+                    borderRadius:
+                      "50%",
+                    objectFit:
+                      "cover",
                   }}
                 />
               ) : (
@@ -897,8 +1064,6 @@ useEffect(() => {
 
           </button>
 
-          {/* REGISTERED USERS */}
-
           {chats
             .slice(0, 8)
             .map((chat) => (
@@ -907,7 +1072,9 @@ useEffect(() => {
                 className="status-item"
                 key={`status-${chat.id}`}
                 onClick={() =>
-                  handleOpenChat(chat)
+                  handleOpenChat(
+                    chat
+                  )
                 }
               >
 
@@ -922,8 +1089,10 @@ useEffect(() => {
                       style={{
                         width: "100%",
                         height: "100%",
-                        borderRadius: "50%",
-                        objectFit: "cover",
+                        borderRadius:
+                          "50%",
+                        objectFit:
+                          "cover",
                       }}
                     />
                   ) : (
@@ -943,21 +1112,22 @@ useEffect(() => {
 
       </section>
 
-      {/* =====================================
-          CHAT FILTERS
-      ===================================== */}
+      {/* FILTERS */}
 
       <section className="chat-filters">
 
         <button
           type="button"
           className={
-            activeFilter === "unread"
+            activeFilter ===
+            "unread"
               ? "filter-button active"
               : "filter-button"
           }
           onClick={() =>
-            setActiveFilter("unread")
+            setActiveFilter(
+              "unread"
+            )
           }
         >
           Unread
@@ -966,12 +1136,15 @@ useEffect(() => {
         <button
           type="button"
           className={
-            activeFilter === "favorites"
+            activeFilter ===
+            "favorites"
               ? "filter-button active"
               : "filter-button"
           }
           onClick={() =>
-            setActiveFilter("favorites")
+            setActiveFilter(
+              "favorites"
+            )
           }
         >
           Favorites
@@ -980,12 +1153,15 @@ useEffect(() => {
         <button
           type="button"
           className={
-            activeFilter === "groups"
+            activeFilter ===
+            "groups"
               ? "filter-button active"
               : "filter-button"
           }
           onClick={() =>
-            setActiveFilter("groups")
+            setActiveFilter(
+              "groups"
+            )
           }
         >
           Groups
@@ -1007,9 +1183,7 @@ useEffect(() => {
 
       </section>
 
-      {/* =====================================
-          CHAT HEADING
-      ===================================== */}
+      {/* CHAT HEADING */}
 
       <section className="chats-heading">
 
@@ -1021,9 +1195,10 @@ useEffect(() => {
 
           <span>
             {isLoadingChats
-              ? "Loading..."
+              ? "Loading contacts..."
               : `${filteredChats.length} ${
-                  filteredChats.length === 1
+                  filteredChats.length ===
+                  1
                     ? "conversation"
                     : "conversations"
                 }`}
@@ -1050,7 +1225,6 @@ useEffect(() => {
           </button>
 
           {showPlusMenu && (
-
             <div className="plus-menu">
 
               <button
@@ -1064,7 +1238,6 @@ useEffect(() => {
                 <span>
                   💬
                 </span>
-
                 New Chat
               </button>
 
@@ -1079,7 +1252,6 @@ useEffect(() => {
                 <span>
                   👥
                 </span>
-
                 New Group
               </button>
 
@@ -1094,7 +1266,6 @@ useEffect(() => {
                 <span>
                   👤
                 </span>
-
                 New Contact
               </button>
 
@@ -1109,21 +1280,17 @@ useEffect(() => {
                 <span>
                   🏘️
                 </span>
-
                 New Community
               </button>
 
             </div>
-
           )}
 
         </div>
 
       </section>
 
-      {/* =====================================
-          ERROR
-      ===================================== */}
+      {/* ERROR */}
 
       {chatLoadError && (
         <div
@@ -1145,38 +1312,35 @@ useEffect(() => {
         </div>
       )}
 
-      {/* =====================================
-          CHAT LIST
-      ===================================== */}
+      {/* CHAT LIST */}
 
       <main className="chat-list">
 
         {isLoadingChats ? (
-
           <div className="empty-chats">
 
             <div className="empty-icon">
-              💬
+              👥
             </div>
 
             <h3>
-              Loading conversations...
+              Loading contacts...
             </h3>
 
             <p>
-              Getting registered users and messages.
+              Just a moment while we get your contacts.
             </p>
 
           </div>
-
-        ) : filteredChats.length === 0 ? (
-
+        ) : filteredChats.length ===
+          0 ? (
           <div className="empty-chats">
 
             <div className="empty-icon">
               {searchQuery
                 ? "🔎"
-                : activeFilter !== "all"
+                : activeFilter !==
+                  "all"
                 ? "📭"
                 : "💬"}
             </div>
@@ -1206,101 +1370,97 @@ useEffect(() => {
             </p>
 
           </div>
-
         ) : (
-
           filteredChats.map(
-            (chat) => (
+            (chat) => {
+              const isPreviewLoading =
+                loadingConversationIds.has(
+                  chat.conversationId
+                );
 
-              <button
-                type="button"
-                className="chat-item"
-                key={chat.id}
-                onClick={() =>
-                  handleOpenChat(chat)
-                }
-              >
+              return (
+                <button
+                  type="button"
+                  className="chat-item"
+                  key={chat.id}
+                  onClick={() =>
+                    handleOpenChat(
+                      chat
+                    )
+                  }
+                >
 
-                {/* ==========================
-                    AVATAR
-                ========================== */}
+                  {/* AVATAR */}
 
-                <div className="chat-avatar">
+                  <div className="chat-avatar">
 
-                  {chat.profilePhoto ? (
-
-                    <img
-                      src={
-                        chat.profilePhoto
-                      }
-                      alt={
-                        chat.name
-                      }
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        borderRadius: "50%",
-                        objectFit: "cover",
-                      }}
-                    />
-
-                  ) : (
-
-                    chat.avatar
-
-                  )}
-
-                </div>
-
-                {/* ==========================
-                    CHAT CONTENT
-                ========================== */}
-
-                <div className="chat-content">
-
-                  <div className="chat-top">
-
-                    <h3>
-                      {chat.name}
-                    </h3>
-
-                    <span className="chat-time">
-                      {chat.time}
-                    </span>
-
-                  </div>
-
-                  <div className="chat-bottom">
-
-                    <p>
-                      {chat.message}
-                    </p>
-
-                    {chat.unread >
-                      0 && (
-
-                      <span className="unread-count">
-                        {chat.unread}
-                      </span>
-
+                    {chat.profilePhoto ? (
+                      <img
+                        src={
+                          chat.profilePhoto
+                        }
+                        alt={chat.name}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          borderRadius:
+                            "50%",
+                          objectFit:
+                            "cover",
+                        }}
+                      />
+                    ) : (
+                      chat.avatar
                     )}
 
                   </div>
 
-                </div>
+                  {/* CHAT CONTENT */}
 
-              </button>
+                  <div className="chat-content">
 
-            )
+                    <div className="chat-top">
+
+                      <h3>
+                        {chat.name}
+                      </h3>
+
+                      <span className="chat-time">
+                        {chat.time}
+                      </span>
+
+                    </div>
+
+                    <div className="chat-bottom">
+
+                      <p>
+                        {isPreviewLoading &&
+                        chat.message ===
+                          "Start a conversation"
+                          ? "Loading messages..."
+                          : chat.message}
+                      </p>
+
+                      {chat.unread >
+                        0 && (
+                        <span className="unread-count">
+                          {chat.unread}
+                        </span>
+                      )}
+
+                    </div>
+
+                  </div>
+
+                </button>
+              );
+            }
           )
-
         )}
 
       </main>
 
-      {/* =====================================
-          BOTTOM NAVIGATION
-      ===================================== */}
+      {/* BOTTOM NAVIGATION */}
 
       <nav
         className="bottom-navigation"
@@ -1311,7 +1471,9 @@ useEffect(() => {
           type="button"
           className="nav-button active"
           onClick={() =>
-            onNavigate?.("chats")
+            onNavigate?.(
+              "chats"
+            )
           }
         >
           <span className="nav-icon">
@@ -1327,7 +1489,9 @@ useEffect(() => {
           type="button"
           className="nav-button"
           onClick={() =>
-            onNavigate?.("calls")
+            onNavigate?.(
+              "calls"
+            )
           }
         >
           <span className="nav-icon">
@@ -1343,7 +1507,9 @@ useEffect(() => {
           type="button"
           className="nav-button"
           onClick={() =>
-            onNavigate?.("tools")
+            onNavigate?.(
+              "tools"
+            )
           }
         >
           <span className="nav-icon">
@@ -1359,7 +1525,9 @@ useEffect(() => {
           type="button"
           className="nav-button"
           onClick={() =>
-            onNavigate?.("settings")
+            onNavigate?.(
+              "settings"
+            )
           }
         >
           <span className="nav-icon">
