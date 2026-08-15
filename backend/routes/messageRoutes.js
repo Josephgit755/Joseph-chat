@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const Message = require("../models/Message");
 
 const router = express.Router();
@@ -10,6 +11,9 @@ const router = express.Router();
 const DELETED_MESSAGE_TEXT =
   "This message was deleted.";
 
+const UNDONE_MESSAGE_TEXT =
+  "This message was undone.";
+
 const DISAPPEARING_DURATIONS = [
   0,
   24 * 60 * 60 * 1000,
@@ -18,18 +22,46 @@ const DISAPPEARING_DURATIONS = [
 ];
 
 // ==========================================
+// HELPERS
+// ==========================================
+
+const isValidObjectId = (id) =>
+  mongoose.Types.ObjectId.isValid(id);
+
+const normalizeUserId = (id) =>
+  String(id);
+
+const isParticipant = (
+  message,
+  userId
+) => {
+  const currentUserId =
+    normalizeUserId(userId);
+
+  return (
+    normalizeUserId(
+      message.senderId
+    ) === currentUserId ||
+    normalizeUserId(
+      message.receiverId
+    ) === currentUserId
+  );
+};
+
+// ==========================================
 // TEST MESSAGE ROUTE
 // ==========================================
 
 router.get("/test", (req, res) => {
   res.json({
     success: true,
-    message: "ZenvaZapp message API is working",
+    message:
+      "ZenvaZapp message API is working",
   });
 });
 
 // ==========================================
-// GET MESSAGES FOR A CONVERSATION
+// GET MESSAGES FOR CONVERSATION
 // ==========================================
 
 router.get(
@@ -39,7 +71,8 @@ router.get(
       const { conversationId } =
         req.params;
 
-      const { userId } = req.query;
+      const { userId } =
+        req.query;
 
       if (!conversationId) {
         return res.status(400).json({
@@ -49,11 +82,11 @@ router.get(
         });
       }
 
-      const now = new Date();
-
       // ======================================
       // EXPIRE DISAPPEARING MESSAGES
       // ======================================
+
+      const now = new Date();
 
       await Message.updateMany(
         {
@@ -62,34 +95,30 @@ router.get(
             $ne: null,
             $lte: now,
           },
-          undone: false,
+          deletedForEveryone: false,
         },
         {
           $set: {
-            undone: true,
             deletedForSender: true,
             deletedForReceiver: true,
+            expiresAt: null,
           },
         }
       );
 
       // ======================================
-      // LOAD MESSAGES
-      // ======================================
-      //
-      // When userId is provided, ONLY return
-      // messages visible to that specific user.
-      //
-      // This fixes the previous situation where
-      // the $or condition could return a message
-      // even when it had been deleted for the
-      // current user.
+      // BUILD QUERY
       // ======================================
 
-      let messageQuery = {
+      const messageQuery = {
         conversationId,
+        deletedForEveryone: false,
         undone: false,
       };
+
+      // ======================================
+      // USER-SPECIFIC VISIBILITY
+      // ======================================
 
       if (userId) {
         messageQuery.$or = [
@@ -103,32 +132,31 @@ router.get(
           },
         ];
       } else {
-        // Backward-compatible fallback for
-        // existing frontend requests.
+        // Backward-compatible fallback.
         messageQuery.$or = [
           {
-            senderId: {
-              $exists: true,
-            },
             deletedForSender: false,
           },
           {
-            receiverId: {
-              $exists: true,
-            },
             deletedForReceiver: false,
           },
         ];
       }
 
+      // ======================================
+      // LOAD MESSAGES
+      // ======================================
+
       const messages =
         await Message.find(
           messageQuery
-        ).sort({
-          createdAt: 1,
-        });
+        )
+          .sort({
+            createdAt: 1,
+          })
+          .lean();
 
-      res.json({
+      return res.json({
         success: true,
         messages,
       });
@@ -138,7 +166,7 @@ router.get(
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message:
           "Failed to load messages.",
@@ -164,6 +192,10 @@ router.post(
         disappearingDuration,
       } = req.body;
 
+      // ======================================
+      // REQUIRED FIELDS
+      // ======================================
+
       if (
         !conversationId ||
         !senderId ||
@@ -177,8 +209,28 @@ router.post(
       }
 
       if (
-        messageType === "text" &&
-        (!text || !text.trim())
+        !isValidObjectId(senderId) ||
+        !isValidObjectId(receiverId)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid sender or receiver ID.",
+        });
+      }
+
+      // ======================================
+      // MESSAGE TYPE
+      // ======================================
+
+      const normalizedMessageType =
+        messageType || "text";
+
+      if (
+        normalizedMessageType ===
+          "text" &&
+        (!text ||
+          !String(text).trim())
       ) {
         return res.status(400).json({
           success: false,
@@ -196,9 +248,12 @@ router.post(
       if (
         disappearingDuration !==
           undefined &&
-        disappearingDuration !== null &&
-        disappearingDuration !== "" &&
-        disappearingDuration !== "off"
+        disappearingDuration !==
+          null &&
+        disappearingDuration !==
+          "" &&
+        disappearingDuration !==
+          "off"
       ) {
         duration = Number(
           disappearingDuration
@@ -235,27 +290,29 @@ router.post(
 
       const message =
         await Message.create({
-          conversationId,
+          conversationId:
+            conversationId.trim(),
+
           senderId,
+
           receiverId,
 
           text: text
-            ? text.trim()
+            ? String(text).trim()
             : "",
 
           messageType:
-            messageType || "text",
+            normalizedMessageType,
 
           status: "sent",
 
-          deletedForSender:
-            false,
+          edited: false,
 
-          deletedForReceiver:
-            false,
+          deletedForSender: false,
 
-          deletedForEveryone:
-            false,
+          deletedForReceiver: false,
+
+          deletedForEveryone: false,
 
           undone: false,
 
@@ -265,7 +322,7 @@ router.post(
           expiresAt,
         });
 
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         message,
       });
@@ -275,7 +332,7 @@ router.post(
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message:
           "Failed to send message.",
@@ -301,17 +358,31 @@ router.patch(
         text,
       } = req.body;
 
-      if (!userId) {
+      if (
+        !userId ||
+        !isValidObjectId(userId)
+      ) {
         return res.status(400).json({
           success: false,
           message:
-            "User ID is required.",
+            "Valid user ID is required.",
+        });
+      }
+
+      if (
+        !messageId ||
+        !isValidObjectId(messageId)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Valid message ID is required.",
         });
       }
 
       if (
         !text ||
-        !text.trim()
+        !String(text).trim()
       ) {
         return res.status(400).json({
           success: false,
@@ -333,6 +404,10 @@ router.patch(
         });
       }
 
+      // ======================================
+      // ONLY SENDER CAN EDIT
+      // ======================================
+
       if (
         String(message.senderId) !==
         String(userId)
@@ -344,10 +419,14 @@ router.patch(
         });
       }
 
+      // ======================================
+      // CANNOT EDIT DELETED/UNDONE MESSAGE
+      // ======================================
+
       if (
         message.deletedForEveryone ||
-        message.undone ||
-        message.deletedForSender
+        message.deletedForSender ||
+        message.undone
       ) {
         return res.status(400).json({
           success: false,
@@ -357,15 +436,13 @@ router.patch(
       }
 
       message.text =
-        text.trim();
+        String(text).trim();
 
       message.edited = true;
-      message.updatedAt =
-        new Date();
 
       await message.save();
 
-      res.json({
+      return res.json({
         success: true,
         message,
       });
@@ -375,7 +452,7 @@ router.patch(
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message:
           "Failed to edit message.",
@@ -399,11 +476,25 @@ router.patch(
       const { userId } =
         req.body;
 
-      if (!userId) {
+      if (
+        !userId ||
+        !isValidObjectId(userId)
+      ) {
         return res.status(400).json({
           success: false,
           message:
-            "User ID is required.",
+            "Valid user ID is required.",
+        });
+      }
+
+      if (
+        !messageId ||
+        !isValidObjectId(messageId)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Valid message ID is required.",
         });
       }
 
@@ -420,19 +511,16 @@ router.patch(
         });
       }
 
+      // ======================================
+      // VERIFY PARTICIPANT
+      // ======================================
+
       if (
-        String(message.senderId) ===
-        String(userId)
+        !isParticipant(
+          message,
+          userId
+        )
       ) {
-        message.deletedForSender =
-          true;
-      } else if (
-        String(message.receiverId) ===
-        String(userId)
-      ) {
-        message.deletedForReceiver =
-          true;
-      } else {
         return res.status(403).json({
           success: false,
           message:
@@ -440,9 +528,24 @@ router.patch(
         });
       }
 
+      // ======================================
+      // DELETE FOR CURRENT USER
+      // ======================================
+
+      if (
+        String(message.senderId) ===
+        String(userId)
+      ) {
+        message.deletedForSender =
+          true;
+      } else {
+        message.deletedForReceiver =
+          true;
+      }
+
       await message.save();
 
-      res.json({
+      return res.json({
         success: true,
         message,
       });
@@ -452,7 +555,7 @@ router.patch(
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message:
           "Failed to delete message for you.",
@@ -475,11 +578,25 @@ router.patch(
       const { userId } =
         req.body;
 
-      if (!userId) {
+      if (
+        !userId ||
+        !isValidObjectId(userId)
+      ) {
         return res.status(400).json({
           success: false,
           message:
-            "User ID is required.",
+            "Valid user ID is required.",
+        });
+      }
+
+      if (
+        !messageId ||
+        !isValidObjectId(messageId)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Valid message ID is required.",
         });
       }
 
@@ -496,6 +613,10 @@ router.patch(
         });
       }
 
+      // ======================================
+      // ONLY SENDER
+      // ======================================
+
       if (
         String(message.senderId) !==
         String(userId)
@@ -507,10 +628,26 @@ router.patch(
         });
       }
 
+      // ======================================
+      // ALREADY DELETED
+      // ======================================
+
+      if (
+        message.deletedForEveryone
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Message is already deleted for everyone.",
+        });
+      }
+
+      // ======================================
+      // DELETE FOR EVERYONE
+      // ======================================
+
       message.deletedForEveryone =
         true;
-
-      message.undone = true;
 
       message.deletedForSender =
         true;
@@ -518,12 +655,14 @@ router.patch(
       message.deletedForReceiver =
         true;
 
+      message.expiresAt = null;
+
       message.text =
         DELETED_MESSAGE_TEXT;
 
       await message.save();
 
-      res.json({
+      return res.json({
         success: true,
         message,
       });
@@ -533,10 +672,130 @@ router.patch(
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message:
           "Failed to delete message for everyone.",
+      });
+    }
+  }
+);
+
+// ==========================================
+// UNDO MESSAGE
+// ==========================================
+
+router.patch(
+  "/:messageId/undo",
+  async (req, res) => {
+    try {
+      const { messageId } =
+        req.params;
+
+      const { userId } =
+        req.body;
+
+      if (
+        !userId ||
+        !isValidObjectId(userId)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Valid user ID is required.",
+        });
+      }
+
+      if (
+        !messageId ||
+        !isValidObjectId(messageId)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Valid message ID is required.",
+        });
+      }
+
+      const message =
+        await Message.findById(
+          messageId
+        );
+
+      if (!message) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "Message not found.",
+        });
+      }
+
+      // ======================================
+      // ONLY SENDER CAN UNDO
+      // ======================================
+
+      if (
+        String(message.senderId) !==
+        String(userId)
+      ) {
+        return res.status(403).json({
+          success: false,
+          message:
+            "Only the sender can undo this message.",
+        });
+      }
+
+      if (
+        message.deletedForEveryone
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "A message deleted for everyone cannot be undone.",
+        });
+      }
+
+      if (message.undone) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Message has already been undone.",
+        });
+      }
+
+      // ======================================
+      // UNDO
+      // ======================================
+
+      message.undone = true;
+
+      message.deletedForSender =
+        true;
+
+      message.deletedForReceiver =
+        true;
+
+      message.expiresAt = null;
+
+      message.text =
+        UNDONE_MESSAGE_TEXT;
+
+      await message.save();
+
+      return res.json({
+        success: true,
+        message,
+      });
+    } catch (error) {
+      console.error(
+        "Undo message error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Failed to undo message.",
       });
     }
   }
@@ -565,25 +824,29 @@ router.patch(
         });
       }
 
-      if (!userId) {
+      if (
+        !userId ||
+        !isValidObjectId(userId)
+      ) {
         return res.status(400).json({
           success: false,
           message:
-            "User ID is required.",
+            "Valid user ID is required.",
         });
       }
 
-      const conversationMessages =
+      // ======================================
+      // FIND CONVERSATION MESSAGES
+      // ======================================
+
+      const messages =
         await Message.find({
           conversationId,
         }).select(
           "senderId receiverId"
         );
 
-      if (
-        conversationMessages.length ===
-        0
-      ) {
+      if (!messages.length) {
         return res.json({
           success: true,
           message:
@@ -592,16 +855,22 @@ router.patch(
         });
       }
 
-      const isParticipant =
-        conversationMessages.some(
-          (item) =>
-            String(item.senderId) ===
-              String(userId) ||
-            String(item.receiverId) ===
-              String(userId)
+      // ======================================
+      // VERIFY PARTICIPANT
+      // ======================================
+
+      const participant =
+        messages.some(
+          (message) =>
+            String(
+              message.senderId
+            ) === String(userId) ||
+            String(
+              message.receiverId
+            ) === String(userId)
         );
 
-      if (!isParticipant) {
+      if (!participant) {
         return res.status(403).json({
           success: false,
           message:
@@ -609,11 +878,16 @@ router.patch(
         });
       }
 
+      // ======================================
+      // DELETE MESSAGES SENT BY USER
+      // ======================================
+
       const senderResult =
         await Message.updateMany(
           {
             conversationId,
             senderId: userId,
+            deletedForSender: false,
           },
           {
             $set: {
@@ -622,11 +896,16 @@ router.patch(
           }
         );
 
+      // ======================================
+      // DELETE MESSAGES RECEIVED BY USER
+      // ======================================
+
       const receiverResult =
         await Message.updateMany(
           {
             conversationId,
             receiverId: userId,
+            deletedForReceiver: false,
           },
           {
             $set: {
@@ -645,7 +924,7 @@ router.patch(
             0
         );
 
-      res.json({
+      return res.json({
         success: true,
         message:
           "Conversation deleted for you.",
@@ -658,7 +937,7 @@ router.patch(
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message:
           "Failed to delete conversation.",
@@ -669,7 +948,7 @@ router.patch(
 );
 
 // ==========================================
-// MARK ALL INCOMING MESSAGES DELIVERED
+// MARK INCOMING MESSAGES DELIVERED
 // ==========================================
 
 router.patch(
@@ -683,11 +962,14 @@ router.patch(
       const { userId } =
         req.body;
 
-      if (!userId) {
+      if (
+        !userId ||
+        !isValidObjectId(userId)
+      ) {
         return res.status(400).json({
           success: false,
           message:
-            "User ID is required.",
+            "Valid user ID is required.",
         });
       }
 
@@ -698,6 +980,7 @@ router.patch(
             receiverId: userId,
             status: "sent",
             deletedForReceiver: false,
+            deletedForEveryone: false,
           },
           {
             $set: {
@@ -706,7 +989,7 @@ router.patch(
           }
         );
 
-      res.json({
+      return res.json({
         success: true,
         message:
           "Messages marked as delivered.",
@@ -719,7 +1002,7 @@ router.patch(
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message:
           "Failed to mark messages as delivered.",
@@ -729,7 +1012,7 @@ router.patch(
 );
 
 // ==========================================
-// MARK ALL INCOMING MESSAGES READ
+// MARK INCOMING MESSAGES READ
 // ==========================================
 
 router.patch(
@@ -743,11 +1026,14 @@ router.patch(
       const { userId } =
         req.body;
 
-      if (!userId) {
+      if (
+        !userId ||
+        !isValidObjectId(userId)
+      ) {
         return res.status(400).json({
           success: false,
           message:
-            "User ID is required.",
+            "Valid user ID is required.",
         });
       }
 
@@ -763,6 +1049,7 @@ router.patch(
               ],
             },
             deletedForReceiver: false,
+            deletedForEveryone: false,
           },
           {
             $set: {
@@ -771,7 +1058,7 @@ router.patch(
           }
         );
 
-      res.json({
+      return res.json({
         success: true,
         message:
           "Messages marked as read.",
@@ -784,7 +1071,7 @@ router.patch(
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message:
           "Failed to mark messages as read.",
@@ -804,16 +1091,23 @@ router.patch(
       const { messageId } =
         req.params;
 
+      const { userId } =
+        req.body;
+
+      if (
+        !userId ||
+        !isValidObjectId(userId)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Valid user ID is required.",
+        });
+      }
+
       const message =
-        await Message.findByIdAndUpdate(
-          messageId,
-          {
-            status:
-              "delivered",
-          },
-          {
-            new: true,
-          }
+        await Message.findById(
+          messageId
         );
 
       if (!message) {
@@ -824,7 +1118,44 @@ router.patch(
         });
       }
 
-      res.json({
+      // Only receiver can mark it delivered.
+      if (
+        String(message.receiverId) !==
+        String(userId)
+      ) {
+        return res.status(403).json({
+          success: false,
+          message:
+            "Only the receiver can mark this message as delivered.",
+        });
+      }
+
+      if (
+        message.deletedForReceiver ||
+        message.deletedForEveryone
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "This message is no longer available.",
+        });
+      }
+
+      if (
+        message.status === "read"
+      ) {
+        return res.json({
+          success: true,
+          message,
+        });
+      }
+
+      message.status =
+        "delivered";
+
+      await message.save();
+
+      return res.json({
         success: true,
         message,
       });
@@ -834,7 +1165,7 @@ router.patch(
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message:
           "Failed to mark message as delivered.",
@@ -854,15 +1185,23 @@ router.patch(
       const { messageId } =
         req.params;
 
+      const { userId } =
+        req.body;
+
+      if (
+        !userId ||
+        !isValidObjectId(userId)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Valid user ID is required.",
+        });
+      }
+
       const message =
-        await Message.findByIdAndUpdate(
-          messageId,
-          {
-            status: "read",
-          },
-          {
-            new: true,
-          }
+        await Message.findById(
+          messageId
         );
 
       if (!message) {
@@ -873,7 +1212,34 @@ router.patch(
         });
       }
 
-      res.json({
+      // Only receiver can mark it read.
+      if (
+        String(message.receiverId) !==
+        String(userId)
+      ) {
+        return res.status(403).json({
+          success: false,
+          message:
+            "Only the receiver can mark this message as read.",
+        });
+      }
+
+      if (
+        message.deletedForReceiver ||
+        message.deletedForEveryone
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "This message is no longer available.",
+        });
+      }
+
+      message.status = "read";
+
+      await message.save();
+
+      return res.json({
         success: true,
         message,
       });
@@ -883,7 +1249,7 @@ router.patch(
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message:
           "Failed to mark message as read.",

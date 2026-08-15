@@ -25,6 +25,7 @@ const messageSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      index: true,
     },
 
     // ========================================
@@ -35,6 +36,7 @@ const messageSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      index: true,
     },
 
     // ========================================
@@ -53,6 +55,15 @@ const messageSchema = new mongoose.Schema(
 
     messageType: {
       type: String,
+      enum: [
+        "text",
+        "image",
+        "video",
+        "audio",
+        "file",
+        "voice",
+        "system",
+      ],
       default: "text",
       trim: true,
     },
@@ -70,6 +81,7 @@ const messageSchema = new mongoose.Schema(
         "read",
       ],
       default: "sent",
+      index: true,
     },
 
     // ========================================
@@ -109,7 +121,15 @@ const messageSchema = new mongoose.Schema(
     },
 
     // ========================================
-    // UNDONE / REMOVED MESSAGE
+    // UNDONE
+    // ========================================
+    //
+    // This is kept separate from deletion.
+    // It represents a message that was undone
+    // by the application's undo functionality.
+    //
+    // Do NOT use this field for disappearing
+    // messages or delete-for-everyone.
     // ========================================
 
     undone: {
@@ -118,13 +138,26 @@ const messageSchema = new mongoose.Schema(
     },
 
     // ========================================
-    // DISAPPEARING MESSAGE SETTING
-    // off / 24h / 7d / 90d
+    // DISAPPEARING MESSAGE DURATION
+    // ========================================
+    //
+    // Stored in milliseconds:
+    //
+    // 0                   = off
+    // 86400000            = 24 hours
+    // 604800000           = 7 days
+    // 7776000000          = 90 days
     // ========================================
 
     disappearingDuration: {
-      type: String,
-      default: "off",
+      type: Number,
+      enum: [
+        0,
+        24 * 60 * 60 * 1000,
+        7 * 24 * 60 * 60 * 1000,
+        90 * 24 * 60 * 60 * 1000,
+      ],
+      default: 0,
     },
 
     // ========================================
@@ -149,6 +182,14 @@ const messageSchema = new mongoose.Schema(
 messageSchema.index({
   conversationId: 1,
   createdAt: 1,
+});
+
+// ==========================================
+// INDEX FOR EXPIRING MESSAGES
+// ==========================================
+
+messageSchema.index({
+  expiresAt: 1,
 });
 
 // ==========================================
