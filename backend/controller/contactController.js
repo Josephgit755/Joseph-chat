@@ -945,4 +945,4 @@ module.exports = {
   markRecentlyContacted,
   getRecentlyContacted,
   getFavoriteContacts,
-};s
+};
