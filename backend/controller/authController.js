@@ -39,6 +39,34 @@ const hashOTP = (otp) => {
 };
 
 // ==========================================
+// NORMALIZE PHONE
+// ==========================================
+//
+// Keep phone numbers in one consistent format
+// throughout ZenvaZapp.
+//
+// Example:
+//
+// +237 690 123 456
+// +237-690-123-456
+// +237(690)123456
+//
+// All become:
+//
+// +237690123456
+// ==========================================
+
+const normalizePhone = (phone) => {
+  if (!phone) {
+    return "";
+  }
+
+  return String(phone)
+    .trim()
+    .replace(/[^\d+]/g, "");
+};
+
+// ==========================================
 // SAFE USER
 // ==========================================
 
@@ -123,9 +151,7 @@ const registerUser = async (req, res) => {
         .toLowerCase();
 
     const cleanedPhone =
-      phone
-        .trim()
-        .replace(/[\s()-]/g, "");
+      normalizePhone(phone);
 
     // ==========================================
     // FULL NAME
@@ -342,6 +368,58 @@ const registerUser = async (req, res) => {
       error
     );
 
+    // ==========================================
+    // HANDLE DUPLICATE DATABASE VALUES
+    // ==========================================
+
+    if (
+      error.code === 11000
+    ) {
+      const duplicateField =
+        Object.keys(
+          error.keyPattern || {}
+        )[0];
+
+      if (
+        duplicateField ===
+        "username"
+      ) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "Username is already taken.",
+        });
+      }
+
+      if (
+        duplicateField ===
+        "email"
+      ) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "Email is already registered.",
+        });
+      }
+
+      if (
+        duplicateField ===
+        "phone"
+      ) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "Phone number is already registered.",
+        });
+      }
+
+      return res.status(409).json({
+        success: false,
+        message:
+          "An account with these details already exists.",
+      });
+    }
+
     return res.status(500).json({
       success: false,
       message:
@@ -378,12 +456,7 @@ const loginUser = async (req, res) => {
         .toLowerCase();
 
     const cleanedPhone =
-      identifier
-        .trim()
-        .replace(
-          /[\s()-]/g,
-          ""
-        );
+      normalizePhone(identifier);
 
     const user =
       await User.findOne({
