@@ -3,6 +3,7 @@ import { useState } from "react";
 import Login from "./pages/Login";
 import ProfileSetup from "./pages/ProfileSetup";
 import ChatList from "./pages/ChatList";
+import Contacts from "./pages/Contacts";
 import PrivateChat from "./pages/PrivateChat";
 import DisappearingMessage from "./pages/DisappearingMessage";
 
@@ -24,6 +25,13 @@ function App() {
   const [selectedChat, setSelectedChat] =
     useState(null);
 
+  const [activeCall, setActiveCall] =
+    useState(null);
+
+  const API_URL =
+    process.env.REACT_APP_API_URL ||
+    "https://joseph-backend.onrender.com";
+
   // ==========================================
   // AFTER LOGIN + OTP VERIFICATION
   // ==========================================
@@ -32,9 +40,6 @@ function App() {
     authenticatedUser
   ) => {
     setUser(authenticatedUser);
-
-    // After successful OTP verification,
-    // the user goes to profile setup.
     setCurrentScreen("profile");
   };
 
@@ -52,8 +57,6 @@ function App() {
 
     setUser(updatedUser);
 
-    // Make sure the latest user is available
-    // locally as well.
     try {
       localStorage.setItem(
         "zenvazapp_user",
@@ -66,9 +69,67 @@ function App() {
       );
     }
 
-    // IMPORTANT:
-    // Immediately enter the ChatList.
     setCurrentScreen("chatlist");
+  };
+
+  // ==========================================
+  // MARK CONTACT AS RECENTLY CONTACTED
+  // ==========================================
+
+  const handleContactOpened = async (chat) => {
+    const currentUserId =
+      user?._id ||
+      user?.id ||
+      user?.userId;
+
+    const contactUserId =
+      chat?._id ||
+      chat?.id ||
+      chat?.userId;
+
+    if (
+      !currentUserId ||
+      !contactUserId
+    ) {
+      return;
+    }
+
+    try {
+      const response =
+        await fetch(
+          `${API_URL}/api/contacts/recently-contacted`,
+          {
+            method: "PATCH",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              userId: currentUserId,
+              contactUserId:
+                contactUserId,
+            }),
+          }
+        );
+
+      if (!response.ok) {
+        console.warn(
+          "Recently contacted sync returned:",
+          response.status
+        );
+      }
+    } catch (error) {
+      /*
+       * This should never block the user
+       * from opening or using a chat.
+       */
+      console.warn(
+        "Unable to update recently contacted status:",
+        error
+      );
+    }
   };
 
   // ==========================================
@@ -76,8 +137,37 @@ function App() {
   // ==========================================
 
   const handleOpenChat = (chat) => {
-    setSelectedChat(chat);
-    setCurrentScreen("private-chat");
+    if (!chat) {
+      return;
+    }
+
+    /*
+     * Remember where the chat was opened from.
+     *
+     * Contacts -> PrivateChat -> Back
+     * should return to Contacts.
+     *
+     * ChatList -> PrivateChat -> Back
+     * should return to ChatList.
+     */
+
+    const navigationSource =
+      currentScreen === "contacts"
+        ? "contacts"
+        : "chatlist";
+
+    const chatWithNavigation = {
+      ...chat,
+      navigationSource,
+    };
+
+    setSelectedChat(
+      chatWithNavigation
+    );
+
+    setCurrentScreen(
+      "private-chat"
+    );
   };
 
   // ==========================================
@@ -107,7 +197,9 @@ function App() {
 
   const handleCloseDisappearingSettings =
     () => {
-      setCurrentScreen("private-chat");
+      setCurrentScreen(
+        "private-chat"
+      );
     };
 
   // ==========================================
@@ -123,6 +215,14 @@ function App() {
       case "chats":
       case "chatlist":
         setCurrentScreen("chatlist");
+        break;
+
+      // --------------------------------------
+      // CONTACTS
+      // --------------------------------------
+
+      case "contacts":
+        setCurrentScreen("contacts");
         break;
 
       // --------------------------------------
@@ -196,9 +296,7 @@ function App() {
       // --------------------------------------
 
       case "new-chat":
-        console.log(
-          "New Chat page is not implemented yet."
-        );
+        setCurrentScreen("contacts");
         break;
 
       // --------------------------------------
@@ -216,9 +314,7 @@ function App() {
       // --------------------------------------
 
       case "new-contact":
-        console.log(
-          "New Contact page is not implemented yet."
-        );
+        setCurrentScreen("contacts");
         break;
 
       // --------------------------------------
@@ -291,18 +387,53 @@ function App() {
   }
 
   // ==========================================
+  // CONTACTS
+  // ==========================================
+
+  if (currentScreen === "contacts") {
+    return (
+      <Contacts
+        user={user}
+        onOpenChat={
+          handleOpenChat
+        }
+        onNavigate={
+          handleNavigate
+        }
+      />
+    );
+  }
+
+  // ==========================================
   // PRIVATE CHAT
   // ==========================================
 
-  if (currentScreen === "private-chat") {
+  if (
+    currentScreen === "private-chat"
+  ) {
     return (
       <PrivateChat
         user={user}
         chat={selectedChat}
 
         onBack={() => {
+          const navigationSource =
+            selectedChat?.navigationSource;
+
           setSelectedChat(null);
-          setCurrentScreen("chatlist");
+
+          if (
+            navigationSource ===
+            "contacts"
+          ) {
+            setCurrentScreen(
+              "contacts"
+            );
+          } else {
+            setCurrentScreen(
+              "chatlist"
+            );
+          }
         }}
 
         onCall={(chat) => {
@@ -311,7 +442,14 @@ function App() {
             chat
           );
 
-          setCurrentScreen("calls");
+          setActiveCall({
+            type: "voice",
+            chat,
+          });
+
+          setCurrentScreen(
+            "calls"
+          );
         }}
 
         onVideoCall={(chat) => {
@@ -320,11 +458,22 @@ function App() {
             chat
           );
 
-          setCurrentScreen("calls");
+          setActiveCall({
+            type: "video",
+            chat,
+          });
+
+          setCurrentScreen(
+            "calls"
+          );
         }}
 
         onOpenDisappearingSettings={
           handleOpenDisappearingSettings
+        }
+
+        onContactOpened={
+          handleContactOpened
         }
       />
     );
@@ -362,6 +511,7 @@ function App() {
     return (
       <Calls
         user={user}
+        activeCall={activeCall}
         onNavigate={
           handleNavigate
         }
@@ -402,7 +552,9 @@ function App() {
   // TRANSLATOR
   // ==========================================
 
-  if (currentScreen === "translator") {
+  if (
+    currentScreen === "translator"
+  ) {
     return (
       <Translator
         onBack={() =>

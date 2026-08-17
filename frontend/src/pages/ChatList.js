@@ -4,6 +4,7 @@ import {
   useMemo,
   useState,
 } from "react";
+
 import "./chatlist.css";
 
 // ==========================================
@@ -44,8 +45,7 @@ const formatMessageTime = (dateValue) => {
   const now = new Date();
 
   const isToday =
-    date.toDateString() ===
-    now.toDateString();
+    date.toDateString() === now.toDateString();
 
   if (isToday) {
     return date.toLocaleTimeString([], {
@@ -284,7 +284,7 @@ function ChatList({
   };
 
   // ==========================================
-  // LOAD ONE CONVERSATION IN BACKGROUND
+  // LOAD ONE CONVERSATION
   // ==========================================
 
   const loadConversationData =
@@ -349,10 +349,6 @@ function ChatList({
               ? data.messages
               : [];
 
-          // ========================================
-          // LATEST MESSAGE
-          // ========================================
-
           const latestMessage =
             messages.length > 0
               ? messages[
@@ -360,19 +356,11 @@ function ChatList({
                 ]
               : null;
 
-          // ========================================
-          // SYNCHRONIZED UNREAD COUNT
-          // ========================================
-
           const unreadCount =
             calculateUnreadCount(
               messages,
               currentUserId
             );
-
-          // ========================================
-          // UPDATED CHAT
-          // ========================================
 
           const updatedChat = {
             ...conversation,
@@ -393,10 +381,6 @@ function ChatList({
 
             latestMessage,
           };
-
-          // ========================================
-          // UPDATE ONLY THIS CHAT
-          // ========================================
 
           setChats(
             (previousChats) => {
@@ -486,7 +470,7 @@ function ChatList({
     );
 
   // ==========================================
-  // REFRESH ALL UNREAD COUNTS
+  // REFRESH UNREAD COUNTS
   // ==========================================
 
   const refreshUnreadCounts =
@@ -499,11 +483,8 @@ function ChatList({
           return;
         }
 
-        const conversations =
-          [...chats];
-
         await Promise.all(
-          conversations.map(
+          chats.map(
             (chat) =>
               loadConversationData(
                 chat
@@ -519,18 +500,14 @@ function ChatList({
     );
 
   // ==========================================
-  // LOAD REGISTERED USERS
+  // LOAD ONLY MY CONTACTS
   // ==========================================
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadUsers = async () => {
+    const loadContacts = async () => {
       if (!currentUserId) {
-        console.log(
-          "Cannot load chat users: current user ID missing."
-        );
-
         if (isMounted) {
           setIsLoadingChats(false);
         }
@@ -544,7 +521,9 @@ function ChatList({
 
         const response =
           await fetch(
-            `${API_URL}/api/users`
+            `${API_URL}/api/contacts?userId=${encodeURIComponent(
+              currentUserId
+            )}`
           );
 
         let data = {};
@@ -564,101 +543,104 @@ function ChatList({
         ) {
           throw new Error(
             data?.message ||
-              "Failed to load registered users."
+              "Failed to load contacts."
           );
         }
 
-        const registeredUsers =
+        const contacts =
           Array.isArray(
-            data.users
+            data.contacts
           )
-            ? data.users
+            ? data.contacts
             : [];
 
         const baseChats =
-          registeredUsers
-            .filter((account) => {
-              const accountId =
-                account?._id ||
-                account?.id ||
-                account?.userId;
+          contacts
+            .filter(
+              (contactRecord) =>
+                contactRecord?.contact
+            )
+            .map(
+              (contactRecord) => {
+                const account =
+                  contactRecord.contact;
 
-              return (
-                accountId &&
-                String(accountId) !==
-                  String(
-                    currentUserId
-                  )
-              );
-            })
-            .map((account) => {
-              const accountId =
-                account?._id ||
-                account?.id ||
-                account?.userId;
+                const accountId =
+                  account?._id ||
+                  account?.id ||
+                  account?.userId;
 
-              const displayName =
-                account?.displayName ||
-                account?.fullName ||
-                account?.username ||
-                "User";
+                if (!accountId) {
+                  return null;
+                }
 
-              const profilePhoto =
-                account?.profilePhoto ||
-                account?.avatar ||
-                "";
-
-              const conversationId =
-                createConversationId(
-                  currentUserId,
-                  accountId
-                );
-
-              return {
-                id: accountId,
-
-                conversationId,
-
-                name: displayName,
-
-                username:
-                  account?.username ||
-                  "",
-
-                fullName:
+                const displayName =
+                  contactRecord?.nickname ||
                   account?.fullName ||
-                  "",
+                  account?.username ||
+                  "User";
 
-                profilePhoto,
+                const profilePhoto =
+                  account?.profilePhoto ||
+                  account?.avatar ||
+                  "";
 
-                profileCompleted:
-                  account?.profileCompleted,
+                const conversationId =
+                  createConversationId(
+                    currentUserId,
+                    accountId
+                  );
 
-                message:
-                  "Start a conversation",
+                return {
+                  id: accountId,
 
-                time: "",
+                  contactId:
+                    contactRecord._id,
 
-                unread: 0,
+                  conversationId,
 
-                favorite:
-                  Boolean(
-                    account?.favorite
-                  ),
+                  name: displayName,
 
-                group: false,
+                  username:
+                    account?.username ||
+                    "",
 
-                avatar:
-                  profilePhoto ||
-                  displayName
-                    .charAt(0)
-                    .toUpperCase(),
-              };
-            });
+                  fullName:
+                    account?.fullName ||
+                    "",
 
-        // ======================================
-        // DISPLAY USERS IMMEDIATELY
-        // ======================================
+                  phone:
+                    account?.phone ||
+                    "",
+
+                  profilePhoto,
+
+                  profileCompleted:
+                    account?.profileCompleted,
+
+                  message:
+                    "Start a conversation",
+
+                  time: "",
+
+                  unread: 0,
+
+                  favorite:
+                    Boolean(
+                      contactRecord?.favorite
+                    ),
+
+                  group: false,
+
+                  avatar:
+                    profilePhoto ||
+                    displayName
+                      .charAt(0)
+                      .toUpperCase(),
+                };
+              }
+            )
+            .filter(Boolean);
 
         if (isMounted) {
           setChats(baseChats);
@@ -666,7 +648,7 @@ function ChatList({
         }
 
         // ======================================
-        // BACKGROUND MESSAGE SYNCHRONIZATION
+        // LOAD MESSAGES IN BACKGROUND
         // ======================================
 
         baseChats.forEach(
@@ -678,24 +660,23 @@ function ChatList({
         );
       } catch (error) {
         console.error(
-          "Load registered users error:",
+          "Load contacts error:",
           error
         );
 
         if (isMounted) {
           setChatLoadError(
             error?.message ||
-              "Unable to load registered users."
+              "Unable to load your contacts."
           );
 
           setChats([]);
-
           setIsLoadingChats(false);
         }
       }
     };
 
-    loadUsers();
+    loadContacts();
 
     return () => {
       isMounted = false;
@@ -707,7 +688,7 @@ function ChatList({
   ]);
 
   // ==========================================
-  // UNREAD SYNCHRONIZATION WHEN APP RETURNS
+  // APP VISIBILITY
   // ==========================================
 
   useEffect(() => {
@@ -751,7 +732,7 @@ function ChatList({
   ]);
 
   // ==========================================
-  // PERIODIC UNREAD SYNCHRONIZATION
+  // PERIODIC SYNCHRONIZATION
   // ==========================================
 
   useEffect(() => {
@@ -777,7 +758,7 @@ function ChatList({
   ]);
 
   // ==========================================
-  // SEARCH + FILTER
+  // SEARCH MY CHATS ONLY
   // ==========================================
 
   const filteredChats =
@@ -862,17 +843,6 @@ function ChatList({
   };
 
   // ==========================================
-  // STATUS
-  // ==========================================
-
-  const handleYourStatus =
-    () => {
-      if (onNavigate) {
-        onNavigate("status");
-      }
-    };
-
-  // ==========================================
   // PLUS MENU
   // ==========================================
 
@@ -919,7 +889,7 @@ function ChatList({
           <button
             type="button"
             className="header-icon-button"
-            aria-label="Search"
+            aria-label="Search my chats"
             onClick={() => {
               setShowSearch(
                 !showSearch
@@ -963,7 +933,7 @@ function ChatList({
 
             <input
               type="text"
-              placeholder="Search chats, contacts and messages..."
+              placeholder="Search your chats..."
               value={searchQuery}
               onChange={(event) =>
                 setSearchQuery(
@@ -971,7 +941,7 @@ function ChatList({
                 )
               }
               autoFocus
-              aria-label="Search chats"
+              aria-label="Search my chats"
             />
 
             {searchQuery && (
@@ -1021,8 +991,10 @@ function ChatList({
           <button
             type="button"
             className="status-item add-status"
-            onClick={
-              handleYourStatus
+            onClick={() =>
+              onNavigate?.(
+                "status"
+              )
             }
           >
 
@@ -1034,14 +1006,6 @@ function ChatList({
                     user.profilePhoto
                   }
                   alt="Your profile"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    borderRadius:
-                      "50%",
-                    objectFit:
-                      "cover",
-                  }}
                 />
               ) : (
                 user?.displayName
@@ -1086,14 +1050,6 @@ function ChatList({
                         chat.profilePhoto
                       }
                       alt={chat.name}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        borderRadius:
-                          "50%",
-                        objectFit:
-                          "cover",
-                      }}
                     />
                   ) : (
                     chat.avatar
@@ -1235,9 +1191,7 @@ function ChatList({
                   )
                 }
               >
-                <span>
-                  💬
-                </span>
+                <span>💬</span>
                 New Chat
               </button>
 
@@ -1249,9 +1203,7 @@ function ChatList({
                   )
                 }
               >
-                <span>
-                  👥
-                </span>
+                <span>👥</span>
                 New Group
               </button>
 
@@ -1263,24 +1215,8 @@ function ChatList({
                   )
                 }
               >
-                <span>
-                  👤
-                </span>
-                New Contact
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  handlePlusNavigation(
-                    "community"
-                  )
-                }
-              >
-                <span>
-                  🏘️
-                </span>
-                New Community
+                <span>👤</span>
+                Add Contact
               </button>
 
             </div>
@@ -1324,11 +1260,11 @@ function ChatList({
             </div>
 
             <h3>
-              Loading contacts...
+              Loading your contacts...
             </h3>
 
             <p>
-              Just a moment while we get your contacts.
+              Your conversations are loading in the background.
             </p>
 
           </div>
@@ -1347,7 +1283,7 @@ function ChatList({
 
             <h3>
               {searchQuery
-                ? "No users found"
+                ? "No chats found"
                 : activeFilter ===
                   "unread"
                 ? "No unread chats"
@@ -1357,7 +1293,7 @@ function ChatList({
                 : activeFilter ===
                   "groups"
                 ? "No groups yet"
-                : "No users found"}
+                : "No chats yet"}
             </h3>
 
             <p>
@@ -1366,8 +1302,24 @@ function ChatList({
                 : activeFilter !==
                   "all"
                 ? "Try another chat filter."
-                : "Registered ZenvaZapp users will appear here."}
+                : "Add someone to your ZenvaZapp contacts to start a conversation."}
             </p>
+
+            {activeFilter ===
+              "all" &&
+              !searchQuery && (
+                <button
+                  type="button"
+                  className="empty-chat-action"
+                  onClick={() =>
+                    onNavigate?.(
+                      "new-contact"
+                    )
+                  }
+                >
+                  Add Contact
+                </button>
+            )}
 
           </div>
         ) : (
@@ -1390,8 +1342,6 @@ function ChatList({
                   }
                 >
 
-                  {/* AVATAR */}
-
                   <div className="chat-avatar">
 
                     {chat.profilePhoto ? (
@@ -1400,22 +1350,12 @@ function ChatList({
                           chat.profilePhoto
                         }
                         alt={chat.name}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          borderRadius:
-                            "50%",
-                          objectFit:
-                            "cover",
-                        }}
                       />
                     ) : (
                       chat.avatar
                     )}
 
                   </div>
-
-                  {/* CHAT CONTENT */}
 
                   <div className="chat-content">
 
@@ -1489,17 +1429,15 @@ function ChatList({
           type="button"
           className="nav-button"
           onClick={() =>
-            onNavigate?.(
-              "calls"
-            )
+            onNavigate?.("contacts")
           }
         >
           <span className="nav-icon">
-            📞
+            👥
           </span>
 
           <span>
-            Calls
+            Contacts
           </span>
         </button>
 

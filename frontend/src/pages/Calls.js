@@ -1,6 +1,11 @@
 import "./calls.css";
 
-function Calls({ user, onNavigate }) {
+function Calls({
+  user,
+  onNavigate,
+  callTarget,
+  callType,
+}) {
   const calls = [
     {
       id: 1,
@@ -31,44 +36,126 @@ function Calls({ user, onNavigate }) {
     },
   ];
 
+  const targetName =
+    callTarget?.name ||
+    callTarget?.fullName ||
+    "Contact";
+
+  const targetAvatar =
+    callTarget?.profilePhoto ||
+    callTarget?.avatar ||
+    targetName
+      .charAt(0)
+      .toUpperCase();
+
+  const requestedCallType =
+    callType === "video"
+      ? "Video"
+      : "Voice";
+
   return (
     <div className="calls-page">
 
       {/* HEADER */}
+
       <header className="calls-header">
 
         <div className="calls-title-area">
+
+          <button
+            type="button"
+            className="calls-back-button"
+            onClick={() =>
+              onNavigate?.("chats")
+            }
+            aria-label="Back to chats"
+          >
+            ←
+          </button>
+
           <div className="calls-logo">
             Z
           </div>
 
           <div>
-            <h1>Calls</h1>
+            <h1>
+              Calls
+            </h1>
+
             <span>
-              Stay connected with everyone
+              Call history and details
             </span>
           </div>
-        </div>
 
-        <button
-          className="new-call-button"
-          onClick={() =>
-            console.log("New call")
-          }
-        >
-          + Call
-        </button>
+        </div>
 
       </header>
 
 
+      {/* REQUESTED CALL */}
+
+      {callTarget && (
+        <section className="requested-call-card">
+
+          <div className="requested-call-avatar">
+            {callTarget?.profilePhoto ? (
+              <img
+                src={
+                  callTarget.profilePhoto
+                }
+                alt={targetName}
+              />
+            ) : (
+              targetAvatar
+            )}
+          </div>
+
+          <div className="requested-call-info">
+
+            <span>
+              {requestedCallType} call
+            </span>
+
+            <h2>
+              {targetName}
+            </h2>
+
+            <p>
+              Call requested from Contacts
+            </p>
+
+          </div>
+
+          <button
+            type="button"
+            className="requested-call-action"
+            onClick={() =>
+              console.log(
+                `Starting ${callType || "voice"} call with`,
+                callTarget
+              )
+            }
+          >
+            {callType === "video"
+              ? "📹"
+              : "📞"}
+          </button>
+
+        </section>
+      )}
+
+
       {/* QUICK ACTIONS */}
+
       <section className="call-actions">
 
         <button
+          type="button"
           className="call-action-card"
           onClick={() =>
-            console.log("Start voice call")
+            console.log(
+              "Start voice call"
+            )
           }
         >
           <div className="call-action-icon">
@@ -76,16 +163,24 @@ function Calls({ user, onNavigate }) {
           </div>
 
           <div>
-            <h3>Voice Call</h3>
-            <p>Start a voice call</p>
+            <h3>
+              Voice Call
+            </h3>
+
+            <p>
+              Start a voice call
+            </p>
           </div>
         </button>
 
 
         <button
+          type="button"
           className="call-action-card"
           onClick={() =>
-            console.log("Start video call")
+            console.log(
+              "Start video call"
+            )
           }
         >
           <div className="call-action-icon">
@@ -93,8 +188,13 @@ function Calls({ user, onNavigate }) {
           </div>
 
           <div>
-            <h3>Video Call</h3>
-            <p>Start a video call</p>
+            <h3>
+              Video Call
+            </h3>
+
+            <p>
+              Start a video call
+            </p>
           </div>
         </button>
 
@@ -102,24 +202,33 @@ function Calls({ user, onNavigate }) {
 
 
       {/* RECENT CALLS */}
+
       <section className="recent-calls">
 
         <div className="calls-section-title">
+
           <div>
-            <h2>Recent Calls</h2>
+            <h2>
+              Recent Calls
+            </h2>
+
             <span>
-              Your latest conversations
+              Your latest call activity
             </span>
           </div>
 
           <button
+            type="button"
             className="clear-calls"
             onClick={() =>
-              console.log("Clear calls")
+              console.log(
+                "Clear calls"
+              )
             }
           >
             Clear
           </button>
+
         </div>
 
 
@@ -128,6 +237,7 @@ function Calls({ user, onNavigate }) {
           {calls.map((call) => (
 
             <button
+              type="button"
               className="call-item"
               key={call.id}
               onClick={() =>
@@ -196,7 +306,8 @@ function Calls({ user, onNavigate }) {
       </section>
 
 
-      {/* EMPTY AREA / FUTURE FEATURES */}
+      {/* SECURITY INFORMATION */}
+
       <section className="calls-info">
 
         <div className="calls-info-icon">
@@ -214,55 +325,6 @@ function Calls({ user, onNavigate }) {
         </p>
 
       </section>
-
-
-      {/* BOTTOM NAVIGATION */}
-      <nav className="calls-bottom-navigation">
-
-        <button
-          className="calls-nav-button"
-          onClick={() =>
-            onNavigate?.("chats")
-          }
-        >
-          <span>💬</span>
-          <small>Chats</small>
-        </button>
-
-
-        <button
-          className="calls-nav-button active"
-          onClick={() =>
-            onNavigate?.("calls")
-          }
-        >
-          <span>📞</span>
-          <small>Calls</small>
-        </button>
-
-
-        <button
-          className="calls-nav-button"
-          onClick={() =>
-            onNavigate?.("tools")
-          }
-        >
-          <span>🛠️</span>
-          <small>Tools</small>
-        </button>
-
-
-        <button
-          className="calls-nav-button"
-          onClick={() =>
-            onNavigate?.("settings")
-          }
-        >
-          <span>⚙️</span>
-          <small>Settings</small>
-        </button>
-
-      </nav>
 
     </div>
   );
