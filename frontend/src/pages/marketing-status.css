@@ -1,0 +1,593 @@
+/* =========================================
+   ZENVAZAPP MARKETING STATUS
+   PURPLE THEME
+========================================= */
+
+.marketing-status-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+
+  padding-bottom: 88px;
+
+  box-sizing: border-box;
+
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(232, 107, 199, 0.18),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at bottom left,
+      rgba(143, 60, 120, 0.18),
+      transparent 34%
+    ),
+    #5e2046;
+
+  color: #ffffff;
+}
+
+/* HEADER */
+
+.marketing-header {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 18px 22px;
+
+  border-bottom: 1px solid
+    rgba(255, 255, 255, 0.1);
+}
+
+.marketing-back-button {
+  width: 42px;
+  height: 42px;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.1);
+
+  border-radius: 13px;
+
+  background:
+    rgba(255, 255, 255, 0.07);
+
+  color: #ffffff;
+
+  font-size: 22px;
+
+  cursor: pointer;
+}
+
+.marketing-back-button:hover {
+  background:
+    rgba(236, 116, 207, 0.12);
+}
+
+.marketing-header h1 {
+  margin: 0;
+
+  font-size: 20px;
+}
+
+.marketing-header p {
+  margin: 4px 0 0;
+
+  color:
+    rgba(255, 255, 255, 0.58);
+
+  font-size: 11px;
+}
+
+/* CONTENT */
+
+.marketing-content {
+  width: min(
+    720px,
+    calc(100% - 32px)
+  );
+
+  margin: 0 auto;
+
+  padding: 24px 0;
+}
+
+/* INTRO */
+
+.marketing-intro {
+  display: flex;
+
+  align-items: center;
+
+  gap: 14px;
+
+  margin-bottom: 20px;
+}
+
+.marketing-main-icon {
+  width: 54px;
+  height: 54px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 16px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #e86bc7,
+      #8f3c78
+    );
+
+  font-size: 25px;
+
+  box-shadow:
+    0 8px 24px
+    rgba(217, 91, 183, 0.18);
+}
+
+.marketing-intro h2 {
+  margin: 0;
+
+  font-size: 19px;
+}
+
+.marketing-intro p {
+  margin: 5px 0 0;
+
+  color:
+    rgba(255, 255, 255, 0.58);
+
+  font-size: 12px;
+
+  line-height: 1.5;
+}
+
+/* FORM */
+
+.marketing-form-card {
+  padding: 20px;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.1);
+
+  border-radius: 20px;
+
+  background:
+    rgba(255, 255, 255, 0.07);
+
+  box-shadow:
+    0 10px 30px
+    rgba(25, 5, 20, 0.12);
+}
+
+.marketing-field {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 7px;
+
+  margin-bottom: 16px;
+}
+
+.marketing-field label {
+  color:
+    rgba(255, 255, 255, 0.75);
+
+  font-size: 11px;
+
+  font-weight: 600;
+}
+
+.marketing-field input,
+.marketing-field textarea,
+.marketing-field select {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.11);
+
+  border-radius: 12px;
+
+  padding: 12px 13px;
+
+  outline: none;
+
+  background:
+    rgba(20, 7, 18, 0.28);
+
+  color: #ffffff;
+
+  font-family: inherit;
+
+  font-size: 12px;
+}
+
+.marketing-field textarea {
+  resize: vertical;
+
+  min-height: 100px;
+}
+
+.marketing-field select option {
+  background: #5e2046;
+
+  color: #ffffff;
+}
+
+.marketing-field input::placeholder,
+.marketing-field textarea::placeholder {
+  color:
+    rgba(255, 255, 255, 0.36);
+}
+
+.marketing-field input:focus,
+.marketing-field textarea:focus,
+.marketing-field select:focus {
+  border-color:
+    rgba(232, 107, 199, 0.6);
+
+  box-shadow:
+    0 0 0 3px
+    rgba(232, 107, 199, 0.08);
+}
+
+.marketing-two-columns {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 12px;
+}
+
+.marketing-preview-button {
+  width: 100%;
+
+  min-height: 46px;
+
+  border: 0;
+
+  border-radius: 13px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #e86bc7,
+      #b94a99
+    );
+
+  color: #ffffff;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 8px 20px
+    rgba(217, 91, 183, 0.18);
+}
+
+.marketing-preview-button:disabled {
+  opacity: 0.45;
+
+  cursor: not-allowed;
+
+  box-shadow: none;
+}
+
+/* PREVIEW */
+
+.marketing-preview-section {
+  margin-top: 22px;
+}
+
+.marketing-preview-heading {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 10px;
+}
+
+.marketing-preview-heading span {
+  color:
+    rgba(255, 255, 255, 0.5);
+
+  font-size: 10px;
+}
+
+.marketing-preview-heading h2 {
+  margin: 2px 0 0;
+
+  font-size: 16px;
+}
+
+.marketing-preview-heading button {
+  border: 0;
+
+  background: transparent;
+
+  color: #f19bd9;
+
+  cursor: pointer;
+}
+
+.marketing-status-preview {
+  padding: 18px;
+
+  border: 1px solid
+    rgba(236, 116, 207, 0.2);
+
+  border-radius: 19px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(217, 91, 183, 0.13),
+      rgba(255, 255, 255, 0.06)
+    );
+}
+
+.marketing-preview-top {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+}
+
+.marketing-preview-avatar {
+  width: 40px;
+  height: 40px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  border-radius: 50%;
+
+  background:
+    linear-gradient(
+      135deg,
+      #e86bc7,
+      #8f3c78
+    );
+
+  font-weight: 700;
+}
+
+.marketing-preview-avatar img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+.marketing-preview-top strong {
+  display: block;
+
+  font-size: 12px;
+}
+
+.marketing-preview-top span {
+  display: block;
+
+  margin-top: 2px;
+
+  color:
+    rgba(255, 255, 255, 0.45);
+
+  font-size: 9px;
+}
+
+.marketing-preview-category {
+  display: inline-block;
+
+  margin-top: 18px;
+
+  padding: 5px 9px;
+
+  border-radius: 999px;
+
+  background:
+    rgba(232, 107, 199, 0.12);
+
+  color: #f19bd9;
+
+  font-size: 9px;
+}
+
+.marketing-preview-text {
+  margin: 13px 0 0;
+
+  white-space: pre-line;
+
+  color:
+    rgba(255, 255, 255, 0.86);
+
+  font-size: 13px;
+
+  line-height: 1.65;
+}
+
+.marketing-preview-actions {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 1fr);
+
+  gap: 10px;
+
+  margin-top: 12px;
+}
+
+.marketing-preview-actions button {
+  min-height: 42px;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.1);
+
+  border-radius: 11px;
+
+  background:
+    rgba(255, 255, 255, 0.06);
+
+  color: #ffffff;
+
+  cursor: pointer;
+}
+
+.marketing-preview-actions .marketing-share-button {
+  border: 0;
+
+  background:
+    linear-gradient(
+      135deg,
+      #e86bc7,
+      #b94a99
+    );
+}
+
+/* INFO */
+
+.marketing-info-card {
+  display: flex;
+
+  gap: 12px;
+
+  margin-top: 20px;
+
+  padding: 16px;
+
+  border-radius: 17px;
+
+  background:
+    rgba(255, 255, 255, 0.05);
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.08);
+}
+
+.marketing-info-card > span {
+  font-size: 20px;
+}
+
+.marketing-info-card h3 {
+  margin: 0;
+
+  font-size: 12px;
+}
+
+.marketing-info-card p {
+  margin: 5px 0 0;
+
+  color:
+    rgba(255, 255, 255, 0.54);
+
+  font-size: 10px;
+
+  line-height: 1.5;
+}
+
+/* BOTTOM NAV */
+
+.marketing-bottom-navigation {
+  position: fixed;
+
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  z-index: 30;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  padding: 8px 10px 10px;
+
+  background:
+    rgba(50, 21, 42, 0.97);
+
+  border-top: 1px solid
+    rgba(236, 116, 207, 0.16);
+
+  box-shadow:
+    0 -8px 25px
+    rgba(25, 5, 20, 0.16);
+}
+
+.marketing-bottom-navigation button {
+  min-height: 56px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 4px;
+
+  border: 0;
+
+  border-radius: 12px;
+
+  background: transparent;
+
+  color:
+    rgba(255, 255, 255, 0.48);
+
+  cursor: pointer;
+}
+
+.marketing-bottom-navigation button span {
+  font-size: 18px;
+}
+
+.marketing-bottom-navigation button small {
+  font-size: 10px;
+}
+
+.marketing-bottom-navigation button.active {
+  color: #e86bc7;
+
+  background:
+    rgba(236, 116, 207, 0.08);
+}
+
+/* MOBILE */
+
+@media (max-width: 600px) {
+  .marketing-content {
+    width: calc(100% - 28px);
+
+    padding-top: 20px;
+  }
+
+  .marketing-two-columns {
+    grid-template-columns: 1fr;
+
+    gap: 0;
+  }
+
+  .marketing-form-card {
+    padding: 16px;
+  }
+}

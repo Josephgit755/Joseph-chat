@@ -2978,7 +2978,44 @@ const handleSendMessage = async (event) => {
   // ==========================================
   // RENDER
   // ==========================================
+    // ==========================================
+  // DIRECT CALL ACTIONS
+  // ==========================================
 
+  const handleStartCall = useCallback(
+    (type) => {
+      if (!chat) {
+        return;
+      }
+
+      if (type === "video") {
+        console.log(
+          "ZenvaZapp video call requested:",
+          chat
+        );
+
+        if (onVideoCall) {
+          onVideoCall(chat);
+        }
+
+        return;
+      }
+
+      console.log(
+        "ZenvaZapp audio call requested:",
+        chat
+      );
+
+      if (onCall) {
+        onCall(chat);
+      }
+    },
+    [
+      chat,
+      onCall,
+      onVideoCall,
+    ]
+  );
   return (
     <div
       className="private-chat-page"
@@ -3027,29 +3064,28 @@ const handleSendMessage = async (event) => {
           <button
             type="button"
             onClick={() =>
-              onCall?.(chat)
+             handleStartCall("audio")
             }
             aria-label="Voice call"
             title="Voice call"
           >
             <span className="header-call-icon">
-              ☎
+             ☎
             </span>
-          </button>
+         </button>
 
-          <button
+         <button
             type="button"
             onClick={() =>
-              onVideoCall?.(chat)
+             handleStartCall("video")
             }
             aria-label="Video call"
             title="Video call"
           >
-            <span className="header-video-icon">
-              📹
-            </span>
+           <span className="header-video-icon">
+             📹
+           </span>
           </button>
-
           <div className="chat-more-container">
             <button
               type="button"
@@ -3189,7 +3225,7 @@ const handleSendMessage = async (event) => {
 
           <div className="private-chat-search-field">
             <span className="private-chat-search-icon">
-              ⌕
+              🔎
             </span>
 
             <input
@@ -3295,7 +3331,7 @@ const handleSendMessage = async (event) => {
           <div className="private-chat-empty">
             <div className="private-chat-empty-icon">
               {showSearch
-                ? "⌕"
+                ? "🔎"
                 : "💬"}
             </div>
 

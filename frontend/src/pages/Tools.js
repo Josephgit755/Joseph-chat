@@ -47,48 +47,42 @@ function Tools({ user, onNavigate }) {
   ];
 
   const handleToolClick = (tool) => {
-    if (tool.id === "breath") {
-      onNavigate?.("breath");
-      return;
-    }
+    switch (tool.id) {
+      case "breath":
+        onNavigate?.("breath");
+        break;
 
-    if (tool.id === "translator") {
-      onNavigate?.("translator");
-      return;
-    }
+      case "translator":
+        onNavigate?.("translator");
+        break;
 
-    if (tool.id === "student") {
-      onNavigate?.("student");
-      return;
-    }
+      case "student":
+        onNavigate?.("student");
+        break;
 
-    if (tool.id === "files") {
-      onNavigate?.("files");
-      return;
-    }
+      case "files":
+        onNavigate?.("files");
+        break;
 
-    if (tool.id === "marketing") {
-      onNavigate?.("marketing");
-      return;
-    }
+      case "marketing":
+        onNavigate?.("marketing");
+        break;
 
-    if (tool.id === "ai") {
-      onNavigate?.("ai");
-      return;
+      case "ai":
+        onNavigate?.("ai");
+        break;
+
+      default:
+        break;
     }
   };
 
   return (
     <div className="tools-page">
-
-      {/* =====================================
-          HEADER
-      ===================================== */}
+      {/* HEADER */}
 
       <header className="tools-header">
-
         <div className="tools-title-area">
-
           <div className="tools-logo">
             Z
           </div>
@@ -100,20 +94,13 @@ function Tools({ user, onNavigate }) {
               More ways to make ZenvaZapp useful
             </span>
           </div>
-
         </div>
-
       </header>
 
-
-      {/* =====================================
-          MAIN CONTENT
-      ===================================== */}
+      {/* MAIN CONTENT */}
 
       <main className="tools-content">
-
         <div className="tools-intro">
-
           <h2>
             What do you need?
           </h2>
@@ -122,30 +109,29 @@ function Tools({ user, onNavigate }) {
             Explore tools designed to help you
             communicate, learn, work and get things done.
           </p>
-
         </div>
 
-
-        {/* =====================================
-            TOOLS
-        ===================================== */}
+        {/* TOOLS */}
 
         <section className="tools-grid">
-
           {tools.map((tool) => (
-
             <button
               key={tool.id}
-              className="tool-card"
-              onClick={() => handleToolClick(tool)}
+              type="button"
+              className={
+                tool.id === "ai"
+                  ? "tool-card featured"
+                  : "tool-card"
+              }
+              onClick={() =>
+                handleToolClick(tool)
+              }
             >
-
               <div className="tool-icon">
                 {tool.icon}
               </div>
 
               <div className="tool-information">
-
                 <h3>
                   {tool.title}
                 </h3>
@@ -153,56 +139,44 @@ function Tools({ user, onNavigate }) {
                 <p>
                   {tool.description}
                 </p>
-
               </div>
 
               <span className="tool-arrow">
                 →
               </span>
-
             </button>
-
           ))}
-
         </section>
 
-
-        {/* =====================================
-            AI INFORMATION
-        ===================================== */}
+        {/* ZENVA AI INFORMATION */}
 
         <section className="tools-ai-note">
-
           <div className="tools-ai-icon">
             ✨
           </div>
 
           <div>
-
             <h3>
               Zenva AI
             </h3>
 
             <p>
-              Your intelligent assistant will eventually
-              work directly inside your conversations,
-              helping you understand and manage messages.
+              Your intelligent assistant can help
+              you understand, rewrite, summarize
+              and work with your messages and content.
             </p>
-
           </div>
-
         </section>
-
       </main>
 
+      {/* BOTTOM NAVIGATION */}
 
-      {/* =====================================
-          BOTTOM NAVIGATION
-      ===================================== */}
-
-      <nav className="tools-bottom-navigation">
-
+      <nav
+        className="tools-bottom-navigation"
+        aria-label="Main navigation"
+      >
         <button
+          type="button"
           className="tools-nav-button"
           onClick={() =>
             onNavigate?.("chatlist")
@@ -212,19 +186,19 @@ function Tools({ user, onNavigate }) {
           <small>Chats</small>
         </button>
 
-
         <button
+          type="button"
           className="tools-nav-button"
           onClick={() =>
-            onNavigate?.("calls")
+            onNavigate?.("contacts")
           }
         >
-          <span>📞</span>
-          <small>Calls</small>
+          <span>👥</span>
+          <small>Contacts</small>
         </button>
 
-
         <button
+          type="button"
           className="tools-nav-button active"
           onClick={() =>
             onNavigate?.("tools")
@@ -234,8 +208,8 @@ function Tools({ user, onNavigate }) {
           <small>Tools</small>
         </button>
 
-
         <button
+          type="button"
           className="tools-nav-button"
           onClick={() =>
             onNavigate?.("settings")
@@ -244,9 +218,7 @@ function Tools({ user, onNavigate }) {
           <span>⚙️</span>
           <small>Settings</small>
         </button>
-
       </nav>
-
     </div>
   );
 }

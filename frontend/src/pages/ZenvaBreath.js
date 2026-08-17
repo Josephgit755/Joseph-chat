@@ -22,13 +22,23 @@ const phases = [
 
 function ZenvaBreath({ onBack }) {
   const [isRunning, setIsRunning] = useState(false);
+
   const [phaseIndex, setPhaseIndex] = useState(0);
+
   const [secondsLeft, setSecondsLeft] = useState(
     phases[0].duration
   );
+
   const [cycles, setCycles] = useState(0);
 
+  const [showCongratulations, setShowCongratulations] =
+    useState(false);
+
   const currentPhase = phases[phaseIndex];
+
+  // ==========================================
+  // BREATHING TIMER
+  // ==========================================
 
   useEffect(() => {
     if (!isRunning) {
@@ -44,8 +54,26 @@ function ZenvaBreath({ onBack }) {
         const nextPhase =
           (phaseIndex + 1) % phases.length;
 
+        // ======================================
+        // COMPLETED ONE FULL ROUND
+        // ======================================
+
         if (nextPhase === 0) {
-          setCycles((previousCycles) => previousCycles + 1);
+          setCycles((previousCycles) => {
+            const newCycleCount =
+              previousCycles + 1;
+
+            // ==================================
+            // CONGRATULATIONS AFTER 2 ROUNDS
+            // ==================================
+
+            if (newCycleCount >= 2) {
+              setIsRunning(false);
+              setShowCongratulations(true);
+            }
+
+            return newCycleCount;
+          });
         }
 
         setPhaseIndex(nextPhase);
@@ -57,21 +85,61 @@ function ZenvaBreath({ onBack }) {
     return () => clearInterval(timer);
   }, [isRunning, phaseIndex]);
 
+  // ==========================================
+  // START / PAUSE
+  // ==========================================
+
   const handleStartPause = () => {
+    if (showCongratulations) {
+      return;
+    }
+
     setIsRunning((previous) => !previous);
   };
 
+  // ==========================================
+  // RESET
+  // ==========================================
+
   const handleReset = () => {
     setIsRunning(false);
+
     setPhaseIndex(0);
-    setSecondsLeft(phases[0].duration);
+
+    setSecondsLeft(
+      phases[0].duration
+    );
+
     setCycles(0);
+
+    setShowCongratulations(false);
+  };
+
+  // ==========================================
+  // CONTINUE BREATHING AFTER CONGRATULATIONS
+  // ==========================================
+
+  const handleContinue = () => {
+    setShowCongratulations(false);
+
+    setCycles(0);
+
+    setPhaseIndex(0);
+
+    setSecondsLeft(
+      phases[0].duration
+    );
+
+    setIsRunning(true);
   };
 
   return (
     <div className="zenva-breath-page">
 
-      {/* HEADER */}
+      {/* =====================================
+          HEADER
+      ===================================== */}
+
       <header className="zenva-breath-header">
 
         <button
@@ -82,17 +150,24 @@ function ZenvaBreath({ onBack }) {
         </button>
 
         <div>
-          <h1>Zenva Breath</h1>
+
+          <h1>
+            Zenva Breath
+          </h1>
 
           <p>
             Take a moment for yourself
           </p>
+
         </div>
 
       </header>
 
 
-      {/* INTRO */}
+      {/* =====================================
+          INTRO
+      ===================================== */}
+
       <section className="zenva-breath-intro">
 
         <div className="zenva-breath-icon">
@@ -112,7 +187,10 @@ function ZenvaBreath({ onBack }) {
       </section>
 
 
-      {/* BREATHING AREA */}
+      {/* =====================================
+          BREATHING AREA
+      ===================================== */}
+
       <section className="breathing-area">
 
         <div
@@ -156,12 +234,16 @@ function ZenvaBreath({ onBack }) {
       </section>
 
 
-      {/* CONTROLS */}
+      {/* =====================================
+          CONTROLS
+      ===================================== */}
+
       <section className="breath-controls">
 
         <button
           className="breath-primary-button"
           onClick={handleStartPause}
+          disabled={showCongratulations}
         >
           {isRunning
             ? "Pause"
@@ -178,7 +260,10 @@ function ZenvaBreath({ onBack }) {
       </section>
 
 
-      {/* PROGRESS */}
+      {/* =====================================
+          PROGRESS
+      ===================================== */}
+
       <section className="breath-progress">
 
         <div className="breath-progress-header">
@@ -188,7 +273,7 @@ function ZenvaBreath({ onBack }) {
           </span>
 
           <strong>
-            {cycles}
+            {cycles} / 2
           </strong>
 
         </div>
@@ -199,7 +284,7 @@ function ZenvaBreath({ onBack }) {
             className="breath-progress-fill"
             style={{
               width: `${Math.min(
-                cycles * 20,
+                cycles * 50,
                 100
               )}%`,
             }}
@@ -210,18 +295,92 @@ function ZenvaBreath({ onBack }) {
       </section>
 
 
-      {/* FOOTER MESSAGE */}
+      {/* =====================================
+          FOOTER MESSAGE
+      ===================================== */}
+
       <section className="breath-message">
 
-        <span>✨</span>
+        <span>
+          ✨
+        </span>
 
         <p>
           There is no need to rush.
-          Take a breath, then continue
-          when you're ready.
+          Take a breath with ZenvaBreath,
+          then continue the day when you're ready.
         </p>
 
       </section>
+
+
+      {/* =====================================
+          CONGRATULATIONS OVERLAY
+      ===================================== */}
+
+      {showCongratulations && (
+
+        <div className="breath-congratulations-overlay">
+
+          <div className="breath-congratulations-card">
+
+            <div className="breath-confetti">
+              ✨
+            </div>
+
+            <div className="breath-success-icon">
+              🫁
+            </div>
+
+            <h2>
+              Beautifully Done!
+            </h2>
+
+            <p className="breath-congratulations-main">
+              You completed 2 full breathing rounds.
+            </p>
+
+            <p className="breath-congratulations-sub">
+              You took a moment to slow down,
+              breathe and reset. Give yourself
+              credit for that.
+            </p>
+
+            <div className="breath-achievement">
+              <span>
+                ✓
+              </span>
+
+              <div>
+                <strong>
+                  Calm Moment Completed
+                </strong>
+
+                <small>
+                  2 breathing rounds finished
+                </small>
+              </div>
+            </div>
+
+            <button
+              className="breath-continue-button"
+              onClick={handleContinue}
+            >
+              Continue Breathing
+            </button>
+
+            <button
+              className="breath-finish-button"
+              onClick={handleReset}
+            >
+              Finish Session
+            </button>
+
+          </div>
+
+        </div>
+
+      )}
 
     </div>
   );

@@ -1,0 +1,596 @@
+/* =========================================
+   ZENVAZAPP ZENVA AI
+   PURPLE THEME
+========================================= */
+
+.zenva-ai-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+
+  box-sizing: border-box;
+
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(232, 107, 199, 0.2),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at bottom left,
+      rgba(143, 60, 120, 0.18),
+      transparent 34%
+    ),
+    #5e2046;
+
+  color: #ffffff;
+}
+
+/* HEADER */
+
+.zenva-ai-header {
+  min-height: 70px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 12px 18px;
+
+  box-sizing: border-box;
+
+  border-bottom: 1px solid
+    rgba(255, 255, 255, 0.1);
+
+  background:
+    rgba(50, 21, 42, 0.35);
+
+}
+
+.zenva-ai-back {
+  width: 42px;
+  height: 42px;
+
+  flex-shrink: 0;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.1);
+
+  border-radius: 13px;
+
+  background:
+    rgba(255, 255, 255, 0.06);
+
+  color: #ffffff;
+
+  font-size: 21px;
+
+  cursor: pointer;
+}
+
+.zenva-ai-back:hover {
+  background:
+    rgba(236, 116, 207, 0.1);
+}
+
+.zenva-ai-brand {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  flex: 1;
+}
+
+.zenva-ai-logo {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 13px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #e86bc7,
+      #8f3c78
+    );
+
+  box-shadow:
+    0 7px 20px
+    rgba(217, 91, 183, 0.2);
+}
+
+.zenva-ai-brand h1 {
+  margin: 0;
+
+  font-size: 17px;
+}
+
+.zenva-ai-brand span {
+  display: block;
+
+  margin-top: 2px;
+
+  color:
+    rgba(255, 255, 255, 0.52);
+
+  font-size: 10px;
+}
+
+.zenva-ai-clear {
+  border: 0;
+
+  background: transparent;
+
+  color: #f19bd9;
+
+  font-size: 11px;
+
+  cursor: pointer;
+}
+
+/* CONTENT */
+
+.zenva-ai-content {
+  width: min(
+    760px,
+    calc(100% - 32px)
+  );
+
+  min-height:
+    calc(100vh - 70px);
+
+  margin: 0 auto;
+
+  padding: 28px 0 32px;
+
+  box-sizing: border-box;
+}
+
+/* WELCOME */
+
+.zenva-ai-welcome {
+  padding: 25px 20px;
+
+  text-align: center;
+}
+
+.zenva-ai-welcome-icon {
+  width: 66px;
+  height: 66px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  margin: 0 auto 14px;
+
+  border-radius: 21px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #e86bc7,
+      #8f3c78
+    );
+
+  font-size: 30px;
+
+  box-shadow:
+    0 12px 30px
+    rgba(217, 91, 183, 0.2);
+}
+
+.zenva-ai-welcome h2 {
+  margin: 0;
+
+  font-size: 22px;
+}
+
+.zenva-ai-welcome p {
+  margin: 7px auto 0;
+
+  max-width: 430px;
+
+  color:
+    rgba(255, 255, 255, 0.57);
+
+  font-size: 12px;
+
+  line-height: 1.5;
+}
+
+/* ACTIONS */
+
+.zenva-ai-actions {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 12px;
+}
+
+.zenva-ai-action {
+  position: relative;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 11px;
+
+  min-height: 95px;
+
+  padding: 15px;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.09);
+
+  border-radius: 17px;
+
+  background:
+    rgba(255, 255, 255, 0.06);
+
+  color: #ffffff;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.zenva-ai-action:hover {
+  transform: translateY(-2px);
+
+  border-color:
+    rgba(236, 116, 207, 0.3);
+
+  background:
+    rgba(236, 116, 207, 0.08);
+}
+
+.zenva-ai-action.active {
+  border-color:
+    rgba(236, 116, 207, 0.45);
+
+  background:
+    rgba(236, 116, 207, 0.1);
+}
+
+.zenva-ai-action-icon {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 13px;
+
+  background:
+    rgba(232, 107, 199, 0.12);
+
+  font-size: 19px;
+}
+
+.zenva-ai-action strong {
+  display: block;
+
+  font-size: 12px;
+}
+
+.zenva-ai-action p {
+  margin: 4px 18px 0 0;
+
+  color:
+    rgba(255, 255, 255, 0.52);
+
+  font-size: 9px;
+
+  line-height: 1.45;
+}
+
+.zenva-ai-action > span {
+  position: absolute;
+
+  top: 15px;
+  right: 14px;
+
+  color: #e86bc7;
+}
+
+/* CONVERSATION */
+
+.zenva-ai-conversation {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 12px;
+
+  margin-bottom: 22px;
+}
+
+.zenva-ai-message {
+  max-width: 80%;
+
+  padding: 13px 15px;
+
+  border-radius: 16px;
+
+  white-space: pre-line;
+}
+
+.zenva-ai-message.user {
+  align-self: flex-end;
+
+  border-bottom-right-radius: 5px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #d95bb7,
+      #9c417f
+    );
+}
+
+.zenva-ai-message.assistant {
+  align-self: flex-start;
+
+  border-bottom-left-radius: 5px;
+
+  background:
+    rgba(255, 255, 255, 0.07);
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.08);
+}
+
+.zenva-ai-message-label {
+  margin-bottom: 5px;
+
+  color:
+    rgba(255, 255, 255, 0.55);
+
+  font-size: 9px;
+
+  font-weight: 600;
+}
+
+.zenva-ai-message p {
+  margin: 0;
+
+  font-size: 12px;
+
+  line-height: 1.6;
+}
+
+.zenva-ai-action-label {
+  display: inline-block;
+
+  margin-top: 8px;
+
+  color:
+    rgba(255, 255, 255, 0.5);
+
+  font-size: 8px;
+}
+
+/* INPUT */
+
+.zenva-ai-input-section {
+  margin-top: 15px;
+
+  padding: 16px;
+
+  border: 1px solid
+    rgba(236, 116, 207, 0.15);
+
+  border-radius: 19px;
+
+  background:
+    rgba(255, 255, 255, 0.06);
+}
+
+.zenva-ai-selected-action {
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  margin-bottom: 9px;
+}
+
+.zenva-ai-selected-action span {
+  color:
+    rgba(255, 255, 255, 0.45);
+
+  font-size: 9px;
+}
+
+.zenva-ai-selected-action strong {
+  padding: 4px 8px;
+
+  border-radius: 999px;
+
+  background:
+    rgba(232, 107, 199, 0.12);
+
+  color: #f19bd9;
+
+  font-size: 9px;
+}
+
+.zenva-ai-form {
+  position: relative;
+}
+
+.zenva-ai-form textarea {
+  width: 100%;
+
+  min-height: 90px;
+
+  box-sizing: border-box;
+
+  padding: 13px 52px 13px 13px;
+
+  resize: vertical;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.1);
+
+  border-radius: 14px;
+
+  outline: none;
+
+  background:
+    rgba(20, 7, 18, 0.3);
+
+  color: #ffffff;
+
+  font-family: inherit;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+}
+
+.zenva-ai-form textarea::placeholder {
+  color:
+    rgba(255, 255, 255, 0.35);
+}
+
+.zenva-ai-form textarea:focus {
+  border-color:
+    rgba(232, 107, 199, 0.55);
+
+  box-shadow:
+    0 0 0 3px
+    rgba(232, 107, 199, 0.08);
+}
+
+.zenva-ai-form button {
+  position: absolute;
+
+  right: 9px;
+  bottom: 9px;
+
+  width: 36px;
+  height: 36px;
+
+  border: 0;
+
+  border-radius: 11px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #e86bc7,
+      #b94a99
+    );
+
+  color: #ffffff;
+
+  font-size: 18px;
+
+  cursor: pointer;
+}
+
+.zenva-ai-form button:disabled {
+  opacity: 0.35;
+
+  cursor: not-allowed;
+}
+
+.zenva-ai-disclaimer {
+  margin: 8px 2px 0;
+
+  color:
+    rgba(255, 255, 255, 0.36);
+
+  font-size: 8px;
+
+  line-height: 1.4;
+}
+
+/* QUICK LINKS */
+
+.zenva-ai-quick-links {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, 1fr);
+
+  gap: 9px;
+
+  margin-top: 18px;
+}
+
+.zenva-ai-quick-links button {
+  min-height: 40px;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.08);
+
+  border-radius: 11px;
+
+  background:
+    rgba(255, 255, 255, 0.04);
+
+  color:
+    rgba(255, 255, 255, 0.62);
+
+  font-size: 10px;
+
+  cursor: pointer;
+}
+
+.zenva-ai-quick-links button:hover {
+  background:
+    rgba(236, 116, 207, 0.08);
+
+  color: #f19bd9;
+}
+
+/* MOBILE */
+
+@media (max-width: 600px) {
+  .zenva-ai-content {
+    width: calc(100% - 24px);
+
+    padding-top: 18px;
+  }
+
+  .zenva-ai-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .zenva-ai-welcome {
+    padding: 18px 10px;
+  }
+
+  .zenva-ai-message {
+    max-width: 90%;
+  }
+
+  .zenva-ai-quick-links {
+    grid-template-columns: 1fr;
+  }
+}

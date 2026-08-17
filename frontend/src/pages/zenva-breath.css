@@ -538,3 +538,464 @@
     padding-right: 18px;
   }
 }
+/* =========================================
+   CONGRATULATIONS OVERLAY
+========================================= */
+
+.breath-congratulations-overlay {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 100;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+
+  box-sizing: border-box;
+
+  background:
+    rgba(35, 8, 29, 0.78);
+
+  backdrop-filter:
+    blur(10px);
+
+  -webkit-backdrop-filter:
+    blur(10px);
+
+  animation:
+    breath-overlay-in 0.35s ease;
+}
+
+
+/* =========================================
+   CONGRATULATIONS CARD
+========================================= */
+
+.breath-congratulations-card {
+  position: relative;
+
+  width: min(420px, 100%);
+
+  padding: 32px 26px 26px;
+
+  box-sizing: border-box;
+
+  overflow: hidden;
+
+  text-align: center;
+
+  border: 1px solid
+    rgba(236, 116, 207, 0.35);
+
+  border-radius: 28px;
+
+  background:
+    radial-gradient(
+      circle at top,
+      rgba(236, 116, 207, 0.22),
+      transparent 45%
+    ),
+    linear-gradient(
+      145deg,
+      #702653,
+      #4b1938
+    );
+
+  box-shadow:
+    0 25px 70px
+    rgba(25, 5, 20, 0.45),
+    0 0 50px
+    rgba(217, 91, 183, 0.14);
+
+  animation:
+    breath-card-in 0.45s
+    cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+/* =========================================
+   DECORATIVE GLOW
+========================================= */
+
+.breath-congratulations-card::before {
+  content: "";
+
+  position: absolute;
+
+  width: 180px;
+  height: 180px;
+
+  top: -100px;
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  border-radius: 50%;
+
+  background:
+    rgba(236, 116, 207, 0.22);
+
+  filter: blur(35px);
+
+  pointer-events: none;
+}
+
+
+/* =========================================
+   DECORATIVE SPARKLE
+========================================= */
+
+.breath-confetti {
+  position: absolute;
+
+  top: 16px;
+  right: 20px;
+
+  font-size: 24px;
+
+  animation:
+    breath-sparkle 1.8s ease-in-out
+    infinite;
+}
+
+
+/* =========================================
+   SUCCESS ICON
+========================================= */
+
+.breath-success-icon {
+  width: 76px;
+  height: 76px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  margin: 0 auto 18px;
+
+  border-radius: 24px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #e86bc7,
+      #a33e88
+    );
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.18);
+
+  font-size: 35px;
+
+  box-shadow:
+    0 12px 32px
+    rgba(217, 91, 183, 0.28);
+
+  animation:
+    breath-icon-pop 0.55s
+    cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+/* =========================================
+   TITLE
+========================================= */
+
+.breath-congratulations-card h2 {
+  position: relative;
+
+  margin: 0;
+
+  color: #ffffff;
+
+  font-size: 25px;
+
+  font-weight: 800;
+
+  letter-spacing: -0.3px;
+}
+
+
+/* =========================================
+   MAIN MESSAGE
+========================================= */
+
+.breath-congratulations-main {
+  margin: 10px 0 0;
+
+  color: #f6b5e3;
+
+  font-size: 13px;
+
+  font-weight: 700;
+}
+
+
+/* =========================================
+   SECONDARY MESSAGE
+========================================= */
+
+.breath-congratulations-sub {
+  max-width: 330px;
+
+  margin: 10px auto 0;
+
+  color:
+    rgba(255, 255, 255, 0.66);
+
+  font-size: 11px;
+
+  line-height: 1.65;
+}
+
+
+/* =========================================
+   ACHIEVEMENT
+========================================= */
+
+.breath-achievement {
+  display: flex;
+
+  align-items: center;
+
+  gap: 11px;
+
+  margin: 22px 0;
+
+  padding: 13px;
+
+  text-align: left;
+
+  border: 1px solid
+    rgba(236, 116, 207, 0.18);
+
+  border-radius: 15px;
+
+  background:
+    rgba(255, 255, 255, 0.055);
+}
+
+.breath-achievement > span {
+  width: 34px;
+  height: 34px;
+
+  flex-shrink: 0;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 11px;
+
+  background:
+    rgba(217, 91, 183, 0.18);
+
+  color: #f19bd9;
+
+  font-size: 16px;
+
+  font-weight: 800;
+}
+
+.breath-achievement strong {
+  display: block;
+
+  color: #ffffff;
+
+  font-size: 12px;
+}
+
+.breath-achievement small {
+  display: block;
+
+  margin-top: 3px;
+
+  color:
+    rgba(255, 255, 255, 0.52);
+
+  font-size: 10px;
+}
+
+
+/* =========================================
+   CONTINUE BUTTON
+========================================= */
+
+.breath-continue-button {
+  width: 100%;
+
+  min-height: 50px;
+
+  border: 0;
+
+  border-radius: 14px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #e86bc7,
+      #c64ca5
+    );
+
+  color: #ffffff;
+
+  font-size: 13px;
+
+  font-weight: 800;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 10px 25px
+    rgba(217, 91, 183, 0.22);
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.breath-continue-button:hover {
+  opacity: 0.93;
+
+  box-shadow:
+    0 14px 32px
+    rgba(217, 91, 183, 0.30);
+}
+
+.breath-continue-button:active {
+  transform: scale(0.98);
+}
+
+
+/* =========================================
+   FINISH BUTTON
+========================================= */
+
+.breath-finish-button {
+  margin-top: 12px;
+
+  border: 0;
+
+  background: transparent;
+
+  color:
+    rgba(255, 255, 255, 0.55);
+
+  font-size: 11px;
+
+  cursor: pointer;
+
+  transition:
+    color 0.18s ease;
+}
+
+.breath-finish-button:hover {
+  color: #f19bd9;
+}
+
+
+/* =========================================
+   ANIMATIONS
+========================================= */
+
+@keyframes breath-overlay-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes breath-card-in {
+  from {
+    opacity: 0;
+
+    transform:
+      translateY(20px)
+      scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}
+
+@keyframes breath-icon-pop {
+  from {
+    opacity: 0;
+
+    transform:
+      scale(0.65)
+      rotate(-8deg);
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      scale(1)
+      rotate(0);
+  }
+}
+
+@keyframes breath-sparkle {
+  0%,
+  100% {
+    transform:
+      translateY(0)
+      rotate(0deg);
+
+    opacity: 0.7;
+  }
+
+  50% {
+    transform:
+      translateY(-5px)
+      rotate(8deg);
+
+    opacity: 1;
+  }
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 480px) {
+
+  .breath-congratulations-overlay {
+    padding: 18px;
+  }
+
+  .breath-congratulations-card {
+    padding: 28px 20px 22px;
+
+    border-radius: 24px;
+  }
+
+  .breath-success-icon {
+    width: 68px;
+    height: 68px;
+
+    font-size: 31px;
+  }
+
+  .breath-congratulations-card h2 {
+    font-size: 22px;
+  }
+}

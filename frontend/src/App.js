@@ -7,12 +7,13 @@ import Contacts from "./pages/Contacts";
 import PrivateChat from "./pages/PrivateChat";
 import DisappearingMessage from "./pages/DisappearingMessage";
 
-import Calls from "./pages/Calls";
 import Tools from "./pages/Tools";
 import ZenvaBreath from "./pages/ZenvaBreath";
 import Translator from "./pages/Translator";
 import StudentMode from "./pages/StudentMode";
 import SmartFiles from "./pages/SmartFiles";
+import ZenvaAI from "./pages/ZenvaAI";
+import MarketingStatus from "./pages/MarketingStatus";
 
 import "./styles/auth.css";
 
@@ -23,9 +24,6 @@ function App() {
   const [user, setUser] = useState(null);
 
   const [selectedChat, setSelectedChat] =
-    useState(null);
-
-  const [activeCall, setActiveCall] =
     useState(null);
 
   const API_URL =
@@ -203,6 +201,66 @@ function App() {
     };
 
   // ==========================================
+  // DIRECT AUDIO CALL
+  // ==========================================
+
+  const handleVoiceCall = (chat) => {
+    if (!chat) {
+      return;
+    }
+
+    /*
+     * Calls no longer open a Calls page.
+     *
+     * The selected contact is passed directly
+     * into the call handler.
+     *
+     * The actual WebRTC call connection will be
+     * connected in the call implementation phase.
+     */
+
+    console.log(
+      "Direct ZenvaZapp audio call requested:",
+      chat
+    );
+
+    /*
+     * Keep the user inside PrivateChat for now.
+     * No Calls page is opened.
+     */
+  };
+
+  // ==========================================
+  // DIRECT VIDEO CALL
+  // ==========================================
+
+  const handleVideoCall = (chat) => {
+    if (!chat) {
+      return;
+    }
+
+    /*
+     * Calls no longer open a Calls page.
+     *
+     * The selected contact is passed directly
+     * into the call handler.
+     *
+     * The actual WebRTC video connection will be
+     * connected in the call implementation phase.
+     */
+
+    console.log(
+      "Direct ZenvaZapp video call requested:",
+      chat
+    );
+
+    /*
+     * Keep the user inside PrivateChat for now.
+     * No Calls page is opened.
+     */
+  };
+
+  // ==========================================
   // NAVIGATION
   // ==========================================
 
@@ -223,14 +281,6 @@ function App() {
 
       case "contacts":
         setCurrentScreen("contacts");
-        break;
-
-      // --------------------------------------
-      // CALLS
-      // --------------------------------------
-
-      case "calls":
-        setCurrentScreen("calls");
         break;
 
       // --------------------------------------
@@ -271,6 +321,22 @@ function App() {
 
       case "files":
         setCurrentScreen("files");
+        break;
+
+      // --------------------------------------
+      // MARKETING STATUS
+      // --------------------------------------
+
+      case "marketing":
+        setCurrentScreen("marketing");
+        break;
+
+      // --------------------------------------
+      // ZENVA AI
+      // --------------------------------------
+
+      case "ai":
+        setCurrentScreen("ai");
         break;
 
       // --------------------------------------
@@ -436,37 +502,24 @@ function App() {
           }
         }}
 
-        onCall={(chat) => {
-          console.log(
-            "Starting voice call:",
-            chat
-          );
+        /*
+         * =====================================
+         * DIRECT CALL ACTIONS
+         * =====================================
+         *
+         * Calls do NOT navigate to a Calls page.
+         *
+         * PrivateChat sends the selected contact
+         * directly to these handlers.
+         */
 
-          setActiveCall({
-            type: "voice",
-            chat,
-          });
+        onCall={
+          handleVoiceCall
+        }
 
-          setCurrentScreen(
-            "calls"
-          );
-        }}
-
-        onVideoCall={(chat) => {
-          console.log(
-            "Starting video call:",
-            chat
-          );
-
-          setActiveCall({
-            type: "video",
-            chat,
-          });
-
-          setCurrentScreen(
-            "calls"
-          );
-        }}
+        onVideoCall={
+          handleVideoCall
+        }
 
         onOpenDisappearingSettings={
           handleOpenDisappearingSettings
@@ -498,22 +551,6 @@ function App() {
 
         onClose={
           handleCloseDisappearingSettings
-        }
-      />
-    );
-  }
-
-  // ==========================================
-  // CALLS
-  // ==========================================
-
-  if (currentScreen === "calls") {
-    return (
-      <Calls
-        user={user}
-        activeCall={activeCall}
-        onNavigate={
-          handleNavigate
         }
       />
     );
@@ -589,6 +626,44 @@ function App() {
   if (currentScreen === "files") {
     return (
       <SmartFiles
+        user={user}
+        onBack={() =>
+          setCurrentScreen("tools")
+        }
+        onNavigate={
+          handleNavigate
+        }
+      />
+    );
+  }
+
+  // ==========================================
+  // MARKETING STATUS
+  // ==========================================
+
+  if (
+    currentScreen === "marketing"
+  ) {
+    return (
+      <MarketingStatus
+        user={user}
+        onBack={() =>
+          setCurrentScreen("tools")
+        }
+        onNavigate={
+          handleNavigate
+        }
+      />
+    );
+  }
+
+  // ==========================================
+  // ZENVA AI
+  // ==========================================
+
+  if (currentScreen === "ai") {
+    return (
+      <ZenvaAI
         user={user}
         onBack={() =>
           setCurrentScreen("tools")

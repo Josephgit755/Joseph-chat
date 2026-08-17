@@ -22,11 +22,126 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: "*",
-    methods: ["GET", "POST", "PATCH", "DELETE"],
+    methods: [
+      "GET",
+      "POST",
+      "PATCH",
+      "DELETE",
+    ],
   },
 });
 
 app.set("io", io);
+
+// ==========================================
+// CONNECTED USER SOCKET MAP
+// ==========================================
+//
+// userId -> Set of socket IDs
+//
+// A user can have more than one browser/device
+// connected at the same time.
+//
+
+const connectedUsers = new Map();
+
+// ==========================================
+// USER ROOM HELPER
+// ==========================================
+
+const getUserRoom = (userId) => {
+  if (!userId) {
+    return null;
+  }
+
+  return `user:${String(userId)}`;
+};
+
+// ==========================================
+// ADD USER SOCKET
+// ==========================================
+
+const registerUserSocket = (
+  userId,
+  socket
+) => {
+  if (!userId || !socket) {
+    return;
+  }
+
+  const normalizedUserId =
+    String(userId);
+
+  const existingSockets =
+    connectedUsers.get(
+      normalizedUserId
+    ) || new Set();
+
+  existingSockets.add(
+    socket.id
+  );
+
+  connectedUsers.set(
+    normalizedUserId,
+    existingSockets
+  );
+
+  const userRoom =
+    getUserRoom(
+      normalizedUserId
+    );
+
+  if (userRoom) {
+    socket.join(userRoom);
+  }
+
+  socket.userId =
+    normalizedUserId;
+
+  console.log(
+    `Socket ${socket.id} registered for user ${normalizedUserId}`
+  );
+};
+
+// ==========================================
+// REMOVE USER SOCKET
+// ==========================================
+
+const unregisterUserSocket = (
+  socket
+) => {
+  const userId =
+    socket?.userId;
+
+  if (!userId) {
+    return;
+  }
+
+  const existingSockets =
+    connectedUsers.get(
+      String(userId)
+    );
+
+  if (!existingSockets) {
+    return;
+  }
+
+  existingSockets.delete(
+    socket.id
+  );
+
+  if (
+    existingSockets.size === 0
+  ) {
+    connectedUsers.delete(
+      String(userId)
+    );
+  }
+
+  console.log(
+    `Socket ${socket.id} unregistered from user ${userId}`
+  );
+};
 
 // ==========================================
 // SOCKET.IO CONNECTION
@@ -35,6 +150,28 @@ app.set("io", io);
 io.on("connection", (socket) => {
   console.log(
     `ZenvaZapp Socket.IO user connected: ${socket.id}`
+  );
+
+  // ========================================
+  // REGISTER USER
+  // ========================================
+
+  socket.on(
+    "register-user",
+    (userId) => {
+      if (!userId) {
+        console.log(
+          "User registration rejected: userId missing."
+        );
+
+        return;
+      }
+
+      registerUserSocket(
+        userId,
+        socket
+      );
+    }
   );
 
   // ========================================
@@ -52,7 +189,9 @@ io.on("connection", (socket) => {
         return;
       }
 
-      socket.join(conversationId);
+      socket.join(
+        conversationId
+      );
 
       console.log(
         `Socket ${socket.id} joined conversation: ${conversationId}`
@@ -71,7 +210,9 @@ io.on("connection", (socket) => {
         return;
       }
 
-      socket.leave(conversationId);
+      socket.leave(
+        conversationId
+      );
 
       console.log(
         `Socket ${socket.id} left conversation: ${conversationId}`
@@ -83,36 +224,37 @@ io.on("connection", (socket) => {
   // REAL-TIME NEW MESSAGE
   // ========================================
 
-  socket.on("send-message", (message) => {
-    if (!message) {
-      return;
-    }
+  socket.on(
+    "send-message",
+    (message) => {
+      if (!message) {
+        return;
+      }
 
-    const conversationId =
-      message.conversationId;
+      const conversationId =
+        message.conversationId;
 
-    if (!conversationId) {
+      if (!conversationId) {
+        console.log(
+          "Socket message rejected: conversationId missing."
+        );
+
+        return;
+      }
+
       console.log(
-        "Socket message rejected: conversationId missing."
-      );
-
-      return;
-    }
-
-    console.log(
-      "Real-time message received:",
-      message
-    );
-
-    // The sender already added the saved message
-    // locally, so only send it to the other users.
-    socket
-      .to(conversationId)
-      .emit(
-        "new-message",
+        "Real-time message received:",
         message
       );
-  });
+
+      socket
+        .to(conversationId)
+        .emit(
+          "new-message",
+          message
+        );
+    }
+  );
 
   // ========================================
   // MESSAGE EDITED
@@ -136,7 +278,10 @@ io.on("connection", (socket) => {
         return;
       }
 
-      if (!message._id && !message.id) {
+      if (
+        !message._id &&
+        !message.id
+      ) {
         console.log(
           "Edited message rejected: message ID missing."
         );
@@ -146,12 +291,11 @@ io.on("connection", (socket) => {
 
       console.log(
         `Message edited: ${
-          message._id || message.id
+          message._id ||
+          message.id
         }`
       );
 
-      // Send the updated message to the
-      // OTHER browsers in this conversation.
       socket
         .to(conversationId)
         .emit(
@@ -183,7 +327,10 @@ io.on("connection", (socket) => {
         return;
       }
 
-      if (!message._id && !message.id) {
+      if (
+        !message._id &&
+        !message.id
+      ) {
         console.log(
           "Delete-for-everyone rejected: message ID missing."
         );
@@ -193,14 +340,11 @@ io.on("connection", (socket) => {
 
       console.log(
         `Message deleted for everyone: ${
-          message._id || message.id
+          message._id ||
+          message.id
         }`
       );
 
-      // Both browsers must display the deleted
-      // state. The requesting browser updates
-      // itself locally, while this broadcasts
-      // the change to the other browser(s).
       socket
         .to(conversationId)
         .emit(
@@ -228,28 +372,24 @@ io.on("connection", (socket) => {
         return;
       }
 
-      if (!message._id && !message.id) {
+      if (
+        !message._id &&
+        !message.id
+      ) {
         return;
       }
 
       console.log(
         `Message deleted for one user: ${
-          message._id || message.id
+          message._id ||
+          message.id
         }`
       );
 
       /*
-        IMPORTANT:
-
-        Delete-for-me should normally NOT remove
-        the message from the other user's browser.
-
-        Therefore we do NOT broadcast this event
-        as a deletion to the other participant.
-
-        The requesting browser handles its own
-        local deletion.
-      */
+       * Delete-for-me stays local to the
+       * requesting browser.
+       */
     }
   );
 
@@ -275,7 +415,10 @@ io.on("connection", (socket) => {
         return;
       }
 
-      if (!message._id && !message.id) {
+      if (
+        !message._id &&
+        !message.id
+      ) {
         console.log(
           "Undo rejected: message ID missing."
         );
@@ -285,11 +428,11 @@ io.on("connection", (socket) => {
 
       console.log(
         `Message undone: ${
-          message._id || message.id
+          message._id ||
+          message.id
         }`
       );
 
-      // Tell the other browser about the undo.
       socket
         .to(conversationId)
         .emit(
@@ -363,15 +506,291 @@ io.on("connection", (socket) => {
     }
   );
 
+  // ==========================================
+  // CALL — OFFER
+  // ==========================================
+  //
+  // Caller sends the WebRTC offer to the
+  // intended receiver only.
+  //
+  // IMPORTANT:
+  // PrivateChat.js expects the receiver to
+  // receive "call-offer".
+  //
+
+  socket.on(
+    "call-offer",
+    ({
+      receiverId,
+      callerId,
+      conversationId,
+      callType,
+      offer,
+      callerName,
+      callerAvatar,
+    } = {}) => {
+      if (
+        !receiverId ||
+        !callerId ||
+        !offer
+      ) {
+        console.log(
+          "Call offer rejected: required data missing."
+        );
+
+        return;
+      }
+
+      const receiverRoom =
+        getUserRoom(
+          receiverId
+        );
+
+      if (!receiverRoom) {
+        return;
+      }
+
+      console.log(
+        `Call offer: ${callerId} -> ${receiverId} (${callType})`
+      );
+
+      io.to(receiverRoom).emit(
+        "call-offer",
+        {
+          callerId,
+          receiverId,
+          conversationId:
+            conversationId || "",
+          callType:
+            callType || "audio",
+          offer,
+          callerName:
+            callerName ||
+            "ZenvaZapp User",
+          callerAvatar:
+            callerAvatar || "",
+        }
+      );
+    }
+  );
+
+  // ==========================================
+  // CALL — ANSWER
+  // ==========================================
+  //
+  // Receiver sends the WebRTC answer back
+  // to the caller.
+  //
+  // IMPORTANT:
+  // PrivateChat.js expects "call-answer".
+  //
+
+  socket.on(
+    "call-answer",
+    ({
+      callerId,
+      receiverId,
+      conversationId,
+      answer,
+    } = {}) => {
+      if (
+        !callerId ||
+        !receiverId ||
+        !answer
+      ) {
+        console.log(
+          "Call answer rejected: required data missing."
+        );
+
+        return;
+      }
+
+      const callerRoom =
+        getUserRoom(
+          callerId
+        );
+
+      if (!callerRoom) {
+        return;
+      }
+
+      console.log(
+        `Call answer: ${receiverId} -> ${callerId}`
+      );
+
+      io.to(callerRoom).emit(
+        "call-answer",
+        {
+          callerId,
+          receiverId,
+          conversationId:
+            conversationId || "",
+          answer,
+        }
+      );
+    }
+  );
+
+  // ==========================================
+  // CALL — ICE CANDIDATE
+  // ==========================================
+  //
+  // IMPORTANT:
+  // PrivateChat.js expects "call-ice-candidate".
+  //
+
+  socket.on(
+    "call-ice-candidate",
+    ({
+      targetUserId,
+      senderUserId,
+      conversationId,
+      candidate,
+    } = {}) => {
+      if (
+        !targetUserId ||
+        !senderUserId ||
+        !candidate
+      ) {
+        console.log(
+          "ICE candidate rejected: required data missing."
+        );
+
+        return;
+      }
+
+      const targetRoom =
+        getUserRoom(
+          targetUserId
+        );
+
+      if (!targetRoom) {
+        return;
+      }
+
+      console.log(
+        `ICE candidate: ${senderUserId} -> ${targetUserId}`
+      );
+
+      io.to(targetRoom).emit(
+        "call-ice-candidate",
+        {
+          targetUserId,
+          senderUserId,
+          conversationId:
+            conversationId || "",
+          candidate,
+        }
+      );
+    }
+  );
+
+  // ==========================================
+  // CALL — REJECT
+  // ==========================================
+
+  socket.on(
+    "call-rejected",
+    ({
+      callerId,
+      receiverId,
+      conversationId,
+      reason,
+    } = {}) => {
+      if (
+        !callerId ||
+        !receiverId
+      ) {
+        return;
+      }
+
+      const callerRoom =
+        getUserRoom(
+          callerId
+        );
+
+      if (!callerRoom) {
+        return;
+      }
+
+      console.log(
+        `Call rejected: ${receiverId} -> ${callerId}`
+      );
+
+      io.to(callerRoom).emit(
+        "call-rejected",
+        {
+          callerId,
+          receiverId,
+          conversationId:
+            conversationId || "",
+          reason:
+            reason ||
+            "Call declined.",
+        }
+      );
+    }
+  );
+
+  // ==========================================
+  // CALL — ENDED
+  // ==========================================
+
+  socket.on(
+    "call-ended",
+    ({
+      targetUserId,
+      senderUserId,
+      conversationId,
+    } = {}) => {
+      if (
+        !targetUserId ||
+        !senderUserId
+      ) {
+        return;
+      }
+
+      const targetRoom =
+        getUserRoom(
+          targetUserId
+        );
+
+      if (!targetRoom) {
+        return;
+      }
+
+      console.log(
+        `Call ended: ${senderUserId} -> ${targetUserId}`
+      );
+
+      io.to(targetRoom).emit(
+        "call-ended",
+        {
+          targetUserId,
+          senderUserId,
+          conversationId:
+            conversationId || "",
+        }
+      );
+    }
+  );
+
   // ========================================
   // DISCONNECT
   // ========================================
 
-  socket.on("disconnect", () => {
-    console.log(
-      `ZenvaZapp Socket.IO user disconnected: ${socket.id}`
-    );
-  });
+  socket.on(
+    "disconnect",
+    () => {
+      unregisterUserSocket(
+        socket
+      );
+
+      console.log(
+        `ZenvaZapp Socket.IO user disconnected: ${socket.id}`
+      );
+    }
+  );
 });
 
 // ==========================================
@@ -393,7 +812,9 @@ server.listen(
 // ==========================================
 
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(
+    process.env.MONGO_URI
+  )
   .then(() => {
     console.log(
       "MongoDB connected successfully."
@@ -410,14 +831,17 @@ mongoose
 // SHUTDOWN
 // ==========================================
 
-process.on("SIGINT", () => {
-  console.log(
-    "Shutting down ZenvaZapp server..."
-  );
+process.on(
+  "SIGINT",
+  () => {
+    console.log(
+      "Shutting down ZenvaZapp server..."
+    );
 
-  server.close(() => {
-    mongoose.connection.close();
+    server.close(() => {
+      mongoose.connection.close();
 
-    process.exit(0);
-  });
-});
+      process.exit(0);
+    });
+  }
+);

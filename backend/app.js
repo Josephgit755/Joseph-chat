@@ -7,6 +7,7 @@ const profileRoutes = require("./routes/profileRoutes");
 const messageRoutes = require("./routes/messageRoutes");
 const userRoutes = require("./routes/userRoutes");
 const contactRoutes = require("./routes/contactRoutes");
+const translatorRoutes = require("./routes/translatorRoutes");
 
 dotenv.config();
 
@@ -69,24 +70,31 @@ app.use(
 // ==========================================
 // CONTACT ROUTES
 // ==========================================
-//
-// Contacts are now becoming their own
-// persistent MongoDB system instead of
-// relying directly on /api/users.
-//
-// Available endpoints:
-//
-// GET    /api/contacts
-// GET    /api/contacts/search?q=...
-// POST   /api/contacts
-// GET    /api/contacts/:contactId
-// DELETE /api/contacts/:contactId
-// PATCH  /api/contacts/:contactId/favorite
-// ==========================================
 
 app.use(
   "/api/contacts",
   contactRoutes
+);
+
+// ==========================================
+// TRANSLATOR ROUTES
+// ==========================================
+//
+// POST /api/translator/translate
+//
+// Body:
+//
+// {
+//   "text": "Hello",
+//   "sourceLanguage": "english",
+//   "targetLanguage": "french"
+// }
+//
+// ==========================================
+
+app.use(
+  "/api/translator",
+  translatorRoutes
 );
 
 // ==========================================

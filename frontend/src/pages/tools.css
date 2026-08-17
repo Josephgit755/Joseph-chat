@@ -27,7 +27,6 @@
   color: #ffffff;
 }
 
-
 /* =========================================
    HEADER
 ========================================= */
@@ -36,7 +35,7 @@
   padding: 20px 24px;
 
   border-bottom: 1px solid
-    rgba(255, 255, 255, 0.10);
+    rgba(255, 255, 255, 0.1);
 }
 
 .tools-title-area {
@@ -71,7 +70,8 @@
   font-weight: 800;
 
   box-shadow:
-    0 8px 22px rgba(217, 91, 183, 0.18);
+    0 8px 22px
+    rgba(217, 91, 183, 0.18);
 }
 
 .tools-header h1 {
@@ -85,11 +85,11 @@
 
   margin-top: 3px;
 
-  color: rgba(255, 255, 255, 0.62);
+  color:
+    rgba(255, 255, 255, 0.62);
 
   font-size: 12px;
 }
-
 
 /* =========================================
    CONTENT
@@ -116,13 +116,13 @@
 .tools-intro p {
   margin: 7px 0 0;
 
-  color: rgba(255, 255, 255, 0.60);
+  color:
+    rgba(255, 255, 255, 0.6);
 
   font-size: 12px;
 
   line-height: 1.6;
 }
-
 
 /* =========================================
    TOOLS GRID
@@ -151,7 +151,7 @@
   padding: 18px;
 
   border: 1px solid
-    rgba(255, 255, 255, 0.10);
+    rgba(255, 255, 255, 0.1);
 
   border-radius: 19px;
 
@@ -175,13 +175,20 @@
   transform: translateY(-2px);
 
   border-color:
-    rgba(236, 116, 207, 0.30);
+    rgba(236, 116, 207, 0.3);
 
   background:
-    rgba(236, 116, 207, 0.10);
+    rgba(236, 116, 207, 0.1);
 
   box-shadow:
-    0 8px 24px rgba(25, 5, 20, 0.14);
+    0 8px 24px
+    rgba(25, 5, 20, 0.14);
+}
+
+.tool-card:focus-visible {
+  outline: 2px solid #e86bc7;
+
+  outline-offset: 3px;
 }
 
 .tool-card.featured {
@@ -193,14 +200,15 @@
     linear-gradient(
       135deg,
       rgba(217, 91, 183, 0.18),
-      rgba(143, 60, 120, 0.10)
+      rgba(143, 60, 120, 0.1)
     );
 
   border-color:
     rgba(236, 116, 207, 0.28);
 
   box-shadow:
-    0 10px 28px rgba(25, 5, 20, 0.12);
+    0 10px 28px
+    rgba(25, 5, 20, 0.12);
 }
 
 .tool-icon {
@@ -238,11 +246,12 @@
     linear-gradient(
       135deg,
       rgba(232, 107, 199, 0.28),
-      rgba(198, 76, 165, 0.20)
+      rgba(198, 76, 165, 0.2)
     );
 
   box-shadow:
-    0 7px 20px rgba(217, 91, 183, 0.14);
+    0 7px 20px
+    rgba(217, 91, 183, 0.14);
 }
 
 .tool-information {
@@ -258,7 +267,8 @@
 .tool-information p {
   margin: 7px 0 0;
 
-  color: rgba(255, 255, 255, 0.62);
+  color:
+    rgba(255, 255, 255, 0.62);
 
   font-size: 11px;
 
@@ -275,7 +285,6 @@
 
   font-size: 18px;
 }
-
 
 /* =========================================
    AI NOTE
@@ -300,12 +309,13 @@
   background:
     linear-gradient(
       135deg,
-      rgba(217, 91, 183, 0.10),
+      rgba(217, 91, 183, 0.1),
       rgba(255, 255, 255, 0.05)
     );
 
   box-shadow:
-    0 8px 24px rgba(25, 5, 20, 0.10);
+    0 8px 24px
+    rgba(25, 5, 20, 0.1);
 }
 
 .tools-ai-icon {
@@ -333,7 +343,8 @@
   font-size: 19px;
 
   box-shadow:
-    0 6px 18px rgba(217, 91, 183, 0.15);
+    0 6px 18px
+    rgba(217, 91, 183, 0.15);
 }
 
 .tools-ai-note h3 {
@@ -345,13 +356,13 @@
 .tools-ai-note p {
   margin: 4px 0 0;
 
-  color: rgba(255, 255, 255, 0.58);
+  color:
+    rgba(255, 255, 255, 0.58);
 
   font-size: 11px;
 
   line-height: 1.5;
 }
-
 
 /* =========================================
    BOTTOM NAVIGATION
@@ -382,7 +393,8 @@
     rgba(236, 116, 207, 0.16);
 
   box-shadow:
-    0 -8px 25px rgba(25, 5, 20, 0.16);
+    0 -8px 25px
+    rgba(25, 5, 20, 0.16);
 }
 
 .tools-nav-button {
@@ -403,7 +415,8 @@
 
   background: transparent;
 
-  color: rgba(255, 255, 255, 0.48);
+  color:
+    rgba(255, 255, 255, 0.48);
 
   cursor: pointer;
 
@@ -434,13 +447,11 @@
   color: #f19bd9;
 }
 
-
 /* =========================================
    MOBILE
 ========================================= */
 
 @media (max-width: 600px) {
-
   .tools-header {
     padding: 16px;
   }

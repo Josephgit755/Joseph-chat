@@ -3,27 +3,35 @@ import { useState } from "react";
 import "./translator.css";
 
 function Translator({ onBack }) {
+  // ==========================================
+  // LANGUAGES
+  // ==========================================
+
   const languages = [
     {
       id: "english",
       name: "English",
       flag: "🇬🇧",
     },
+
     {
       id: "french",
       name: "French",
       flag: "🇫🇷",
     },
+
     {
       id: "pidgin",
-      name: "Pidgin English",
+      name: "Cameroonian Pidgin English",
       flag: "🇨🇲",
     },
+
     {
       id: "spanish",
       name: "Spanish",
       flag: "🇪🇸",
     },
+
     {
       id: "arabic",
       name: "Arabic",
@@ -31,56 +39,153 @@ function Translator({ onBack }) {
     },
   ];
 
+  // ==========================================
+  // STATE
+  // ==========================================
+
   const [sourceLanguage, setSourceLanguage] =
     useState("english");
 
   const [targetLanguage, setTargetLanguage] =
     useState("french");
 
-  const [message, setMessage] = useState("");
+  const [message, setMessage] =
+    useState("");
 
   const [translatedText, setTranslatedText] =
     useState("");
 
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] =
+    useState(false);
 
-  const handleTranslate = () => {
+  const [isTranslating, setIsTranslating] =
+    useState(false);
+
+  const [errorMessage, setErrorMessage] =
+    useState("");
+
+  // ==========================================
+  // API URL
+  // ==========================================
+
+  const API_URL =
+    process.env.REACT_APP_API_URL ||
+    "https://joseph-backend.onrender.com";
+
+  // ==========================================
+  // TRANSLATE
+  // ==========================================
+
+  const handleTranslate = async () => {
     if (!message.trim()) {
       return;
     }
 
-    /*
-      Temporary frontend demonstration.
+    setIsTranslating(true);
 
-      Real AI translation will be connected
-      to the ZenvaZapp backend later.
-    */
-
-    const target = languages.find(
-      (language) =>
-        language.id === targetLanguage
-    );
-
-    setTranslatedText(
-      `[${target?.name || "Translation"}] ${message}`
-    );
-
-    setCopied(false);
-  };
-
-  const handleSwapLanguages = () => {
-    setSourceLanguage(targetLanguage);
-    setTargetLanguage(sourceLanguage);
+    setErrorMessage("");
 
     setTranslatedText("");
+
+    setCopied(false);
+
+    try {
+      const response =
+        await fetch(
+          `${API_URL}/api/translator/translate`,
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              text: message,
+
+              sourceLanguage:
+                sourceLanguage,
+
+              targetLanguage:
+                targetLanguage,
+            }),
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            "Unable to translate the message."
+        );
+      }
+
+      if (!data?.translatedText) {
+        throw new Error(
+          "No translation was returned."
+        );
+      }
+
+      setTranslatedText(
+        data.translatedText
+      );
+
+      setCopied(false);
+    } catch (error) {
+      console.error(
+        "Translation request failed:",
+        error
+      );
+
+      setErrorMessage(
+        error.message ||
+          "Unable to translate the message right now."
+      );
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  // ==========================================
+  // SWAP LANGUAGES
+  // ==========================================
+
+  const handleSwapLanguages = () => {
+    setSourceLanguage(
+      targetLanguage
+    );
+
+    setTargetLanguage(
+      sourceLanguage
+    );
+
+    setTranslatedText("");
+
+    setErrorMessage("");
+
     setCopied(false);
   };
+
+  // ==========================================
+  // CLEAR
+  // ==========================================
 
   const handleClear = () => {
     setMessage("");
+
     setTranslatedText("");
+
+    setErrorMessage("");
+
     setCopied(false);
   };
+
+  // ==========================================
+  // COPY
+  // ==========================================
 
   const handleCopy = async () => {
     if (!translatedText) {
@@ -98,12 +203,30 @@ function Translator({ onBack }) {
         setCopied(false);
       }, 1800);
     } catch (error) {
-      console.log(
+      console.error(
         "Unable to copy translation:",
         error
       );
     }
   };
+
+  // ==========================================
+  // GET LANGUAGE NAME
+  // ==========================================
+
+  const getLanguageName = (languageId) => {
+    return (
+      languages.find(
+        (language) =>
+          language.id === languageId
+      )?.name ||
+      languageId
+    );
+  };
+
+  // ==========================================
+  // RENDER
+  // ==========================================
 
   return (
     <div className="translator-page">
@@ -138,6 +261,10 @@ function Translator({ onBack }) {
 
       <main className="translator-content">
 
+        {/* ===================================
+            INTRO
+        =================================== */}
+
         <section className="translator-intro">
 
           <div className="translator-icon">
@@ -149,16 +276,17 @@ function Translator({ onBack }) {
           </h2>
 
           <p>
-            Translate conversations into the
-            language that works best for you.
+            Translate conversations into
+            the language that works best
+            for you.
           </p>
 
         </section>
 
 
-        {/* =====================================
+        {/* ===================================
             LANGUAGE SELECTOR
-        ===================================== */}
+        =================================== */}
 
         <section className="language-selector">
 
@@ -170,21 +298,29 @@ function Translator({ onBack }) {
 
             <select
               value={sourceLanguage}
-              onChange={(event) =>
+              onChange={(event) => {
                 setSourceLanguage(
                   event.target.value
-                )
-              }
+                );
+
+                setTranslatedText("");
+
+                setErrorMessage("");
+              }}
             >
-              {languages.map((language) => (
-                <option
-                  key={language.id}
-                  value={language.id}
-                >
-                  {language.flag}{" "}
-                  {language.name}
-                </option>
-              ))}
+
+              {languages.map(
+                (language) => (
+                  <option
+                    key={language.id}
+                    value={language.id}
+                  >
+                    {language.flag}{" "}
+                    {language.name}
+                  </option>
+                )
+              )}
+
             </select>
 
           </div>
@@ -192,7 +328,9 @@ function Translator({ onBack }) {
 
           <button
             className="swap-languages"
-            onClick={handleSwapLanguages}
+            onClick={
+              handleSwapLanguages
+            }
             aria-label="Swap languages"
           >
             ⇄
@@ -207,21 +345,29 @@ function Translator({ onBack }) {
 
             <select
               value={targetLanguage}
-              onChange={(event) =>
+              onChange={(event) => {
                 setTargetLanguage(
                   event.target.value
-                )
-              }
+                );
+
+                setTranslatedText("");
+
+                setErrorMessage("");
+              }}
             >
-              {languages.map((language) => (
-                <option
-                  key={language.id}
-                  value={language.id}
-                >
-                  {language.flag}{" "}
-                  {language.name}
-                </option>
-              ))}
+
+              {languages.map(
+                (language) => (
+                  <option
+                    key={language.id}
+                    value={language.id}
+                  >
+                    {language.flag}{" "}
+                    {language.name}
+                  </option>
+                )
+              )}
+
             </select>
 
           </div>
@@ -229,9 +375,9 @@ function Translator({ onBack }) {
         </section>
 
 
-        {/* =====================================
+        {/* ===================================
             MESSAGE INPUT
-        ===================================== */}
+        =================================== */}
 
         <section className="translation-card">
 
@@ -243,21 +389,30 @@ function Translator({ onBack }) {
 
             <button
               onClick={handleClear}
-              disabled={!message && !translatedText}
+              disabled={
+                !message &&
+                !translatedText
+              }
             >
               Clear
             </button>
 
           </div>
 
+
           <textarea
             value={message}
-            onChange={(event) =>
-              setMessage(event.target.value)
-            }
+            onChange={(event) => {
+              setMessage(
+                event.target.value
+              );
+
+              setErrorMessage("");
+            }}
             placeholder="Type or paste a message..."
             rows="6"
           />
+
 
           <div className="translation-actions">
 
@@ -268,9 +423,14 @@ function Translator({ onBack }) {
             <button
               className="translate-button"
               onClick={handleTranslate}
-              disabled={!message.trim()}
+              disabled={
+                !message.trim() ||
+                isTranslating
+              }
             >
-              Translate →
+              {isTranslating
+                ? "Translating..."
+                : "Translate →"}
             </button>
 
           </div>
@@ -278,9 +438,30 @@ function Translator({ onBack }) {
         </section>
 
 
-        {/* =====================================
+        {/* ===================================
+            ERROR
+        =================================== */}
+
+        {errorMessage && (
+          <section
+            className="translation-error"
+          >
+
+            <span>
+              ⚠️
+            </span>
+
+            <p>
+              {errorMessage}
+            </p>
+
+          </section>
+        )}
+
+
+        {/* ===================================
             TRANSLATION RESULT
-        ===================================== */}
+        =================================== */}
 
         {translatedText && (
           <section className="translation-result">
@@ -294,16 +475,13 @@ function Translator({ onBack }) {
                 </span>
 
                 <strong>
-                  {
-                    languages.find(
-                      (language) =>
-                        language.id ===
-                        targetLanguage
-                    )?.name
-                  }
+                  {getLanguageName(
+                    targetLanguage
+                  )}
                 </strong>
 
               </div>
+
 
               <button
                 onClick={handleCopy}
@@ -315,6 +493,7 @@ function Translator({ onBack }) {
 
             </div>
 
+
             <p>
               {translatedText}
             </p>
@@ -323,9 +502,9 @@ function Translator({ onBack }) {
         )}
 
 
-        {/* =====================================
+        {/* ===================================
             CHAT TRANSLATION INFO
-        ===================================== */}
+        =================================== */}
 
         <section className="message-translation-info">
 
@@ -340,9 +519,11 @@ function Translator({ onBack }) {
             </h3>
 
             <p>
-              Later, tap the <strong>A</strong> beside
-              a message to translate that message
-              without leaving your conversation.
+              Later, tap the{" "}
+              <strong>A</strong>{" "}
+              beside a message to translate
+              that message without leaving
+              your conversation.
             </p>
 
           </div>
@@ -350,9 +531,9 @@ function Translator({ onBack }) {
         </section>
 
 
-        {/* =====================================
+        {/* ===================================
             SUPPORTED LANGUAGES
-        ===================================== */}
+        =================================== */}
 
         <section className="supported-languages">
 
@@ -362,18 +543,19 @@ function Translator({ onBack }) {
 
           <div className="language-pills">
 
-            {languages.map((language) => (
+            {languages.map(
+              (language) => (
 
-              <span
-                key={language.id}
-                className="language-pill"
-              >
-                {language.flag}
-                {" "}
-                {language.name}
-              </span>
+                <span
+                  key={language.id}
+                  className="language-pill"
+                >
+                  {language.flag}{" "}
+                  {language.name}
+                </span>
 
-            ))}
+              )
+            )}
 
           </div>
 
