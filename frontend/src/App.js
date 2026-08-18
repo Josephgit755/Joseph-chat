@@ -21,7 +21,8 @@ function App() {
   const [currentScreen, setCurrentScreen] =
     useState("login");
 
-  const [user, setUser] = useState(null);
+  const [user, setUser] =
+    useState(null);
 
   const [selectedChat, setSelectedChat] =
     useState(null);
@@ -37,8 +38,13 @@ function App() {
   const handleAuthenticated = (
     authenticatedUser
   ) => {
-    setUser(authenticatedUser);
-    setCurrentScreen("profile");
+    setUser(
+      authenticatedUser
+    );
+
+    setCurrentScreen(
+      "profile"
+    );
   };
 
   // ==========================================
@@ -58,7 +64,9 @@ function App() {
     try {
       localStorage.setItem(
         "zenvazapp_user",
-        JSON.stringify(updatedUser)
+        JSON.stringify(
+          updatedUser
+        )
       );
     } catch (error) {
       console.error(
@@ -67,127 +75,138 @@ function App() {
       );
     }
 
-    setCurrentScreen("chatlist");
+    setCurrentScreen(
+      "chatlist"
+    );
   };
 
   // ==========================================
   // MARK CONTACT AS RECENTLY CONTACTED
   // ==========================================
 
-  const handleContactOpened = async (chat) => {
-    const currentUserId =
-      user?._id ||
-      user?.id ||
-      user?.userId;
+  const handleContactOpened =
+    async (chat) => {
+      const currentUserId =
+        user?._id ||
+        user?.id ||
+        user?.userId;
 
-    const contactUserId =
-      chat?._id ||
-      chat?.id ||
-      chat?.userId;
+      const contactUserId =
+        chat?._id ||
+        chat?.id ||
+        chat?.userId;
 
-    if (
-      !currentUserId ||
-      !contactUserId
-    ) {
-      return;
-    }
+      if (
+        !currentUserId ||
+        !contactUserId
+      ) {
+        return;
+      }
 
-    try {
-      const response =
-        await fetch(
-          `${API_URL}/api/contacts/recently-contacted`,
-          {
-            method: "PATCH",
+      try {
+        const response =
+          await fetch(
+            `${API_URL}/api/contacts/recently-contacted`,
+            {
+              method: "PATCH",
 
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
 
-            body: JSON.stringify({
-              userId: currentUserId,
-              contactUserId:
-                contactUserId,
-            }),
-          }
-        );
+              body: JSON.stringify({
+                userId:
+                  currentUserId,
 
-      if (!response.ok) {
+                contactUserId:
+                  contactUserId,
+              }),
+            }
+          );
+
+        if (!response.ok) {
+          console.warn(
+            "Recently contacted sync returned:",
+            response.status
+          );
+        }
+      } catch (error) {
+        /*
+         * This should never block the user
+         * from opening or using a chat.
+         */
+
         console.warn(
-          "Recently contacted sync returned:",
-          response.status
+          "Unable to update recently contacted status:",
+          error
         );
       }
-    } catch (error) {
-      /*
-       * This should never block the user
-       * from opening or using a chat.
-       */
-      console.warn(
-        "Unable to update recently contacted status:",
-        error
-      );
-    }
-  };
+    };
 
   // ==========================================
   // OPEN PRIVATE CHAT
   // ==========================================
 
-  const handleOpenChat = (chat) => {
-    if (!chat) {
-      return;
-    }
+  const handleOpenChat =
+    (chat) => {
+      if (!chat) {
+        return;
+      }
 
-    /*
-     * Remember where the chat was opened from.
-     *
-     * Contacts -> PrivateChat -> Back
-     * should return to Contacts.
-     *
-     * ChatList -> PrivateChat -> Back
-     * should return to ChatList.
-     */
+      /*
+       * Remember where the chat was opened from.
+       *
+       * Contacts -> PrivateChat -> Back
+       * should return to Contacts.
+       *
+       * ChatList -> PrivateChat -> Back
+       * should return to ChatList.
+       */
 
-    const navigationSource =
-      currentScreen === "contacts"
-        ? "contacts"
-        : "chatlist";
+      const navigationSource =
+        currentScreen ===
+        "contacts"
+          ? "contacts"
+          : "chatlist";
 
-    const chatWithNavigation = {
-      ...chat,
-      navigationSource,
+      const chatWithNavigation = {
+        ...chat,
+        navigationSource,
+      };
+
+      setSelectedChat(
+        chatWithNavigation
+      );
+
+      setCurrentScreen(
+        "private-chat"
+      );
     };
-
-    setSelectedChat(
-      chatWithNavigation
-    );
-
-    setCurrentScreen(
-      "private-chat"
-    );
-  };
 
   // ==========================================
   // OPEN DISAPPEARING MESSAGE SETTINGS
   // ==========================================
 
-  const handleOpenDisappearingSettings = (
-    chat,
-    settings
-  ) => {
-    console.log(
-      "Opening disappearing message settings:",
+  const handleOpenDisappearingSettings =
+    (
       chat,
       settings
-    );
+    ) => {
+      console.log(
+        "Opening disappearing message settings:",
+        chat,
+        settings
+      );
 
-    setSelectedChat(chat);
+      setSelectedChat(
+        chat
+      );
 
-    setCurrentScreen(
-      "disappearing-message"
-    );
-  };
+      setCurrentScreen(
+        "disappearing-message"
+      );
+    };
 
   // ==========================================
   // CLOSE DISAPPEARING MESSAGE SETTINGS
@@ -204,212 +223,243 @@ function App() {
   // DIRECT AUDIO CALL
   // ==========================================
 
-  const handleVoiceCall = (chat) => {
-    if (!chat) {
-      return;
-    }
+  const handleVoiceCall =
+    (chat) => {
+      if (!chat) {
+        return;
+      }
 
-    /*
-     * Calls no longer open a Calls page.
-     *
-     * The selected contact is passed directly
-     * into the call handler.
-     *
-     * The actual WebRTC call connection will be
-     * connected in the call implementation phase.
-     */
+      /*
+       * Calls no longer open a Calls page.
+       *
+       * The selected contact is passed directly
+       * into the call handler.
+       *
+       * The actual WebRTC call connection will be
+       * connected in the call implementation phase.
+       */
 
-    console.log(
-      "Direct ZenvaZapp audio call requested:",
-      chat
-    );
+      console.log(
+        "Direct ZenvaZapp audio call requested:",
+        chat
+      );
 
-    /*
-     * Keep the user inside PrivateChat for now.
-     * No Calls page is opened.
-     */
-  };
+      /*
+       * Keep the user inside PrivateChat for now.
+       * No Calls page is opened.
+       */
+    };
 
   // ==========================================
   // DIRECT VIDEO CALL
   // ==========================================
 
-  const handleVideoCall = (chat) => {
-    if (!chat) {
-      return;
-    }
+  const handleVideoCall =
+    (chat) => {
+      if (!chat) {
+        return;
+      }
 
-    /*
-     * Calls no longer open a Calls page.
-     *
-     * The selected contact is passed directly
-     * into the call handler.
-     *
-     * The actual WebRTC video connection will be
-     * connected in the call implementation phase.
-     */
+      /*
+       * Calls no longer open a Calls page.
+       *
+       * The selected contact is passed directly
+       * into the call handler.
+       *
+       * The actual WebRTC video connection will be
+       * connected in the call implementation phase.
+       */
 
-    console.log(
-      "Direct ZenvaZapp video call requested:",
-      chat
-    );
+      console.log(
+        "Direct ZenvaZapp video call requested:",
+        chat
+      );
 
-    /*
-     * Keep the user inside PrivateChat for now.
-     * No Calls page is opened.
-     */
-  };
+      /*
+       * Keep the user inside PrivateChat for now.
+       * No Calls page is opened.
+       */
+    };
 
   // ==========================================
   // NAVIGATION
   // ==========================================
 
-  const handleNavigate = (section) => {
-    switch (section) {
-      // --------------------------------------
-      // CHATS
-      // --------------------------------------
+  const handleNavigate =
+    (section) => {
+      switch (section) {
 
-      case "chats":
-      case "chatlist":
-        setCurrentScreen("chatlist");
-        break;
+        // --------------------------------------
+        // CHATS
+        // --------------------------------------
 
-      // --------------------------------------
-      // CONTACTS
-      // --------------------------------------
+        case "chats":
+        case "chatlist":
+          setCurrentScreen(
+            "chatlist"
+          );
+          break;
 
-      case "contacts":
-        setCurrentScreen("contacts");
-        break;
+        // --------------------------------------
+        // CONTACTS
+        // --------------------------------------
 
-      // --------------------------------------
-      // TOOLS
-      // --------------------------------------
+        case "contacts":
+          setCurrentScreen(
+            "contacts"
+          );
+          break;
 
-      case "tools":
-        setCurrentScreen("tools");
-        break;
+        // --------------------------------------
+        // TOOLS
+        // --------------------------------------
 
-      // --------------------------------------
-      // ZENVA BREATH
-      // --------------------------------------
+        case "tools":
+          setCurrentScreen(
+            "tools"
+          );
+          break;
 
-      case "breath":
-        setCurrentScreen("breath");
-        break;
+        // --------------------------------------
+        // ZENVA BREATH
+        // --------------------------------------
 
-      // --------------------------------------
-      // TRANSLATOR
-      // --------------------------------------
+        case "breath":
+          setCurrentScreen(
+            "breath"
+          );
+          break;
 
-      case "translator":
-        setCurrentScreen("translator");
-        break;
+        // --------------------------------------
+        // TRANSLATOR
+        // --------------------------------------
 
-      // --------------------------------------
-      // STUDENT MODE
-      // --------------------------------------
+        case "translator":
+          setCurrentScreen(
+            "translator"
+          );
+          break;
 
-      case "student":
-        setCurrentScreen("student");
-        break;
+        // --------------------------------------
+        // STUDENT MODE
+        // --------------------------------------
 
-      // --------------------------------------
-      // SMART FILES
-      // --------------------------------------
+        case "student":
+          setCurrentScreen(
+            "student"
+          );
+          break;
 
-      case "files":
-        setCurrentScreen("files");
-        break;
+        // --------------------------------------
+        // SMART FILES
+        // --------------------------------------
 
-      // --------------------------------------
-      // MARKETING STATUS
-      // --------------------------------------
+        case "files":
+          setCurrentScreen(
+            "files"
+          );
+          break;
 
-      case "marketing":
-        setCurrentScreen("marketing");
-        break;
+        // --------------------------------------
+        // MARKETING STATUS
+        // --------------------------------------
 
-      // --------------------------------------
-      // ZENVA AI
-      // --------------------------------------
+        case "marketing":
+          setCurrentScreen(
+            "marketing"
+          );
+          break;
 
-      case "ai":
-        setCurrentScreen("ai");
-        break;
+        // --------------------------------------
+        // ZENVA AI
+        // --------------------------------------
 
-      // --------------------------------------
-      // PROFILE
-      // --------------------------------------
+        case "ai":
+          setCurrentScreen(
+            "ai"
+          );
+          break;
 
-      case "profile":
-        setCurrentScreen("profile");
-        break;
+        // --------------------------------------
+        // PROFILE
+        // --------------------------------------
 
-      // --------------------------------------
-      // SETTINGS
-      // --------------------------------------
+        case "profile":
+          setCurrentScreen(
+            "profile"
+          );
+          break;
 
-      case "settings":
-        console.log(
-          "Settings page is not implemented yet."
-        );
-        break;
+        // --------------------------------------
+        // SETTINGS
+        // --------------------------------------
 
-      // --------------------------------------
-      // NEW CHAT
-      // --------------------------------------
+        case "settings":
+          console.log(
+            "Settings page is not implemented yet."
+          );
+          break;
 
-      case "new-chat":
-        setCurrentScreen("contacts");
-        break;
+        // --------------------------------------
+        // NEW CHAT
+        // --------------------------------------
 
-      // --------------------------------------
-      // NEW GROUP
-      // --------------------------------------
+        case "new-chat":
+          setCurrentScreen(
+            "contacts"
+          );
+          break;
 
-      case "new-group":
-        console.log(
-          "New Group page is not implemented yet."
-        );
-        break;
+        // --------------------------------------
+        // NEW GROUP
+        // --------------------------------------
 
-      // --------------------------------------
-      // NEW CONTACT
-      // --------------------------------------
+        case "new-group":
+          console.log(
+            "New Group page is not implemented yet."
+          );
+          break;
 
-      case "new-contact":
-        setCurrentScreen("contacts");
-        break;
+        // --------------------------------------
+        // NEW CONTACT
+        // --------------------------------------
 
-      // --------------------------------------
-      // COMMUNITY
-      // --------------------------------------
+        case "new-contact":
+          setCurrentScreen(
+            "contacts"
+          );
+          break;
 
-      case "community":
-        console.log(
-          "Community page is not implemented yet."
-        );
-        break;
+        // --------------------------------------
+        // COMMUNITY
+        // --------------------------------------
 
-      // --------------------------------------
-      // DEFAULT
-      // --------------------------------------
+        case "community":
+          console.log(
+            "Community page is not implemented yet."
+          );
+          break;
 
-      default:
-        console.log(
-          "Navigation selected:",
-          section
-        );
-    }
-  };
+        // --------------------------------------
+        // DEFAULT
+        // --------------------------------------
+
+        default:
+          console.log(
+            "Navigation selected:",
+            section
+          );
+      }
+    };
 
   // ==========================================
   // LOGIN
   // ==========================================
 
-  if (currentScreen === "login") {
+  if (
+    currentScreen ===
+    "login"
+  ) {
     return (
       <Login
         onAuthenticated={
@@ -423,7 +473,10 @@ function App() {
   // PROFILE SETUP
   // ==========================================
 
-  if (currentScreen === "profile") {
+  if (
+    currentScreen ===
+    "profile"
+  ) {
     return (
       <ProfileSetup
         user={user}
@@ -438,7 +491,10 @@ function App() {
   // CHAT LIST
   // ==========================================
 
-  if (currentScreen === "chatlist") {
+  if (
+    currentScreen ===
+    "chatlist"
+  ) {
     return (
       <ChatList
         user={user}
@@ -456,13 +512,26 @@ function App() {
   // CONTACTS
   // ==========================================
 
-  if (currentScreen === "contacts") {
+  if (
+    currentScreen ===
+    "contacts"
+  ) {
     return (
       <Contacts
         user={user}
+
         onOpenChat={
           handleOpenChat
         }
+
+        onCall={
+          handleVoiceCall
+        }
+
+        onVideoCall={
+          handleVideoCall
+        }
+
         onNavigate={
           handleNavigate
         }
@@ -475,7 +544,8 @@ function App() {
   // ==========================================
 
   if (
-    currentScreen === "private-chat"
+    currentScreen ===
+    "private-chat"
   ) {
     return (
       <PrivateChat
@@ -486,7 +556,9 @@ function App() {
           const navigationSource =
             selectedChat?.navigationSource;
 
-          setSelectedChat(null);
+          setSelectedChat(
+            null
+          );
 
           if (
             navigationSource ===
@@ -560,7 +632,10 @@ function App() {
   // TOOLS
   // ==========================================
 
-  if (currentScreen === "tools") {
+  if (
+    currentScreen ===
+    "tools"
+  ) {
     return (
       <Tools
         user={user}
@@ -575,11 +650,16 @@ function App() {
   // ZENVA BREATH
   // ==========================================
 
-  if (currentScreen === "breath") {
+  if (
+    currentScreen ===
+    "breath"
+  ) {
     return (
       <ZenvaBreath
         onBack={() =>
-          setCurrentScreen("tools")
+          setCurrentScreen(
+            "tools"
+          )
         }
       />
     );
@@ -590,12 +670,15 @@ function App() {
   // ==========================================
 
   if (
-    currentScreen === "translator"
+    currentScreen ===
+    "translator"
   ) {
     return (
       <Translator
         onBack={() =>
-          setCurrentScreen("tools")
+          setCurrentScreen(
+            "tools"
+          )
         }
       />
     );
@@ -605,13 +688,20 @@ function App() {
   // STUDENT MODE
   // ==========================================
 
-  if (currentScreen === "student") {
+  if (
+    currentScreen ===
+    "student"
+  ) {
     return (
       <StudentMode
         user={user}
+
         onBack={() =>
-          setCurrentScreen("tools")
+          setCurrentScreen(
+            "tools"
+          )
         }
+
         onNavigate={
           handleNavigate
         }
@@ -623,13 +713,20 @@ function App() {
   // SMART FILES
   // ==========================================
 
-  if (currentScreen === "files") {
+  if (
+    currentScreen ===
+    "files"
+  ) {
     return (
       <SmartFiles
         user={user}
+
         onBack={() =>
-          setCurrentScreen("tools")
+          setCurrentScreen(
+            "tools"
+          )
         }
+
         onNavigate={
           handleNavigate
         }
@@ -642,14 +739,19 @@ function App() {
   // ==========================================
 
   if (
-    currentScreen === "marketing"
+    currentScreen ===
+    "marketing"
   ) {
     return (
       <MarketingStatus
         user={user}
+
         onBack={() =>
-          setCurrentScreen("tools")
+          setCurrentScreen(
+            "tools"
+          )
         }
+
         onNavigate={
           handleNavigate
         }
@@ -661,13 +763,20 @@ function App() {
   // ZENVA AI
   // ==========================================
 
-  if (currentScreen === "ai") {
+  if (
+    currentScreen ===
+    "ai"
+  ) {
     return (
       <ZenvaAI
         user={user}
+
         onBack={() =>
-          setCurrentScreen("tools")
+          setCurrentScreen(
+            "tools"
+          )
         }
+
         onNavigate={
           handleNavigate
         }

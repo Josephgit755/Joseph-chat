@@ -1,3 +1,4 @@
+
 import React, {
   useEffect,
   useRef,
@@ -11,8 +12,6 @@ function PrivateChat({
   chat,
   user,
   onBack,
-  onCall,
-  onVideoCall,
   onOpenDisappearingSettings,
 }) {
   // ==========================================
@@ -67,6 +66,18 @@ function PrivateChat({
   const chatAvatar =
     chat?.avatar ||
     chatName.charAt(0).toUpperCase();
+
+  const currentUserName =
+    user?.displayName ||
+    user?.fullName ||
+    user?.username ||
+    user?.name ||
+    "ZenvaZapp User";
+
+  const currentUserAvatar =
+    user?.profilePhoto ||
+    user?.avatar ||
+    currentUserName.charAt(0).toUpperCase();
 
   // ==========================================
   // MESSAGE STATE
@@ -156,6 +167,29 @@ function PrivateChat({
 
   const messageEndRef = useRef(null);
   const socketRef = useRef(null);
+
+  // ==========================================
+  // DIRECT AUDIO / VIDEO CALLING
+  // ==========================================
+
+  const peerConnectionRef = useRef(null);
+  const localStreamRef = useRef(null);
+  const remoteStreamRef = useRef(null);
+  const pendingIceCandidatesRef = useRef([]);
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
+  const callTimerRef = useRef(null);
+
+  const [callState, setCallState] = useState("idle");
+  const [callType, setCallType] = useState(null);
+  const [incomingCall, setIncomingCall] = useState(null);
+  const [callError, setCallError] = useState("");
+  const [callSeconds, setCallSeconds] = useState(0);
+  const callStateRef = useRef("idle");
+
+  useEffect(() => {
+    callStateRef.current = callState;
+  }, [callState]);
 
   const textareaRef = useRef(null);
   const editTextareaRef = useRef(null);
@@ -439,7 +473,7 @@ function PrivateChat({
         );
       } catch (error) {
         console.warn(
-          "Unable to cache ZenvaZapp messages:",
+          "Unable to save message cache:",
           error
         );
       }
@@ -448,14 +482,12 @@ function PrivateChat({
   );
 
   // ==========================================
-  // LOAD MESSAGE CACHE FIRST
+  // LOAD MESSAGE CACHE
   // ==========================================
 
   useEffect(() => {
     if (!messageCacheKey) {
-      setMessages([]);
       setHasCachedMessages(false);
-      setIsLoadingMessages(true);
       return;
     }
 
@@ -466,9 +498,7 @@ function PrivateChat({
         );
 
       if (!cached) {
-        setMessages([]);
         setHasCachedMessages(false);
-        setIsLoadingMessages(true);
         return;
       }
 
@@ -478,9 +508,7 @@ function PrivateChat({
       if (
         !Array.isArray(parsed)
       ) {
-        setMessages([]);
         setHasCachedMessages(false);
-        setIsLoadingMessages(true);
         return;
       }
 
@@ -491,51 +519,23 @@ function PrivateChat({
           )
           .filter(Boolean);
 
-      setMessages(formatted);
-
-      setHasCachedMessages(
-        formatted.length > 0
-      );
-
-      /*
-       * IMPORTANT:
-       * Cached messages are displayed immediately.
-       * MongoDB is refreshed in the background.
-       */
-      setIsLoadingMessages(false);
+      if (formatted.length) {
+        setMessages(formatted);
+        setHasCachedMessages(true);
+      } else {
+        setHasCachedMessages(false);
+      }
     } catch (error) {
       console.warn(
-        "Unable to load cached ZenvaZapp messages:",
+        "Unable to load cached messages:",
         error
       );
 
-      setMessages([]);
       setHasCachedMessages(false);
-      setIsLoadingMessages(true);
     }
   }, [
     messageCacheKey,
     formatMessage,
-  ]);
-
-  // ==========================================
-  // CACHE CURRENT MESSAGES
-  // ==========================================
-
-  useEffect(() => {
-    if (!messageCacheKey) {
-      return;
-    }
-
-    if (!messages.length) {
-      return;
-    }
-
-    saveMessageCache(messages);
-  }, [
-    messages,
-    messageCacheKey,
-    saveMessageCache,
   ]);
 
   // ==========================================
@@ -554,23 +554,12 @@ function PrivateChat({
           disappearingStorageKey
         );
 
-      if (
-        saved === "off" ||
-        saved === "24h" ||
-        saved === "7d" ||
-        saved === "90d"
-      ) {
-        setDisappearingDuration(
-          saved
-        );
-      } else {
-        setDisappearingDuration(
-          "off"
-        );
-      }
+      setDisappearingDuration(
+        saved || "off"
+      );
     } catch (error) {
-      console.error(
-        "Unable to load disappearing message setting:",
+      console.warn(
+        "Unable to load disappearing setting:",
         error
       );
 
@@ -597,203 +586,1093 @@ function PrivateChat({
             duration
           );
         } catch (error) {
-          console.error(
-            "Unable to save disappearing message setting:",
+          console.warn(
+            "Unable to save disappearing setting:",
             error
           );
         }
+
+        setDisappearingDuration(
+          duration
+        );
       },
       [disappearingStorageKey]
     );
 
   // ==========================================
-  // RESIZE MESSAGE INPUT
+  // SCROLL TO BOTTOM
+  // ==========================================
+
+  const scrollToBottom =
+    useCallback(() => {
+      requestAnimationFrame(() => {
+        messageEndRef.current?.scrollIntoView(
+          {
+            behavior: "smooth",
+          }
+        );
+      });
+    }, []);
+
+  // ==========================================
+  // INPUT RESIZE
   // ==========================================
 
   const resizeMessageInput =
     useCallback(() => {
-      const textarea =
+      const element =
         textareaRef.current;
 
-      if (!textarea) {
+      if (!element) {
         return;
       }
 
-      textarea.style.height =
-        "auto";
+      element.style.height = "auto";
 
-      const minimumHeight = 24;
-      const maximumHeight = 140;
-
-      const nextHeight = Math.min(
-        Math.max(
-          textarea.scrollHeight,
-          minimumHeight
-        ),
-        maximumHeight
-      );
-
-      textarea.style.height =
-        `${nextHeight}px`;
+      element.style.height = `${Math.min(
+        element.scrollHeight,
+        120
+      )}px`;
     }, []);
-
-  // ==========================================
-  // RESIZE EDIT INPUT
-  // ==========================================
 
   const resizeEditInput =
     useCallback(() => {
-      const textarea =
+      const element =
         editTextareaRef.current;
 
-      if (!textarea) {
+      if (!element) {
         return;
       }
 
-      textarea.style.height =
-        "auto";
+      element.style.height = "auto";
 
-      const minimumHeight = 24;
-      const maximumHeight = 120;
-
-      const nextHeight = Math.min(
-        Math.max(
-          textarea.scrollHeight,
-          minimumHeight
-        ),
-        maximumHeight
-      );
-
-      textarea.style.height =
-        `${nextHeight}px`;
+      element.style.height = `${Math.min(
+        element.scrollHeight,
+        120
+      )}px`;
     }, []);
 
   // ==========================================
-  // RESET INPUT
+  // CALL TIMER
   // ==========================================
 
-  const resetMessageInput =
+  const stopCallTimer =
     useCallback(() => {
-      if (textareaRef.current) {
-        textareaRef.current.style.height =
-          "24px";
+      if (callTimerRef.current) {
+        clearInterval(
+          callTimerRef.current
+        );
+
+        callTimerRef.current = null;
       }
     }, []);
 
-  const resetEditInput =
+  const startCallTimer =
     useCallback(() => {
-      if (editTextareaRef.current) {
-        editTextareaRef.current.style.height =
-          "24px";
+      stopCallTimer();
+
+      setCallSeconds(0);
+
+      callTimerRef.current =
+        setInterval(() => {
+          setCallSeconds(
+            (previous) =>
+              previous + 1
+          );
+        }, 1000);
+    }, [stopCallTimer]);
+
+  // ==========================================
+  // FORMAT CALL TIME
+  // ==========================================
+
+  const formatCallTime =
+    useCallback((seconds) => {
+      const minutes =
+        Math.floor(seconds / 60);
+
+      const remainingSeconds =
+        seconds % 60;
+
+      return `${String(
+        minutes
+      ).padStart(2, "0")}:${String(
+        remainingSeconds
+      ).padStart(2, "0")}`;
+    }, []);
+
+  // ==========================================
+  // CLOSE MESSAGE MENU
+  // ==========================================
+
+  const closeMessageMenu =
+    useCallback(() => {
+      setShowMessageMenu(false);
+      setSelectedMessage(null);
+    }, []);
+
+  // ==========================================
+  // CLEANUP CALL
+  // ==========================================
+
+  const cleanupCall =
+    useCallback(
+      ({
+        notifyRemote = true,
+      } = {}) => {
+        stopCallTimer();
+
+        const socket =
+          socketRef.current;
+
+        if (
+          notifyRemote &&
+          socket?.connected &&
+          conversationId
+        ) {
+          socket.emit(
+            "call-ended",
+            {
+              conversationId,
+
+              senderUserId:
+                currentUserId,
+
+              targetUserId:
+                otherUserId,
+            }
+          );
+        }
+
+        if (
+          peerConnectionRef.current
+        ) {
+          try {
+            peerConnectionRef.current.onicecandidate =
+              null;
+
+            peerConnectionRef.current.ontrack =
+              null;
+
+            peerConnectionRef.current.onconnectionstatechange =
+              null;
+
+            peerConnectionRef.current.oniceconnectionstatechange =
+              null;
+
+            peerConnectionRef.current.close();
+          } catch (error) {
+            console.warn(
+              "Peer connection cleanup error:",
+              error
+            );
+          }
+        }
+
+        peerConnectionRef.current =
+          null;
+
+        if (localStreamRef.current) {
+          localStreamRef.current
+            .getTracks()
+            .forEach((track) => {
+              try {
+                track.stop();
+              } catch (error) {
+                console.warn(
+                  "Local track cleanup error:",
+                  error
+                );
+              }
+            });
+        }
+
+        localStreamRef.current =
+          null;
+
+        if (remoteStreamRef.current) {
+          remoteStreamRef.current
+            .getTracks()
+            .forEach((track) => {
+              try {
+                track.stop();
+              } catch (error) {
+                console.warn(
+                  "Remote track cleanup error:",
+                  error
+                );
+              }
+            });
+        }
+
+        remoteStreamRef.current =
+          null;
+
+        pendingIceCandidatesRef.current =
+          [];
+
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject =
+            null;
+        }
+
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject =
+            null;
+        }
+
+        setIncomingCall(null);
+        setCallType(null);
+        setCallSeconds(0);
+        setCallError("");
+        setCallState("idle");
+      },
+      [
+        conversationId,
+        currentUserId,
+        otherUserId,
+        stopCallTimer,
+      ]
+    );
+
+  // ==========================================
+  // CREATE PEER CONNECTION
+  // ==========================================
+
+  const createPeerConnection =
+    useCallback(
+      (targetUserId) => {
+        const configuration = {
+          iceServers: [
+            {
+              urls:
+                "stun:stun.l.google.com:19302",
+            },
+            {
+              urls:
+                "stun:stun1.l.google.com:19302",
+            },
+          ],
+        };
+
+        const peerConnection =
+          new RTCPeerConnection(
+            configuration
+          );
+
+        peerConnectionRef.current =
+          peerConnection;
+
+        peerConnection.onicecandidate =
+          (event) => {
+            if (
+              !event.candidate
+            ) {
+              return;
+            }
+
+            socketRef.current?.emit(
+              "call-ice-candidate",
+              {
+                conversationId,
+
+                senderUserId:
+                  currentUserId,
+
+                targetUserId,
+
+                candidate:
+                  event.candidate,
+              }
+            );
+          };
+
+        peerConnection.ontrack =
+          (event) => {
+            const stream =
+              event.streams?.[0];
+
+            if (!stream) {
+              return;
+            }
+
+            remoteStreamRef.current =
+              stream;
+
+            if (
+              remoteVideoRef.current
+            ) {
+              remoteVideoRef.current.srcObject =
+                stream;
+
+              remoteVideoRef.current
+                .play()
+                .catch(() => {});
+            }
+          };
+
+        peerConnection.onconnectionstatechange =
+          () => {
+            const state =
+              peerConnection.connectionState;
+
+            console.log(
+              "WebRTC connection state:",
+              state
+            );
+
+            if (
+              state === "connected"
+            ) {
+              setCallState(
+                "connected"
+              );
+
+              startCallTimer();
+            }
+
+            if (
+              state === "failed"
+            ) {
+              setCallError(
+                "The call connection failed."
+              );
+
+              cleanupCall({
+                notifyRemote: true,
+              });
+            }
+
+            if (
+              state === "disconnected"
+            ) {
+              setCallError(
+                "The call connection was lost."
+              );
+            }
+          };
+
+        peerConnection.oniceconnectionstatechange =
+          () => {
+            const state =
+              peerConnection.iceConnectionState;
+
+            console.log(
+              "WebRTC ICE connection state:",
+              state
+            );
+
+            if (
+              state === "failed"
+            ) {
+              setCallError(
+                "Unable to establish the call connection."
+              );
+            }
+          };
+
+        return peerConnection;
+      },
+      [
+        conversationId,
+        currentUserId,
+        cleanupCall,
+        startCallTimer,
+      ]
+    );
+
+  // ==========================================
+  // GET LOCAL MEDIA
+  // ==========================================
+
+  const getLocalMedia =
+    useCallback(
+      async (type) => {
+        const constraints =
+          type === "video"
+            ? {
+                audio: true,
+                video: true,
+              }
+            : {
+                audio: true,
+                video: false,
+              };
+
+        const stream =
+          await navigator.mediaDevices.getUserMedia(
+            constraints
+          );
+
+        localStreamRef.current =
+          stream;
+
+        if (
+          localVideoRef.current
+        ) {
+          localVideoRef.current.srcObject =
+            stream;
+
+          localVideoRef.current
+            .play()
+            .catch(() => {});
+        }
+
+        return stream;
+      },
+      []
+    );
+
+  // ==========================================
+  // ADD LOCAL TRACKS
+  // ==========================================
+
+  const addLocalTracks =
+    useCallback(
+      (peerConnection) => {
+        const stream =
+          localStreamRef.current;
+
+        if (
+          !stream ||
+          !peerConnection
+        ) {
+          return;
+        }
+
+        const existingSenderTracks =
+          peerConnection
+            .getSenders()
+            .map(
+              (sender) =>
+                sender.track?.id
+            )
+            .filter(Boolean);
+
+        stream
+          .getTracks()
+          .forEach((track) => {
+            if (
+              existingSenderTracks.includes(
+                track.id
+              )
+            ) {
+              return;
+            }
+
+            peerConnection.addTrack(
+              track,
+              stream
+            );
+          });
+      },
+      []
+    );
+
+  // ==========================================
+  // ADD PENDING ICE
+  // ==========================================
+
+  const flushPendingIceCandidates =
+    useCallback(async () => {
+      const peerConnection =
+        peerConnectionRef.current;
+
+      if (!peerConnection) {
+        return;
+      }
+
+      const candidates =
+        pendingIceCandidatesRef.current;
+
+      pendingIceCandidatesRef.current =
+        [];
+
+      for (
+        const candidate of candidates
+      ) {
+        try {
+          await peerConnection.addIceCandidate(
+            new RTCIceCandidate(
+              candidate
+            )
+          );
+        } catch (error) {
+          console.warn(
+            "Unable to add queued ICE candidate:",
+            error
+          );
+        }
       }
     }, []);
 
   // ==========================================
-  // KEYBOARD
+  // START CALL TIMER WHEN CONNECTED
   // ==========================================
 
-  const handleMessageKeyDown =
-    (event) => {
+  const ensureCallTimer =
+    useCallback(() => {
       if (
-        event.key === "Enter" &&
-        !event.shiftKey
+        callStateRef.current ===
+        "connected"
       ) {
-        event.preventDefault();
-
-        event.currentTarget.form?.requestSubmit();
+        startCallTimer();
       }
-    };
+    }, [startCallTimer]);
 
-  const handleEditKeyDown =
-    (event) => {
-      if (
-        event.key === "Enter" &&
-        !event.shiftKey
-      ) {
-        event.preventDefault();
-
-        handleSaveEdit();
-      }
-
-      if (event.key === "Escape") {
-        event.preventDefault();
-
-        handleCancelEdit();
-      }
-    };
+  void ensureCallTimer;
 
   // ==========================================
-  // SOCKET.IO
+  // CALL — START
+  // ==========================================
+
+  const startCall =
+    useCallback(
+      async (type) => {
+        if (
+          !currentUserId ||
+          !otherUserId
+        ) {
+          setCallError(
+            "Unable to identify the other ZenvaZapp user."
+          );
+
+          return;
+        }
+
+        if (
+          !socketRef.current?.connected
+        ) {
+          setCallError(
+            "Connecting to ZenvaZapp calling service. Please try again."
+          );
+
+          return;
+        }
+
+        if (
+          callStateRef.current !==
+          "idle"
+        ) {
+          return;
+        }
+
+        try {
+          setCallError("");
+          setCallType(type);
+          setCallState("calling");
+          setCallSeconds(0);
+
+          const stream =
+            await getLocalMedia(
+              type
+            );
+
+          const peerConnection =
+            createPeerConnection(
+              otherUserId
+            );
+
+          addLocalTracks(
+            peerConnection
+          );
+
+          const offer =
+            await peerConnection.createOffer();
+
+          await peerConnection.setLocalDescription(
+            offer
+          );
+
+          socketRef.current.emit(
+            "call-offer",
+            {
+              callerId:
+                currentUserId,
+
+              receiverId:
+                otherUserId,
+
+              conversationId,
+
+              callType: type,
+
+              offer,
+
+              callerName:
+                currentUserName,
+
+              callerAvatar:
+                currentUserAvatar,
+            }
+          );
+
+          console.log(
+            `ZenvaZapp ${type} call offer sent:`,
+            {
+              callerId:
+                currentUserId,
+              receiverId:
+                otherUserId,
+            }
+          );
+
+          void stream;
+        } catch (error) {
+          console.error(
+            "Start call error:",
+            error
+          );
+
+          setCallError(
+            error?.message ||
+              "Unable to start the call."
+          );
+
+          cleanupCall({
+            notifyRemote: false,
+          });
+        }
+      },
+      [
+        currentUserId,
+        otherUserId,
+        conversationId,
+        currentUserName,
+        currentUserAvatar,
+        getLocalMedia,
+        createPeerConnection,
+        addLocalTracks,
+        cleanupCall,
+      ]
+    );
+
+  // ==========================================
+  // CALL — ACCEPT
+  // ==========================================
+
+  const handleAcceptCall =
+    useCallback(async () => {
+      if (!incomingCall) {
+        return;
+      }
+
+      const {
+        callerId,
+        offer,
+        callType: incomingType,
+      } = incomingCall;
+
+      if (!callerId || !offer) {
+        return;
+      }
+
+      try {
+        setCallError("");
+        setCallType(
+          incomingType || "audio"
+        );
+        setCallState("connecting");
+        setCallSeconds(0);
+
+        const stream =
+          await getLocalMedia(
+            incomingType || "audio"
+          );
+
+        const peerConnection =
+          createPeerConnection(
+            callerId
+          );
+
+        addLocalTracks(
+          peerConnection
+        );
+
+        await peerConnection.setRemoteDescription(
+          new RTCSessionDescription(
+            offer
+          )
+        );
+
+        await flushPendingIceCandidates();
+
+        const answer =
+          await peerConnection.createAnswer();
+
+        await peerConnection.setLocalDescription(
+          answer
+        );
+
+        socketRef.current?.emit(
+          "call-answer",
+          {
+            callerId,
+
+            receiverId:
+              currentUserId,
+
+            conversationId,
+
+            answer:
+              peerConnection.localDescription,
+          }
+        );
+
+        setIncomingCall(null);
+
+        console.log(
+          "ZenvaZapp call accepted."
+        );
+
+        void stream;
+      } catch (error) {
+        console.error(
+          "Accept call error:",
+          error
+        );
+
+        setCallError(
+          error?.message ||
+            "Unable to accept the call."
+        );
+
+        cleanupCall({
+          notifyRemote: true,
+        });
+      }
+    }, [
+      incomingCall,
+      currentUserId,
+      conversationId,
+      getLocalMedia,
+      createPeerConnection,
+      addLocalTracks,
+      flushPendingIceCandidates,
+      cleanupCall,
+    ]);
+
+  // ==========================================
+  // CALL — REJECT
+  // ==========================================
+
+  const handleRejectCall =
+    useCallback(() => {
+      if (!incomingCall) {
+        return;
+      }
+
+      const callerId =
+        incomingCall.callerId;
+
+      if (
+        socketRef.current?.connected &&
+        callerId
+      ) {
+        socketRef.current.emit(
+          "call-rejected",
+          {
+            callerId,
+
+            receiverId:
+              currentUserId,
+
+            conversationId,
+
+            reason:
+              "Call declined.",
+          }
+        );
+      }
+
+      setIncomingCall(null);
+      setCallType(null);
+      setCallState("idle");
+      setCallSeconds(0);
+      setCallError("");
+    }, [
+      incomingCall,
+      currentUserId,
+      conversationId,
+    ]);
+
+  // ==========================================
+  // CALL — END
+  // ==========================================
+
+  const handleEndCall =
+    useCallback(() => {
+      cleanupCall({
+        notifyRemote: true,
+      });
+    }, [cleanupCall]);
+
+  // ==========================================
+  // CALL — SOCKET HANDLERS
+  // ==========================================
+
+  const handleCallOffer =
+    useCallback(
+      async (data) => {
+        if (!data) {
+          return;
+        }
+
+        if (
+          String(data.receiverId) !==
+          String(currentUserId)
+        ) {
+          return;
+        }
+
+        if (
+          String(data.callerId) ===
+          String(currentUserId)
+        ) {
+          return;
+        }
+
+        if (!data.offer) {
+          return;
+        }
+
+        if (
+          callStateRef.current !==
+          "idle"
+        ) {
+          return;
+        }
+
+        console.log(
+          "Incoming ZenvaZapp call:",
+          data
+        );
+
+        setIncomingCall(data);
+        setCallType(
+          data.callType || "audio"
+        );
+        setCallState("ringing");
+        setCallError("");
+        setCallSeconds(0);
+      },
+      [currentUserId]
+    );
+
+  const handleCallAnswer =
+    useCallback(
+      async (data) => {
+        if (!data?.answer) {
+          return;
+        }
+
+        if (
+          String(data.callerId) !==
+          String(currentUserId)
+        ) {
+          return;
+        }
+
+        const peerConnection =
+          peerConnectionRef.current;
+
+        if (!peerConnection) {
+          return;
+        }
+
+        try {
+          await peerConnection.setRemoteDescription(
+            new RTCSessionDescription(
+              data.answer
+            )
+          );
+
+          await flushPendingIceCandidates();
+
+          setCallState("connecting");
+
+          console.log(
+            "ZenvaZapp call answer received."
+          );
+        } catch (error) {
+          console.error(
+            "Call answer error:",
+            error
+          );
+
+          setCallError(
+            "Unable to establish the call."
+          );
+        }
+      },
+      [
+        currentUserId,
+        flushPendingIceCandidates,
+      ]
+    );
+
+  const handleCallIceCandidate =
+    useCallback(
+      async (data) => {
+        if (!data?.candidate) {
+          return;
+        }
+
+        if (
+          String(data.targetUserId) !==
+          String(currentUserId)
+        ) {
+          return;
+        }
+
+        if (
+          String(data.senderUserId) ===
+          String(currentUserId)
+        ) {
+          return;
+        }
+
+        const peerConnection =
+          peerConnectionRef.current;
+
+        if (
+          !peerConnection ||
+          !peerConnection.remoteDescription
+        ) {
+          pendingIceCandidatesRef.current.push(
+            data.candidate
+          );
+
+          return;
+        }
+
+        try {
+          await peerConnection.addIceCandidate(
+            new RTCIceCandidate(
+              data.candidate
+            )
+          );
+        } catch (error) {
+          console.warn(
+            "ICE candidate error:",
+            error
+          );
+        }
+      },
+      [currentUserId]
+    );
+
+  const handleCallRejected =
+    useCallback(
+      (data) => {
+        if (!data) {
+          return;
+        }
+
+        if (
+          String(data.callerId) !==
+          String(currentUserId)
+        ) {
+          return;
+        }
+
+        console.log(
+          "ZenvaZapp call rejected:",
+          data.reason
+        );
+
+        setCallError(
+          data.reason ||
+            "The call was declined."
+        );
+
+        cleanupCall({
+          notifyRemote: false,
+        });
+      },
+      [currentUserId, cleanupCall]
+    );
+
+  const handleCallEnded =
+    useCallback(
+      (data) => {
+        if (!data) {
+          return;
+        }
+
+        if (
+          String(data.targetUserId) !==
+          String(currentUserId)
+        ) {
+          return;
+        }
+
+        console.log(
+          "Remote ZenvaZapp call ended."
+        );
+
+        cleanupCall({
+          notifyRemote: false,
+        });
+      },
+      [currentUserId, cleanupCall]
+    );
+
+  // ==========================================
+  // SOCKET CONNECTION
   // ==========================================
 
   useEffect(() => {
-    if (
-      !conversationId ||
-      !currentUserId
-    ) {
+    if (!currentUserId) {
       return undefined;
     }
 
-    const socket = io(
-      SOCKET_URL,
-      {
+    const socket =
+      io(SOCKET_URL, {
         transports: [
-          "polling",
           "websocket",
+          "polling",
         ],
-        upgrade: true,
-        reconnection: true,
-        reconnectionAttempts: Infinity,
-        reconnectionDelay: 1000,
-        timeout: 20000,
-      }
+        autoConnect: true,
+      });
+
+    socketRef.current =
+      socket;
+
+    const registerSocketUser =
+      () => {
+        if (!socket.connected) {
+          return;
+        }
+
+        socket.emit(
+          "register-user",
+          currentUserId
+        );
+
+        if (conversationId) {
+          socket.emit(
+            "join-conversation",
+            conversationId
+          );
+        }
+      };
+
+    socket.on(
+      "connect",
+      registerSocketUser
     );
-
-    socketRef.current = socket;
-
-    // ========================================
-    // CONNECT
-    // ========================================
-
-    socket.on("connect", () => {
-      console.log(
-        "ZenvaZapp Socket.IO connected:",
-        socket.id
-      );
-
-      socket.emit(
-        "join-conversation",
-        conversationId
-      );
-    });
-
-    // ========================================
-    // RECONNECT
-    // ========================================
 
     socket.on(
       "reconnect",
-      () => {
-        console.log(
-          "ZenvaZapp Socket.IO reconnected."
-        );
-
-        socket.emit(
-          "join-conversation",
-          conversationId
-        );
-      }
+      registerSocketUser
     );
-
-    // ========================================
-    // CONNECT ERROR
-    // ========================================
 
     socket.on(
       "connect_error",
       (error) => {
         console.error(
-          "ZenvaZapp Socket.IO error:",
+          "ZenvaZapp Socket.IO connection error:",
           error
         );
       }
@@ -804,428 +1683,329 @@ function PrivateChat({
     // ========================================
 
     const handleIncomingMessage =
-      (incomingMessage) => {
-        if (!incomingMessage) {
-          return;
-        }
-
-        const incomingConversationId =
-          incomingMessage.conversationId;
-
-        if (
-          incomingConversationId &&
-          String(
-            incomingConversationId
-          ) !==
-            String(conversationId)
-        ) {
-          return;
-        }
-
-        const formattedMessage =
-          formatMessage(
-            incomingMessage
-          );
-
-        if (!formattedMessage) {
-          return;
-        }
-
-        setMessages(
-          (previous) =>
-            mergeMessages(
-              previous,
-              [formattedMessage]
-            )
-        );
-
-        // ====================================
-        // DELIVERED + READ
-        // ====================================
-
-        if (
-          String(
-            incomingMessage.senderId
-          ) !==
-          String(currentUserId)
-        ) {
-          socket.emit(
-            "message-delivered",
-            {
-              conversationId,
-              messageId:
-                formattedMessage.id,
-            }
-          );
-
-          socket.emit(
-            "message-read",
-            {
-              conversationId,
-              messageId:
-                formattedMessage.id,
-            }
-          );
-        }
-      };
-
-    socket.on(
-      "new-message",
-      handleIncomingMessage
-    );
-
-    socket.on(
-      "message",
-      handleIncomingMessage
-    );
-
-    // ========================================
-    // MESSAGE EDITED
-    // ========================================
-
-    const handleEditedMessage =
-      (updatedMessage) => {
-        if (!updatedMessage) {
+      (incoming) => {
+        if (!incoming) {
           return;
         }
 
         if (
-          updatedMessage.conversationId &&
           String(
-            updatedMessage.conversationId
-          ) !==
-            String(conversationId)
-        ) {
-          return;
-        }
-
-        const updatedId =
-          updatedMessage._id ||
-          updatedMessage.id ||
-          updatedMessage.messageId;
-
-        if (!updatedId) {
-          return;
-        }
-
-        setMessages(
-          (previous) =>
-            previous.map((item) =>
-              String(item.id) ===
-              String(updatedId)
-                ? {
-                    ...item,
-
-                    text:
-                      updatedMessage.text ||
-                      updatedMessage.message ||
-                      "",
-
-                    edited: true,
-
-                    updatedAt:
-                      updatedMessage.updatedAt ||
-                      new Date().toISOString(),
-                  }
-                : item
-            )
-        );
-      };
-
-    socket.on(
-      "message-edited",
-      handleEditedMessage
-    );
-
-    // ========================================
-    // MESSAGE DELETED FOR EVERYONE
-    // ========================================
-
-    const handleDeletedForEveryone =
-      (deletedMessage) => {
-        if (!deletedMessage) {
-          return;
-        }
-
-        if (
-          deletedMessage.conversationId &&
-          String(
-            deletedMessage.conversationId
-          ) !==
-            String(conversationId)
-        ) {
-          return;
-        }
-
-        const deletedId =
-          deletedMessage._id ||
-          deletedMessage.id ||
-          deletedMessage.messageId;
-
-        if (!deletedId) {
-          return;
-        }
-
-        setMessages(
-          (previous) =>
-            previous.map((item) =>
-              String(item.id) ===
-              String(deletedId)
-                ? {
-                    ...item,
-
-                    text:
-                      "This message was deleted.",
-
-                    deletedForEveryone:
-                      true,
-
-                    deleted: true,
-
-                    edited: false,
-                  }
-                : item
-            )
-        );
-      };
-
-    socket.on(
-      "message-deleted-for-everyone",
-      handleDeletedForEveryone
-    );
-
-    socket.on(
-      "message-deleted",
-      handleDeletedForEveryone
-    );
-
-    // ========================================
-    // MESSAGE UNDONE
-    // ========================================
-
-    const handleMessageUndone =
-      (undoneMessage) => {
-        if (!undoneMessage) {
-          return;
-        }
-
-        if (
-          undoneMessage.conversationId &&
-          String(
-            undoneMessage.conversationId
-          ) !==
-            String(conversationId)
-        ) {
-          return;
-        }
-
-        const undoneId =
-          undoneMessage._id ||
-          undoneMessage.id ||
-          undoneMessage.messageId;
-
-        if (!undoneId) {
-          return;
-        }
-
-        setMessages(
-          (previous) =>
-            previous.filter(
-              (item) =>
-                String(item.id) !==
-                String(undoneId)
-            )
-        );
-      };
-
-    socket.on(
-      "message-undone",
-      handleMessageUndone
-    );
-
-    // ========================================
-    // MESSAGE DELETED FOR ME
-    // ========================================
-
-    socket.on(
-      "message-deleted-for-me",
-      ({ messageId }) => {
-        if (!messageId) {
-          return;
-        }
-
-        setMessages(
-          (previous) =>
-            previous.filter(
-              (item) =>
-                String(item.id) !==
-                String(messageId)
-            )
-        );
-      }
-    );
-
-    // ========================================
-    // CONVERSATION DELETED
-    // ========================================
-
-    socket.on(
-      "conversation-deleted",
-      (data) => {
-        if (!data) {
-          return;
-        }
-
-        if (
-          data.conversationId &&
-          String(
-            data.conversationId
-          ) !==
-            String(conversationId)
-        ) {
-          return;
-        }
-
-        setMessages([]);
-
-        if (messageCacheKey) {
-          try {
-            localStorage.removeItem(
-              messageCacheKey
-            );
-          } catch (error) {
-            console.warn(
-              "Unable to clear message cache:",
-              error
-            );
-          }
-        }
-
-        setHasCachedMessages(false);
-
-        setUndoMessageId(null);
-        setUndoSeconds(0);
-      }
-    );
-
-    // ========================================
-    // DISAPPEARING SETTING
-    // ========================================
-
-    socket.on(
-      "disappearing-setting-changed",
-      (data) => {
-        if (!data) {
-          return;
-        }
-
-        const {
-          conversationId:
-            incomingConversationId,
-          duration,
-        } = data;
-
-        if (
-          String(
-            incomingConversationId
+            incoming.conversationId
           ) !==
           String(conversationId)
         ) {
           return;
         }
 
+        const formatted =
+          formatMessage(
+            incoming
+          );
+
+        if (!formatted) {
+          return;
+        }
+
+        setMessages(
+          (previous) => {
+            const updated =
+              mergeMessages(
+                previous,
+                [formatted]
+              );
+
+            saveMessageCache(
+              updated
+            );
+
+            return updated;
+          }
+        );
+
+        scrollToBottom();
+      };
+
+    // ========================================
+    // EDITED MESSAGE
+    // ========================================
+
+    const handleEditedMessage =
+      (incoming) => {
+        if (!incoming) {
+          return;
+        }
+
         if (
-          ![
-            "off",
-            "24h",
-            "7d",
-            "90d",
-          ].includes(duration)
+          String(
+            incoming.conversationId
+          ) !==
+          String(conversationId)
         ) {
           return;
         }
 
-        setDisappearingDuration(
-          duration
-        );
+        const formatted =
+          formatMessage(
+            incoming
+          );
 
-        saveDisappearingSetting(
-          duration
+        if (!formatted) {
+          return;
+        }
+
+        setMessages(
+          (previous) => {
+            const updated =
+              previous.map(
+                (item) =>
+                  String(item.id) ===
+                  String(
+                    formatted.id
+                  )
+                    ? {
+                        ...item,
+                        ...formatted,
+                      }
+                    : item
+              );
+
+            saveMessageCache(
+              updated
+            );
+
+            return updated;
+          }
         );
-      }
-    );
+      };
 
     // ========================================
-    // DELIVERED
+    // DELETED FOR EVERYONE
+    // ========================================
+
+    const handleDeletedForEveryone =
+      (incoming) => {
+        if (!incoming) {
+          return;
+        }
+
+        if (
+          String(
+            incoming.conversationId
+          ) !==
+          String(conversationId)
+        ) {
+          return;
+        }
+
+        const incomingId =
+          incoming._id ||
+          incoming.id ||
+          incoming.messageId;
+
+        if (!incomingId) {
+          return;
+        }
+
+        setMessages(
+          (previous) => {
+            const updated =
+              previous.map(
+                (item) =>
+                  String(item.id) ===
+                  String(
+                    incomingId
+                  )
+                    ? {
+                        ...item,
+                        ...incoming,
+                        deletedForEveryone:
+                          true,
+                        deleted: true,
+                        text:
+                          "This message was deleted.",
+                      }
+                    : item
+              );
+
+            saveMessageCache(
+              updated
+            );
+
+            return updated;
+          }
+        );
+      };
+
+    // ========================================
+    // MESSAGE UNDONE
+    // ========================================
+
+    const handleMessageUndone =
+      (incoming) => {
+        if (!incoming) {
+          return;
+        }
+
+        if (
+          String(
+            incoming.conversationId
+          ) !==
+          String(conversationId)
+        ) {
+          return;
+        }
+
+        const formatted =
+          formatMessage(
+            incoming
+          );
+
+        if (!formatted) {
+          return;
+        }
+
+        setMessages(
+          (previous) => {
+            const updated =
+              previous.map(
+                (item) =>
+                  String(item.id) ===
+                  String(
+                    formatted.id
+                  )
+                    ? {
+                        ...item,
+                        ...formatted,
+                        deleted:
+                          false,
+                        deletedForEveryone:
+                          false,
+                      }
+                    : item
+              );
+
+            saveMessageCache(
+              updated
+            );
+
+            return updated;
+          }
+        );
+      };
+
+    // ========================================
+    // SOCKET MESSAGE STATUS
     // ========================================
 
     socket.on(
       "message-delivered",
-      ({ messageId }) => {
+      ({
+        messageId,
+      } = {}) => {
         if (!messageId) {
           return;
         }
 
         setMessages(
           (previous) =>
-            previous.map((item) =>
-              String(item.id) ===
-              String(messageId)
-                ? {
-                    ...item,
-
-                    status:
-                      item.status ===
-                      "read"
-                        ? "read"
-                        : "delivered",
-
-                    deliveredAt:
-                      item.deliveredAt ||
-                      new Date().toISOString(),
-                  }
-                : item
+            previous.map(
+              (item) =>
+                String(item.id) ===
+                String(messageId)
+                  ? {
+                      ...item,
+                      status:
+                        item.status ===
+                        "read"
+                          ? "read"
+                          : "delivered",
+                    }
+                  : item
             )
         );
       }
     );
-
-    // ========================================
-    // READ
-    // ========================================
 
     socket.on(
       "message-read",
-      ({ messageId }) => {
+      ({
+        messageId,
+      } = {}) => {
         if (!messageId) {
           return;
         }
 
         setMessages(
           (previous) =>
-            previous.map((item) =>
-              String(item.id) ===
-              String(messageId)
-                ? {
-                    ...item,
-
-                    status: "read",
-
-                    readAt:
-                      item.readAt ||
-                      new Date().toISOString(),
-                  }
-                : item
+            previous.map(
+              (item) =>
+                String(item.id) ===
+                String(messageId)
+                  ? {
+                      ...item,
+                      status: "read",
+                    }
+                  : item
             )
         );
       }
     );
+
+    // ========================================
+    // CALL EVENTS
+    // ========================================
+
+    socket.on(
+      "call-offer",
+      handleCallOffer
+    );
+
+    socket.on(
+      "call-answer",
+      handleCallAnswer
+    );
+
+    socket.on(
+      "call-ice-candidate",
+      handleCallIceCandidate
+    );
+
+    socket.on(
+      "call-rejected",
+      handleCallRejected
+    );
+
+    socket.on(
+      "call-ended",
+      handleCallEnded
+    );
+
+    registerSocketUser();
 
     // ========================================
     // CLEANUP
     // ========================================
 
     return () => {
+      if (
+        callStateRef.current !==
+          "idle" &&
+        socket.connected
+      ) {
+        socket.emit(
+          "call-ended",
+          {
+            conversationId,
+
+            senderUserId:
+              currentUserId,
+
+            targetUserId:
+              otherUserId,
+          }
+        );
+      }
+
       socket.emit(
         "leave-conversation",
         conversationId
@@ -1285,10 +2065,36 @@ function PrivateChat({
         "message-read"
       );
 
+      socket.off(
+        "call-offer",
+        handleCallOffer
+      );
+
+      socket.off(
+        "call-answer",
+        handleCallAnswer
+      );
+
+      socket.off(
+        "call-ice-candidate",
+        handleCallIceCandidate
+      );
+
+      socket.off(
+        "call-rejected",
+        handleCallRejected
+      );
+
+      socket.off(
+        "call-ended",
+        handleCallEnded
+      );
+
       socket.disconnect();
 
       if (
-        socketRef.current === socket
+        socketRef.current ===
+        socket
       ) {
         socketRef.current = null;
       }
@@ -1301,6 +2107,7 @@ function PrivateChat({
     mergeMessages,
     saveDisappearingSetting,
     messageCacheKey,
+    cleanupCall,
   ]);
 
   // ==========================================
@@ -1326,9 +2133,13 @@ function PrivateChat({
            * the chat with a loading screen.
            */
           if (hasCachedMessages) {
-            setIsRefreshingMessages(true);
+            setIsRefreshingMessages(
+              true
+            );
           } else {
-            setIsLoadingMessages(true);
+            setIsLoadingMessages(
+              true
+            );
           }
 
           setSendError("");
@@ -1424,6 +2235,7 @@ function PrivateChat({
                   "message-delivered",
                   {
                     conversationId,
+
                     messageId:
                       item.id,
                   }
@@ -1470,6 +2282,7 @@ function PrivateChat({
                   "message-read",
                   {
                     conversationId,
+
                     messageId:
                       item.id,
                   }
@@ -1496,8 +2309,10 @@ function PrivateChat({
                     "them"
                       ? {
                           ...item,
+
                           status:
                             "read",
+
                           readAt:
                             item.readAt ||
                             new Date().toISOString(),
@@ -1529,8 +2344,13 @@ function PrivateChat({
           }
         } finally {
           if (!cancelled) {
-            setIsLoadingMessages(false);
-            setIsRefreshingMessages(false);
+            setIsLoadingMessages(
+              false
+            );
+
+            setIsRefreshingMessages(
+              false
+            );
           }
         }
       };
@@ -1623,22 +2443,25 @@ function PrivateChat({
       return undefined;
     }
 
-    const timer = setTimeout(() => {
-      resizeEditInput();
+    const timer =
+      setTimeout(() => {
+        resizeEditInput();
 
-      editTextareaRef.current?.focus();
+        editTextareaRef.current?.focus();
 
-      if (editTextareaRef.current) {
-        const length =
+        if (
           editTextareaRef.current
-            .value.length;
+        ) {
+          const length =
+            editTextareaRef.current
+              .value.length;
 
-        editTextareaRef.current.setSelectionRange(
-          length,
-          length
-        );
-      }
-    }, 0);
+          editTextareaRef.current.setSelectionRange(
+            length,
+            length
+          );
+        }
+      }, 0);
 
     return () =>
       clearTimeout(timer);
@@ -1656,31 +2479,30 @@ function PrivateChat({
       return undefined;
     }
 
-    const timer = setTimeout(() => {
-      searchInputRef.current?.focus();
-    }, 0);
+    const timer =
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 0);
 
     return () =>
       clearTimeout(timer);
   }, [showSearch]);
 
   // ==========================================
-  // AUTO SCROLL
+  // SCROLL WHEN MESSAGES CHANGE
   // ==========================================
 
   useEffect(() => {
     if (
-      !searchQuery.trim()
+      messages.length ||
+      isLoadingMessages
     ) {
-      messageEndRef.current?.scrollIntoView(
-        {
-          behavior: "smooth",
-        }
-      );
+      scrollToBottom();
     }
   }, [
-    messages,
-    searchQuery,
+    messages.length,
+    isLoadingMessages,
+    scrollToBottom,
   ]);
 
   // ==========================================
@@ -1694,13 +2516,11 @@ function PrivateChat({
 
     if (undoSeconds <= 0) {
       setUndoMessageId(null);
-      setUndoSeconds(0);
-
       return undefined;
     }
 
     const timer =
-      setTimeout(() => {
+      setInterval(() => {
         setUndoSeconds(
           (previous) =>
             previous - 1
@@ -1708,331 +2528,414 @@ function PrivateChat({
       }, 1000);
 
     return () =>
-      clearTimeout(timer);
+      clearInterval(timer);
   }, [
     undoMessageId,
     undoSeconds,
   ]);
 
   // ==========================================
+  // CALL CLEANUP ON UNMOUNT
+  // ==========================================
+
+  useEffect(() => {
+    return () => {
+      stopCallTimer();
+
+      if (
+        peerConnectionRef.current
+      ) {
+        try {
+          peerConnectionRef.current.close();
+        } catch (error) {
+          console.warn(
+            "Unmount peer cleanup error:",
+            error
+          );
+        }
+      }
+
+      if (localStreamRef.current) {
+        localStreamRef.current
+          .getTracks()
+          .forEach((track) => {
+            try {
+              track.stop();
+            } catch (error) {
+              console.warn(
+                "Unmount local track cleanup error:",
+                error
+              );
+            }
+          });
+      }
+
+      if (
+        remoteStreamRef.current
+      ) {
+        remoteStreamRef.current
+          .getTracks()
+          .forEach((track) => {
+            try {
+              track.stop();
+            } catch (error) {
+              console.warn(
+                "Unmount remote track cleanup error:",
+                error
+              );
+            }
+          });
+      }
+    };
+  }, [stopCallTimer]);
+
+  // ==========================================
   // SEND MESSAGE
   // ==========================================
 
-// ==========================================
-// SEND MESSAGE
-// ==========================================
-
-const handleSendMessage = async (event) => {
-  event.preventDefault();
-
-  const trimmedMessage = message.trim();
-
-  if (!trimmedMessage) {
-    return;
-  }
-
-  if (!currentUserId) {
-    setSendError(
-      "Your account information is missing."
-    );
-    return;
-  }
-
-  if (!otherUserId) {
-    setSendError(
-      "The selected contact could not be identified."
-    );
-    return;
-  }
-
-  if (!conversationId) {
-    setSendError(
-      "Conversation could not be identified."
-    );
-    return;
-  }
-
-  setSendError("");
-
-  // ========================================
-  // CONVERT UI DURATION TO BACKEND VALUE
-  // ========================================
-  //
-  // UI:
-  // "off"
-  // "24h"
-  // "7d"
-  // "90d"
-  //
-  // Backend:
-  // 0
-  // 86400000
-  // 604800000
-  // 7776000000
-  // ========================================
-
-  const expirationMilliseconds =
-    getDisappearingMilliseconds(
-      disappearingDuration
-    );
-
-  const safeDuration =
-    expirationMilliseconds || 0;
-
-  const expiresAt =
-    safeDuration > 0
-      ? new Date(
-          Date.now() + safeDuration
-        ).toISOString()
-      : null;
-
-  // ========================================
-  // BUILD MESSAGE PAYLOAD
-  // ========================================
-
-  const messageToSend = {
-    conversationId,
-    senderId: currentUserId,
-    receiverId: otherUserId,
-    text: trimmedMessage,
-    messageType: "text",
-
-    // IMPORTANT:
-    // Backend expects milliseconds,
-    // NOT "off", "24h", "7d", or "90d".
-    disappearingDuration:
-      safeDuration,
-  };
-
-  try {
-    console.log(
-      "=========================================="
-    );
-
-    console.log(
-      "ZenvaZapp sending message..."
-    );
-
-    console.log(
-      "Conversation ID:",
-      conversationId
-    );
-
-    console.log(
-      "Sender ID:",
-      currentUserId
-    );
-
-    console.log(
-      "Receiver ID:",
-      otherUserId
-    );
-
-    console.log(
-      "Message:",
-      trimmedMessage
-    );
-
-    console.log(
-      "Disappearing duration:",
-      safeDuration
-    );
-
-    console.log(
-      "=========================================="
-    );
-
-    const response = await fetch(
-      `${API_URL}/api/messages`,
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-
-        body: JSON.stringify(
-          messageToSend
-        ),
+  const handleSendMessage =
+    async (event) => {
+      if (event) {
+        event.preventDefault();
       }
-    );
 
-    // ======================================
-    // READ SERVER RESPONSE SAFELY
-    // ======================================
+      const trimmedMessage =
+        message.trim();
 
-    let data = {};
+      if (!trimmedMessage) {
+        return;
+      }
 
-    try {
-      data = await response.json();
-    } catch (jsonError) {
-      throw new Error(
-        "The server returned an invalid response."
-      );
-    }
+      if (
+        !currentUserId ||
+        !otherUserId ||
+        !conversationId
+      ) {
+        setSendError(
+          "Unable to identify this conversation."
+        );
 
-    console.log(
-      "Send message API status:",
-      response.status
-    );
+        return;
+      }
 
-    console.log(
-      "Send message API response:",
-      data
-    );
+      try {
+        setSendError("");
 
-    if (!response.ok) {
-      throw new Error(
-        data.message ||
-          data.error ||
-          "Failed to send message."
-      );
-    }
+        const milliseconds =
+          getDisappearingMilliseconds(
+            disappearingDuration
+          );
 
-    if (!data.message) {
-      throw new Error(
-        "The server did not return the saved message."
-      );
-    }
+        const createdAt =
+          new Date().toISOString();
 
-    // ======================================
-    // USE SERVER-SAVED MESSAGE
-    // ======================================
+        const payload = {
+          conversationId,
 
-    const savedMessage = {
-      ...data.message,
+          senderId:
+            currentUserId,
 
-      conversationId:
-        data.message.conversationId ||
-        conversationId,
+          receiverId:
+            otherUserId,
 
-      senderId:
-        data.message.senderId ||
-        currentUserId,
+          text:
+            trimmedMessage,
 
-      receiverId:
-        data.message.receiverId ||
-        otherUserId,
+          disappearingDuration,
 
-      disappearingDuration:
-        data.message
-          .disappearingDuration ??
-        safeDuration,
+          expiresAt:
+            milliseconds
+              ? new Date(
+                  Date.now() +
+                    milliseconds
+                ).toISOString()
+              : null,
 
-      expiresAt:
-        data.message.expiresAt ||
-        expiresAt,
+          createdAt,
+        };
+
+        const response =
+          await fetch(
+            `${API_URL}/api/messages`,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body:
+                JSON.stringify(
+                  payload
+                ),
+            }
+          );
+
+        const data =
+          await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              "Unable to send message."
+          );
+        }
+
+        const savedMessage =
+          formatMessage(
+            data.message ||
+              data
+          );
+
+        if (!savedMessage) {
+          throw new Error(
+            "The server returned an invalid message."
+          );
+        }
+
+        setMessages(
+          (previous) => {
+            const updated =
+              mergeMessages(
+                previous,
+                [savedMessage]
+              );
+
+            saveMessageCache(
+              updated
+            );
+
+            return updated;
+          }
+        );
+
+        setMessage("");
+
+        requestAnimationFrame(() => {
+          resizeMessageInput();
+        });
+
+        setUndoMessageId(
+          savedMessage.id
+        );
+
+        setUndoSeconds(5);
+
+        if (
+          socketRef.current?.connected
+        ) {
+          socketRef.current.emit(
+            "send-message",
+            savedMessage
+          );
+        }
+
+        scrollToBottom();
+      } catch (error) {
+        console.error(
+          "Send message error:",
+          error
+        );
+
+        setSendError(
+          error?.message ||
+            "Unable to send message."
+        );
+      }
     };
 
-    const formattedMessage =
-      formatMessage(savedMessage);
+  // ==========================================
+  // MESSAGE KEYBOARD
+  // ==========================================
 
-    if (!formattedMessage) {
-      throw new Error(
-        "Unable to format the saved message."
+  const handleMessageKeyDown =
+    (event) => {
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey
+      ) {
+        event.preventDefault();
+
+        handleSendMessage();
+      }
+    };
+
+  // ==========================================
+  // EMOJI
+  // ==========================================
+
+  const handleEmoji =
+    () => {
+      setShowEmojiPicker(
+        (previous) =>
+          !previous
       );
-    }
+    };
 
-    // ======================================
-    // ADD MESSAGE LOCALLY
-    // ======================================
-
-    setMessages((previous) => {
-      const exists = previous.some(
-        (item) =>
-          String(item.id) ===
-          String(formattedMessage.id)
+  const addEmoji =
+    (emoji) => {
+      setMessage(
+        (previous) =>
+          `${previous}${emoji}`
       );
 
-      if (exists) {
-        return previous;
+      setShowEmojiPicker(false);
+
+      requestAnimationFrame(() => {
+        textareaRef.current?.focus();
+      });
+    };
+
+  // ==========================================
+  // ATTACHMENT
+  // ==========================================
+
+  const fileInputRef =
+    useRef(null);
+
+  const handleAttachment =
+    () => {
+      fileInputRef.current?.click();
+    };
+
+  const handleFileChange =
+    async (event) => {
+      const file =
+        event.target.files?.[0];
+
+      if (!file) {
+        return;
       }
 
-      return [
-        ...previous,
-        formattedMessage,
-      ];
-    });
-
-    // ======================================
-    // SOCKET BROADCAST
-    // ======================================
-
-    if (
-      socketRef.current?.connected
-    ) {
-      socketRef.current.emit(
-        "send-message",
-        savedMessage
+      /*
+       * File upload infrastructure can be
+       * connected to the existing media
+       * endpoint later. For now we keep
+       * the attachment picker functional
+       * without breaking messaging.
+       */
+      console.log(
+        "Selected attachment:",
+        file.name,
+        file.type,
+        file.size
       );
-    }
 
-    // ======================================
-    // CLEAR INPUT
-    // ======================================
+      setSendError(
+        "File attachment selected. Media upload will be connected to the ZenvaZapp media service."
+      );
 
-    setMessage("");
+      event.target.value = "";
+    };
 
-    resetMessageInput();
-
-    // ======================================
-    // UNDO WINDOW
-    // ======================================
-
-    setUndoMessageId(
-      formattedMessage.id
-    );
-
-    setUndoSeconds(5);
-
-    console.log(
-      "ZenvaZapp message sent successfully."
-    );
-  } catch (error) {
-    console.error(
-      "=========================================="
-    );
-
-    console.error(
-      "ZenvaZapp Send Message Error:",
-      error
-    );
-
-    console.error(
-      "=========================================="
-    );
-
-    setSendError(
-      `Unable to send message. ${
-        error.message || ""
-      }`
-    );
-  }
-};
   // ==========================================
-  // SELECT MESSAGE
+  // CAMERA
+  // ==========================================
+
+  const handleCamera =
+    async () => {
+      try {
+        const stream =
+          await navigator.mediaDevices.getUserMedia(
+            {
+              video: true,
+              audio: true,
+            }
+          );
+
+        stream
+          .getTracks()
+          .forEach((track) =>
+            track.stop()
+          );
+
+        setSendError(
+          "Camera access is available. Camera messaging can be connected to the media upload service next."
+        );
+      } catch (error) {
+        console.error(
+          "Camera access error:",
+          error
+        );
+
+        setSendError(
+          "Camera access was denied or is unavailable."
+        );
+      }
+    };
+
+  // ==========================================
+  // VOICE MESSAGE
+  // ==========================================
+
+  const handleVoice =
+    async () => {
+      try {
+        const stream =
+          await navigator.mediaDevices.getUserMedia(
+            {
+              audio: true,
+            }
+          );
+
+        stream
+          .getTracks()
+          .forEach((track) =>
+            track.stop()
+          );
+
+        setSendError(
+          "Microphone access is available. Voice-note upload can be connected to the media service next."
+        );
+      } catch (error) {
+        console.error(
+          "Microphone access error:",
+          error
+        );
+
+        setSendError(
+          "Microphone access was denied or is unavailable."
+        );
+      }
+    };
+
+  // ==========================================
+  // MESSAGE SELECT
   // ==========================================
 
   const handleMessageSelect =
     (item) => {
       setSelectedMessage(item);
-
       setShowMessageMenu(true);
-
-      setShowChatMenu(false);
-      setShowDeleteMenu(false);
-      setShowEmojiPicker(false);
     };
 
   // ==========================================
-  // CLOSE MESSAGE MENU
+  // COPY MESSAGE
   // ==========================================
 
-  const closeMessageMenu =
-    () => {
-      setSelectedMessage(null);
-      setShowMessageMenu(false);
+  const handleCopyMessage =
+    async () => {
+      if (
+        !selectedMessage ||
+        selectedMessage.deleted ||
+        selectedMessage.deletedForEveryone
+      ) {
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(
+          selectedMessage.text || ""
+        );
+      } catch (error) {
+        console.warn(
+          "Copy message failed:",
+          error
+        );
+      }
+
+      closeMessageMenu();
     };
 
   // ==========================================
@@ -2053,28 +2956,24 @@ const handleSendMessage = async (event) => {
       }
 
       if (
-        selectedMessage.deletedForEveryone ||
-        selectedMessage.deleted
+        selectedMessage.deleted ||
+        selectedMessage.deletedForEveryone
       ) {
         return;
       }
 
-      const originalText =
-        selectedMessage.text || "";
-
       setEditingMessage({
         ...selectedMessage,
-        originalText,
+
+        originalText:
+          selectedMessage.text,
       });
 
       setEditText(
-        originalText
+        selectedMessage.text || ""
       );
 
       closeMessageMenu();
-
-      setShowEmojiPicker(false);
-      setSendError("");
     };
 
   // ==========================================
@@ -2085,7 +2984,30 @@ const handleSendMessage = async (event) => {
     () => {
       setEditingMessage(null);
       setEditText("");
-      resetEditInput();
+    };
+
+  // ==========================================
+  // EDIT KEYBOARD
+  // ==========================================
+
+  const handleEditKeyDown =
+    (event) => {
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey
+      ) {
+        event.preventDefault();
+
+        handleSaveEdit();
+      }
+
+      if (
+        event.key === "Escape"
+      ) {
+        event.preventDefault();
+
+        handleCancelEdit();
+      }
     };
 
   // ==========================================
@@ -2098,31 +3020,22 @@ const handleSendMessage = async (event) => {
         return;
       }
 
-      const trimmedText =
+      const trimmed =
         editText.trim();
 
-      if (!trimmedText) {
-        setSendError(
-          "Edited message cannot be empty."
-        );
-
+      if (!trimmed) {
         return;
       }
 
-      if (!currentUserId) {
-        setSendError(
-          "Your account information is missing."
-        );
-
-        return;
-      }
+      const messageId =
+        editingMessage.id;
 
       try {
-        setSendError("");
-
         const response =
           await fetch(
-            `${API_URL}/api/messages/${editingMessage.id}/edit`,
+            `${API_URL}/api/messages/${encodeURIComponent(
+              messageId
+            )}`,
             {
               method: "PATCH",
 
@@ -2135,7 +3048,7 @@ const handleSendMessage = async (event) => {
                 userId:
                   currentUserId,
 
-                text: trimmedText,
+                text: trimmed,
               }),
             }
           );
@@ -2146,74 +3059,64 @@ const handleSendMessage = async (event) => {
         if (!response.ok) {
           throw new Error(
             data.message ||
-              "Failed to edit message."
+              "Unable to edit message."
           );
         }
 
-        const updatedMessage = {
-          ...(data.message || {}),
-
-          _id:
-            data.message?._id ||
-            editingMessage.id,
-
-          id:
-            data.message?._id ||
-            editingMessage.id,
-
-          conversationId,
-
-          senderId:
-            currentUserId,
-
-          receiverId:
-            otherUserId,
-
-          text: trimmedText,
-
-          edited: true,
-
-          updatedAt:
-            data.message?.updatedAt ||
-            new Date().toISOString(),
-        };
-
-        // ====================================
-        // UPDATE LOCAL
-        // ====================================
+        const updatedMessage =
+          formatMessage(
+            data.message ||
+              data
+          );
 
         setMessages(
-          (previous) =>
-            previous.map((item) =>
-              String(item.id) ===
-              String(
-                editingMessage.id
-              )
-                ? {
-                    ...item,
+          (previous) => {
+            const updated =
+              previous.map(
+                (item) =>
+                  String(item.id) ===
+                  String(messageId)
+                    ? {
+                        ...item,
 
-                    text:
-                      trimmedText,
+                        ...(updatedMessage ||
+                          {}),
 
-                    edited: true,
+                        text: trimmed,
 
-                    updatedAt:
-                      updatedMessage.updatedAt,
-                  }
-                : item
-            )
+                        edited:
+                          true,
+                      }
+                    : item
+              );
+
+            saveMessageCache(
+              updated
+            );
+
+            return updated;
+          }
         );
-
-        // ====================================
-        // BROADCAST
-        // ====================================
 
         if (
           socketRef.current?.connected
         ) {
           socketRef.current.emit(
             "message-edited",
-            updatedMessage
+            {
+              ...(updatedMessage ||
+                editingMessage),
+
+              id: messageId,
+
+              _id: messageId,
+
+              conversationId,
+
+              text: trimmed,
+
+              edited: true,
+            }
           );
         }
 
@@ -2225,176 +3128,8 @@ const handleSendMessage = async (event) => {
         );
 
         setSendError(
-          `Unable to edit message. ${
-            error.message || ""
-          }`
-        );
-      }
-    };
-
-  // ==========================================
-  // COPY
-  // ==========================================
-
-  const handleCopyMessage =
-    async () => {
-      if (!selectedMessage) {
-        return;
-      }
-
-      const textToCopy =
-        selectedMessage.text || "";
-
-      if (!textToCopy) {
-        return;
-      }
-
-      try {
-        if (
-          navigator.clipboard &&
-          navigator.clipboard.writeText
-        ) {
-          await navigator.clipboard.writeText(
-            textToCopy
-          );
-        } else {
-          const temporaryTextarea =
-            document.createElement(
-              "textarea"
-            );
-
-          temporaryTextarea.value =
-            textToCopy;
-
-          temporaryTextarea.style.position =
-            "fixed";
-
-          temporaryTextarea.style.opacity =
-            "0";
-
-          document.body.appendChild(
-            temporaryTextarea
-          );
-
-          temporaryTextarea.focus();
-          temporaryTextarea.select();
-
-          document.execCommand(
-            "copy"
-          );
-
-          document.body.removeChild(
-            temporaryTextarea
-          );
-        }
-
-        closeMessageMenu();
-      } catch (error) {
-        console.error(
-          "Copy message error:",
-          error
-        );
-
-        setSendError(
-          "Unable to copy the message."
-        );
-      }
-    };
-
-  // ==========================================
-  // UNDO MESSAGE
-  // ==========================================
-
-  const handleUndoMessage =
-    async () => {
-      if (!undoMessageId) {
-        return;
-      }
-
-      const messageId =
-        undoMessageId;
-
-      try {
-        setSendError("");
-
-        const response =
-          await fetch(
-            `${API_URL}/api/messages/${messageId}/delete-for-everyone`,
-            {
-              method: "PATCH",
-
-              headers: {
-                "Content-Type":
-                  "application/json",
-              },
-
-              body: JSON.stringify({
-                userId:
-                  currentUserId,
-              }),
-            }
-          );
-
-        const data =
-          await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data.message ||
-              "Failed to undo message."
-          );
-        }
-
-        // ====================================
-        // REMOVE LOCALLY
-        // ====================================
-
-        setMessages(
-          (previous) =>
-            previous.filter(
-              (item) =>
-                String(item.id) !==
-                String(messageId)
-            )
-        );
-
-        setUndoMessageId(null);
-        setUndoSeconds(0);
-
-        // ====================================
-        // BROADCAST
-        // ====================================
-
-        if (
-          socketRef.current?.connected
-        ) {
-          socketRef.current.emit(
-            "message-undone",
-            {
-              ...(data.message || {}),
-
-              _id:
-                data.message?._id ||
-                messageId,
-
-              id:
-                data.message?._id ||
-                messageId,
-
-              conversationId,
-            }
-          );
-        }
-      } catch (error) {
-        console.error(
-          "Undo message error:",
-          error
-        );
-
-        setSendError(
-          `Unable to undo message. ${
-            error.message || ""
-          }`
+          error?.message ||
+            "Unable to edit message."
         );
       }
     };
@@ -2413,11 +3148,11 @@ const handleSendMessage = async (event) => {
         selectedMessage.id;
 
       try {
-        setSendError("");
-
         const response =
           await fetch(
-            `${API_URL}/api/messages/${messageId}/delete-for-me`,
+            `${API_URL}/api/messages/${encodeURIComponent(
+              messageId
+            )}/delete-for-me`,
             {
               method: "PATCH",
 
@@ -2439,7 +3174,7 @@ const handleSendMessage = async (event) => {
         if (!response.ok) {
           throw new Error(
             data.message ||
-              "Failed to delete message."
+              "Unable to delete message for you."
           );
         }
 
@@ -2453,22 +3188,6 @@ const handleSendMessage = async (event) => {
         );
 
         closeMessageMenu();
-
-        if (
-          socketRef.current?.connected
-        ) {
-          socketRef.current.emit(
-            "message-deleted-for-me",
-            {
-              messageId,
-
-              conversationId,
-
-              userId:
-                currentUserId,
-            }
-          );
-        }
       } catch (error) {
         console.error(
           "Delete for me error:",
@@ -2476,9 +3195,8 @@ const handleSendMessage = async (event) => {
         );
 
         setSendError(
-          `Unable to delete message. ${
-            error.message || ""
-          }`
+          error?.message ||
+            "Unable to delete message."
         );
       }
     };
@@ -2504,11 +3222,11 @@ const handleSendMessage = async (event) => {
         selectedMessage.id;
 
       try {
-        setSendError("");
-
         const response =
           await fetch(
-            `${API_URL}/api/messages/${messageId}/delete-for-everyone`,
+            `${API_URL}/api/messages/${encodeURIComponent(
+              messageId
+            )}/delete-for-everyone`,
             {
               method: "PATCH",
 
@@ -2530,52 +3248,38 @@ const handleSendMessage = async (event) => {
         if (!response.ok) {
           throw new Error(
             data.message ||
-              "Failed to delete message."
+              "Unable to delete message for everyone."
           );
         }
 
-        const deletedMessage = {
-          ...(data.message || {}),
-
-          _id:
-            data.message?._id ||
-            messageId,
-
-          id:
-            data.message?._id ||
-            messageId,
-
-          conversationId,
-
-          text:
-            "This message was deleted.",
-
-          deletedForEveryone:
-            true,
-
-          deleted: true,
-        };
-
         setMessages(
-          (previous) =>
-            previous.map((item) =>
-              String(item.id) ===
-              String(messageId)
-                ? {
-                    ...item,
+          (previous) => {
+            const updated =
+              previous.map(
+                (item) =>
+                  String(item.id) ===
+                  String(messageId)
+                    ? {
+                        ...item,
 
-                    text:
-                      "This message was deleted.",
+                        deleted:
+                          true,
 
-                    deletedForEveryone:
-                      true,
+                        deletedForEveryone:
+                          true,
 
-                    deleted: true,
+                        text:
+                          "This message was deleted.",
+                      }
+                    : item
+              );
 
-                    edited: false,
-                  }
-                : item
-            )
+            saveMessageCache(
+              updated
+            );
+
+            return updated;
+          }
         );
 
         if (
@@ -2583,18 +3287,24 @@ const handleSendMessage = async (event) => {
         ) {
           socketRef.current.emit(
             "message-deleted-for-everyone",
-            deletedMessage
-          );
-        }
+            {
+              ...selectedMessage,
 
-        if (
-          String(
-            undoMessageId
-          ) ===
-          String(messageId)
-        ) {
-          setUndoMessageId(null);
-          setUndoSeconds(0);
+              id: messageId,
+
+              _id: messageId,
+
+              conversationId,
+
+              deleted: true,
+
+              deletedForEveryone:
+                true,
+
+              text:
+                "This message was deleted.",
+            }
+          );
         }
 
         closeMessageMenu();
@@ -2605,53 +3315,31 @@ const handleSendMessage = async (event) => {
         );
 
         setSendError(
-          `Unable to delete message for everyone. ${
-            error.message || ""
-          }`
+          error?.message ||
+            "Unable to delete message for everyone."
         );
       }
     };
 
   // ==========================================
-  // DELETE ENTIRE CONVERSATION
+  // UNDO MESSAGE
   // ==========================================
 
-  const handleDeleteChat =
-    () => {
-      setShowChatMenu(false);
-      setShowDeleteMenu(true);
-    };
-
-  // ==========================================
-  // CONFIRM DELETE CONVERSATION
-  // ==========================================
-
-  const handleConfirmDeleteConversation =
+  const handleUndoMessage =
     async () => {
-      if (!conversationId) {
-        setSendError(
-          "Conversation could not be identified."
-        );
-
+      if (!undoMessageId) {
         return;
       }
 
-      if (!currentUserId) {
-        setSendError(
-          "Your account information is missing."
-        );
-
-        return;
-      }
+      const messageId =
+        undoMessageId;
 
       try {
-        setSendError("");
-
         const response =
           await fetch(
-            `${API_URL}/api/messages/conversation/${encodeURIComponent(
-              conversationId
-            )}/delete`,
+            `${API_URL}/api/messages/${encodeURIComponent(
+              messageId
+            )}/undo`,
             {
               method: "PATCH",
 
@@ -2673,127 +3361,144 @@ const handleSendMessage = async (event) => {
         if (!response.ok) {
           throw new Error(
             data.message ||
-              "Failed to delete conversation."
+              "Unable to undo message."
           );
         }
 
-        // ====================================
-        // CLEAR LOCAL MESSAGES
-        // ====================================
+        const restored =
+          formatMessage(
+            data.message ||
+              data
+          );
 
-        setMessages([]);
+        setMessages(
+          (previous) => {
+            const updated =
+              previous.map(
+                (item) =>
+                  String(item.id) ===
+                  String(messageId)
+                    ? {
+                        ...item,
 
-        setHasCachedMessages(false);
+                        ...(restored ||
+                          {}),
+
+                        deleted:
+                          false,
+
+                        deletedForEveryone:
+                          false,
+                      }
+                    : item
+              );
+
+            saveMessageCache(
+              updated
+            );
+
+            return updated;
+          }
+        );
+
+        if (
+          socketRef.current?.connected
+        ) {
+          socketRef.current.emit(
+            "message-undone",
+            {
+              ...(restored || {}),
+
+              id: messageId,
+
+              _id: messageId,
+
+              conversationId,
+
+              deleted: false,
+
+              deletedForEveryone:
+                false,
+            }
+          );
+        }
+
+        setUndoMessageId(null);
+        setUndoSeconds(0);
+      } catch (error) {
+        console.error(
+          "Undo message error:",
+          error
+        );
+
+        setSendError(
+          error?.message ||
+            "Unable to undo message."
+        );
+      }
+    };
+
+  // ==========================================
+  // DELETE CONVERSATION
+  // ==========================================
+
+  const handleConfirmDeleteConversation =
+    async () => {
+      if (
+        !currentUserId ||
+        !conversationId
+      ) {
+        return;
+      }
+
+      try {
+        const response =
+          await fetch(
+            `${API_URL}/api/conversations/${encodeURIComponent(
+              conversationId
+            )}`,
+            {
+              method: "DELETE",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                userId:
+                  currentUserId,
+              }),
+            }
+          );
+
+        const data =
+          await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              "Unable to delete conversation."
+          );
+        }
 
         if (messageCacheKey) {
           try {
             localStorage.removeItem(
               messageCacheKey
             );
-          } catch (storageError) {
+          } catch (error) {
             console.warn(
-              "Unable to clear message cache:",
-              storageError
+              "Unable to remove conversation cache:",
+              error
             );
           }
         }
 
-        // ====================================
-        // CLEAR UI
-        // ====================================
-
-        setSelectedMessage(null);
-        setShowMessageMenu(false);
+        setMessages([]);
         setShowDeleteMenu(false);
-        setShowChatMenu(false);
-        setShowEmojiPicker(false);
 
-        // ====================================
-        // CLEAR SEARCH
-        // ====================================
-
-        setSearchQuery("");
-        setShowSearch(false);
-
-        // ====================================
-        // CLEAR UNDO
-        // ====================================
-
-        setUndoMessageId(null);
-        setUndoSeconds(0);
-
-        // ====================================
-        // CLEAR EDIT
-        // ====================================
-
-        setEditingMessage(null);
-        setEditText("");
-
-        // ====================================
-        // CLEAR COMPOSER
-        // ====================================
-
-        setMessage("");
-
-        resetMessageInput();
-        resetEditInput();
-
-        // ====================================
-        // CLEAR DISAPPEARING STORAGE
-        // ====================================
-
-        if (
-          disappearingStorageKey
-        ) {
-          try {
-            localStorage.removeItem(
-              disappearingStorageKey
-            );
-          } catch (storageError) {
-            console.warn(
-              "Unable to clear disappearing-message setting:",
-              storageError
-            );
-          }
-        }
-
-        setDisappearingDuration(
-          "off"
-        );
-
-        // ====================================
-        // BROADCAST DELETE
-        // ====================================
-
-        if (
-          socketRef.current?.connected
-        ) {
-          socketRef.current.emit(
-            "conversation-deleted",
-            {
-              conversationId,
-
-              userId:
-                currentUserId,
-            }
-          );
-
-          socketRef.current.emit(
-            "leave-conversation",
-            conversationId
-          );
-        }
-
-        // ====================================
-        // RETURN TO CHAT LIST
-        // ====================================
-
-        if (
-          typeof onBack ===
-          "function"
-        ) {
-          onBack();
-        }
+        onBack?.();
       } catch (error) {
         console.error(
           "Delete conversation error:",
@@ -2801,431 +3506,301 @@ const handleSendMessage = async (event) => {
         );
 
         setSendError(
-          `Unable to delete conversation. ${
-            error.message || ""
-          }`
+          error?.message ||
+            "Unable to delete conversation."
         );
       }
-    };
-
-  // ==========================================
-  // ATTACHMENT
-  // ==========================================
-
-  const handleAttachment =
-    () => {
-      alert(
-        "Attachments will be connected to Smart Files."
-      );
-    };
-
-  // ==========================================
-  // CAMERA
-  // ==========================================
-
-  const handleCamera =
-    () => {
-      alert(
-        "Camera will be connected to the ZenvaZapp media system."
-      );
-    };
-
-  // ==========================================
-  // EMOJI
-  // ==========================================
-
-  const handleEmoji = () => {
-    setShowEmojiPicker(
-      (previous) =>
-        !previous
-    );
-  };
-
-  const addEmoji = (emoji) => {
-    setMessage(
-      (previous) =>
-        `${previous}${emoji}`
-    );
-
-    setShowEmojiPicker(false);
-
-    setTimeout(() => {
-      textareaRef.current?.focus();
-    }, 0);
-  };
-
-  // ==========================================
-  // VOICE
-  // ==========================================
-
-  const handleVoice =
-    () => {
-      alert(
-        "Voice recording will be connected to ZenvaZapp voice messaging."
-      );
-    };
-
-  // ==========================================
-  // CHAT MENU
-  // ==========================================
-
-  const handleChatMenuToggle =
-    () => {
-      setShowChatMenu(
-        (previous) =>
-          !previous
-      );
-
-      setShowDeleteMenu(false);
-      setShowMessageMenu(false);
-      setShowEmojiPicker(false);
-    };
-
-  // ==========================================
-  // OPEN SEARCH
-  // ==========================================
-
-  const handleOpenSearch =
-    () => {
-      setShowChatMenu(false);
-      setShowSearch(true);
-      setSearchQuery("");
-    };
-
-  // ==========================================
-  // CLOSE SEARCH
-  // ==========================================
-
-  const handleCloseSearch =
-    () => {
-      setShowSearch(false);
-      setSearchQuery("");
     };
 
   // ==========================================
   // OPEN DISAPPEARING SETTINGS
   // ==========================================
 
-  const handleOpenDisappearingSettings =
+  const handleOpenDisappearing =
     () => {
-      setShowChatMenu(false);
-
-      if (
-        typeof onOpenDisappearingSettings ===
-        "function"
-      ) {
-        onOpenDisappearingSettings(
-          chat,
-          {
-            conversationId,
-
-            currentDuration:
-              disappearingDuration,
-          }
-        );
-
-        return;
-      }
-
-      alert(
-        "The ZenvaZapp disappearing-message settings page will be connected next."
+      onOpenDisappearingSettings?.(
+        chat,
+        {
+          duration:
+            disappearingDuration,
+        }
       );
     };
 
   // ==========================================
-  // PAGE CLICK
-  // ==========================================
-
-  const handlePageClick =
-    () => {
-      if (showMessageMenu) {
-        closeMessageMenu();
-      }
-
-      if (showChatMenu) {
-        setShowChatMenu(false);
-      }
-
-      if (showDeleteMenu) {
-        setShowDeleteMenu(false);
-      }
-
-      if (showEmojiPicker) {
-        setShowEmojiPicker(false);
-      }
-    };
-
-  // ==========================================
-  // SEARCH FILTER
+  // SEARCH
   // ==========================================
 
   const visibleMessages =
-    searchQuery.trim()
-      ? messages.filter(
-          (item) =>
-            String(
-              item.text || ""
-            )
-              .toLowerCase()
-              .includes(
-                searchQuery
-                  .toLowerCase()
-                  .trim()
-              )
-        )
-      : messages;
+    messages.filter((item) => {
+      if (!showSearch) {
+        return true;
+      }
+
+      const query =
+        searchQuery
+          .toLowerCase()
+          .trim();
+
+      if (!query) {
+        return true;
+      }
+
+      return String(
+        item.text || ""
+      )
+        .toLowerCase()
+        .includes(query);
+    });
+
+  // ==========================================
+  // AVATAR HELPERS
+  // ==========================================
+
+  const getAvatarLetter =
+    useCallback((person) => {
+      const name =
+        person?.fullName ||
+        person?.displayName ||
+        person?.username ||
+        person?.name ||
+        "U";
+
+      return String(
+        name
+      ).charAt(0).toUpperCase();
+    }, []);
+
+  const getDisplayName =
+    useCallback((person) => {
+      return (
+        person?.fullName ||
+        person?.displayName ||
+        person?.username ||
+        person?.name ||
+        "ZenvaZapp User"
+      );
+    }, []);
 
   // ==========================================
   // RENDER
   // ==========================================
-    // ==========================================
-  // DIRECT CALL ACTIONS
-  // ==========================================
 
-  const handleStartCall = useCallback(
-    (type) => {
-      if (!chat) {
-        return;
-      }
-
-      if (type === "video") {
-        console.log(
-          "ZenvaZapp video call requested:",
-          chat
-        );
-
-        if (onVideoCall) {
-          onVideoCall(chat);
-        }
-
-        return;
-      }
-
-      console.log(
-        "ZenvaZapp audio call requested:",
-        chat
-      );
-
-      if (onCall) {
-        onCall(chat);
-      }
-    },
-    [
-      chat,
-      onCall,
-      onVideoCall,
-    ]
-  );
   return (
-    <div
-      className="private-chat-page"
-      onClick={handlePageClick}
-    >
+    <div className="private-chat-page">
+
+      {/* =====================================
+          HIDDEN MEDIA ELEMENTS
+      ===================================== */}
+
+      <video
+        ref={localVideoRef}
+        autoPlay
+        muted
+        playsInline
+        className="call-local-video"
+      />
+
+      <video
+        ref={remoteVideoRef}
+        autoPlay
+        playsInline
+        className="call-remote-video"
+      />
+
       {/* =====================================
           HEADER
       ===================================== */}
 
-      <header
-        className="private-chat-header"
-        onClick={(event) =>
-          event.stopPropagation()
-        }
-      >
-        <button
-          type="button"
-          className="private-chat-back"
-          onClick={onBack}
-          aria-label="Go back"
-        >
-          ←
-        </button>
+      <header className="private-chat-header">
 
-        <button
-          type="button"
-          className="private-chat-contact"
-        >
-          <div className="private-chat-avatar">
-            {chatAvatar.length <= 2
-              ? chatAvatar
-              : chatAvatar.charAt(0)}
-          </div>
+        <div className="private-chat-header-left">
 
-          <div className="private-chat-contact-info">
-            <h1>{chatName}</h1>
-
-            <p>
-              <span className="online-dot" />
-              Online
-            </p>
-          </div>
-        </button>
-
-        <div className="private-chat-header-actions">
           <button
             type="button"
+            className="private-chat-back"
+            onClick={() => {
+              if (
+                callStateRef.current !==
+                "idle"
+              ) {
+                handleEndCall();
+              }
+
+              onBack?.();
+            }}
+            aria-label="Back"
+          >
+            ←
+          </button>
+
+          <div className="private-chat-header-avatar">
+            {chat?.profilePhoto ? (
+              <img
+                src={
+                  chat.profilePhoto
+                }
+                alt={chatName}
+              />
+            ) : (
+              chatAvatar
+            )}
+          </div>
+
+          <div className="private-chat-header-info">
+
+            <h1>
+              {chatName}
+            </h1>
+
+            <span>
+              {callState ===
+              "connected"
+                ? `${formatCallTime(
+                    callSeconds
+                  )} • ${
+                    callType ===
+                    "video"
+                      ? "Video call"
+                      : "Voice call"
+                  }`
+                : callState ===
+                  "calling"
+                ? "Calling..."
+                : callState ===
+                  "connecting"
+                ? "Connecting..."
+                : "Online"}
+            </span>
+
+          </div>
+
+        </div>
+
+        <div className="private-chat-header-actions">
+
+          <button
+            type="button"
+            className="private-chat-header-call"
             onClick={() =>
-             handleStartCall("audio")
+              startCall("audio")
+            }
+            disabled={
+              callState !==
+              "idle"
             }
             aria-label="Voice call"
             title="Voice call"
           >
-            <span className="header-call-icon">
-             ☎
-            </span>
-         </button>
+            📞
+          </button>
 
-         <button
+          <button
             type="button"
+            className="private-chat-header-call"
             onClick={() =>
-             handleStartCall("video")
+              startCall("video")
+            }
+            disabled={
+              callState !==
+              "idle"
             }
             aria-label="Video call"
             title="Video call"
           >
-           <span className="header-video-icon">
-             📹
-           </span>
+            🎥
           </button>
-          <div className="chat-more-container">
+
+          <button
+            type="button"
+            className="private-chat-header-more"
+            onClick={() =>
+              setShowChatMenu(
+                (previous) =>
+                  !previous
+              )
+            }
+            aria-label="More options"
+          >
+            ⋮
+          </button>
+
+        </div>
+
+      </header>
+
+      {/* =====================================
+          CHAT MENU
+      ===================================== */}
+
+      {showChatMenu && (
+        <div
+          className="private-chat-menu-overlay"
+          onClick={() =>
+            setShowChatMenu(false)
+          }
+        >
+          <div
+            className="private-chat-menu"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+
             <button
               type="button"
-              onClick={
-                handleChatMenuToggle
-              }
-              aria-label="More options"
-              title="More options"
+              onClick={() => {
+                setShowChatMenu(
+                  false
+                );
+
+                setShowSearch(true);
+              }}
             >
-              ⋮
+              🔍 Search messages
             </button>
 
-            {showChatMenu && (
-              <div
-                className="chat-more-menu"
-                onClick={(event) =>
-                  event.stopPropagation()
-                }
-              >
-                <button
-                  type="button"
-                  onClick={
-                    handleOpenSearch
-                  }
-                >
-                  <span className="menu-icon">
-                    ⌕
-                  </span>
+            <button
+              type="button"
+              onClick={() => {
+                setShowChatMenu(
+                  false
+                );
 
-                  <span>
-                    Search in chat
-                  </span>
-                </button>
+                handleOpenDisappearing();
+              }}
+            >
+              ◷ Disappearing messages
+            </button>
 
-                <button
-                  type="button"
-                  onClick={
-                    handleOpenDisappearingSettings
-                  }
-                >
-                  <span className="menu-icon">
-                    ◷
-                  </span>
+            <button
+              type="button"
+              onClick={() => {
+                setShowChatMenu(
+                  false
+                );
 
-                  <span>
-                    Disappearing messages
-                  </span>
+                setShowDeleteMenu(true);
+              }}
+            >
+              🗑 Delete conversation
+            </button>
 
-                  <span className="menu-arrow">
-                    →
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowChatMenu(
-                      false
-                    );
-
-                    alert(
-                      "Chat notifications settings will be added later."
-                    );
-                  }}
-                >
-                  <span className="menu-icon">
-                    ◌
-                  </span>
-
-                  <span>
-                    Notifications
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowChatMenu(
-                      false
-                    );
-
-                    alert(
-                      "Contact information will be added later."
-                    );
-                  }}
-                >
-                  <span className="menu-icon">
-                    ◯
-                  </span>
-
-                  <span>
-                    Contact info
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={
-                    handleDeleteChat
-                  }
-                >
-                  <span className="menu-icon">
-                    ⌫
-                  </span>
-
-                  <span>
-                    Delete conversation
-                  </span>
-                </button>
-              </div>
-            )}
           </div>
         </div>
-      </header>
+      )}
 
       {/* =====================================
           SEARCH BAR
       ===================================== */}
 
       {showSearch && (
-        <div
-          className="private-chat-search-bar"
-          onClick={(event) =>
-            event.stopPropagation()
-          }
-        >
-          <button
-            type="button"
-            className="private-chat-search-back"
-            onClick={
-              handleCloseSearch
-            }
-            aria-label="Close search"
-          >
-            ←
-          </button>
+        <section className="private-chat-search">
 
-          <div className="private-chat-search-field">
-            <span className="private-chat-search-icon">
-              🔎
+          <div className="private-chat-search-box">
+
+            <span>
+              🔍
             </span>
 
             <input
@@ -3233,20 +3808,21 @@ const handleSendMessage = async (event) => {
                 searchInputRef
               }
               type="text"
-              value={searchQuery}
+              value={
+                searchQuery
+              }
               onChange={(event) =>
                 setSearchQuery(
                   event.target.value
                 )
               }
-              placeholder="Search messages"
+              placeholder="Search messages..."
               aria-label="Search messages"
             />
 
             {searchQuery && (
               <button
                 type="button"
-                className="private-chat-search-clear"
                 onClick={() =>
                   setSearchQuery("")
                 }
@@ -3255,83 +3831,303 @@ const handleSendMessage = async (event) => {
                 ×
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setShowSearch(false);
+              }}
+              aria-label="Close search"
+            >
+              ✕
+            </button>
+
           </div>
+
+        </section>
+      )}
+
+      {/* =====================================
+          CALL ERROR
+      ===================================== */}
+
+      {callError && (
+        <div className="call-error-banner">
+
+          <span>
+            {callError}
+          </span>
+
+          <button
+            type="button"
+            onClick={() =>
+              setCallError("")
+            }
+            aria-label="Dismiss call error"
+          >
+            ×
+          </button>
+
         </div>
       )}
 
       {/* =====================================
-          ERROR
+          INCOMING CALL
       ===================================== */}
 
-      {sendError && (
-        <div className="private-chat-error">
-          {sendError}
-        </div>
-      )}
+      {incomingCall && (
+        <div className="incoming-call-overlay">
 
-      {/* =====================================
-          BACKGROUND REFRESH
-      ===================================== */}
+          <div className="incoming-call-card">
 
-      {isRefreshingMessages && (
-        <div className="private-chat-refreshing">
-          Syncing messages…
-        </div>
-      )}
+            <div className="incoming-call-avatar">
+              {incomingCall.callerAvatar ? (
+                incomingCall.callerAvatar.startsWith(
+                  "http"
+                ) ? (
+                  <img
+                    src={
+                      incomingCall.callerAvatar
+                    }
+                    alt={
+                      incomingCall.callerName
+                    }
+                  />
+                ) : (
+                  incomingCall.callerAvatar
+                )
+              ) : (
+                getAvatarLetter(
+                  {
+                    fullName:
+                      incomingCall.callerName,
+                  }
+                )
+              )}
+            </div>
 
-      {/* =====================================
-          SEARCH RESULT COUNT
-      ===================================== */}
+            <h2>
+              {getDisplayName(
+                {
+                  fullName:
+                    incomingCall.callerName,
+                }
+              )}
+            </h2>
 
-      {showSearch &&
-        searchQuery.trim() && (
-          <div className="private-chat-search-result-count">
-            {visibleMessages.length}{" "}
-            {visibleMessages.length ===
-            1
-              ? "message"
-              : "messages"}{" "}
-            found
+            <p>
+              Incoming{" "}
+              {incomingCall.callType ===
+              "video"
+                ? "video"
+                : "voice"}{" "}
+              call
+            </p>
+
+            <div className="incoming-call-actions">
+
+              <button
+                type="button"
+                className="incoming-call-reject"
+                onClick={
+                  handleRejectCall
+                }
+              >
+                ✕
+              </button>
+
+              <button
+                type="button"
+                className="incoming-call-accept"
+                onClick={
+                  handleAcceptCall
+                }
+              >
+                ✓
+              </button>
+
+            </div>
+
           </div>
+
+        </div>
+      )}
+
+      {/* =====================================
+          ACTIVE CALL PANEL
+      ===================================== */}
+
+      {callState !== "idle" &&
+        !incomingCall && (
+          <section
+            className={`active-call-panel ${
+              callType === "video"
+                ? "active-call-video"
+                : "active-call-audio"
+            }`}
+          >
+
+            {callType ===
+              "video" && (
+              <div className="active-call-video-area">
+
+                <video
+                  ref={
+                    remoteVideoRef
+                  }
+                  autoPlay
+                  playsInline
+                  className="active-call-remote-video"
+                />
+
+                <video
+                  ref={
+                    localVideoRef
+                  }
+                  autoPlay
+                  muted
+                  playsInline
+                  className="active-call-local-video"
+                />
+
+              </div>
+            )}
+
+            {callType ===
+              "audio" && (
+              <div className="active-call-audio-area">
+
+                <div className="active-call-avatar">
+                  {chat?.profilePhoto ? (
+                    <img
+                      src={
+                        chat.profilePhoto
+                      }
+                      alt={
+                        chatName
+                      }
+                    />
+                  ) : (
+                    chatAvatar
+                  )}
+                </div>
+
+                <h2>
+                  {chatName}
+                </h2>
+
+              </div>
+            )}
+
+            <div className="active-call-info">
+
+              <strong>
+                {callState ===
+                "calling"
+                  ? "Calling..."
+                  : callState ===
+                    "connecting"
+                  ? "Connecting..."
+                  : callState ===
+                    "connected"
+                  ? formatCallTime(
+                      callSeconds
+                    )
+                  : "Call"}
+              </strong>
+
+              <span>
+                {callType ===
+                "video"
+                  ? "Video call"
+                  : "Voice call"}
+              </span>
+
+            </div>
+
+            <button
+              type="button"
+              className="active-call-end"
+              onClick={
+                handleEndCall
+              }
+              aria-label="End call"
+              title="End call"
+            >
+              ☎
+            </button>
+
+          </section>
         )}
 
       {/* =====================================
-          CHAT AREA
+          HIDDEN FILE INPUT
       ===================================== */}
 
-      <main
-        className="private-chat-messages"
-        onClick={(event) =>
-          event.stopPropagation()
+      <input
+        ref={fileInputRef}
+        type="file"
+        hidden
+        onChange={
+          handleFileChange
         }
-      >
-        {!showSearch && (
-          <div className="chat-date-divider">
-            <span>Today</span>
+      />
+
+      {/* =====================================
+          MESSAGE AREA
+      ===================================== */}
+
+      <main className="private-chat-messages">
+
+        {isRefreshingMessages && (
+          <div className="private-chat-refreshing">
+            Updating messages...
+          </div>
+        )}
+
+        {sendError && (
+          <div className="private-chat-error">
+
+            <span>
+              {sendError}
+            </span>
+
+            <button
+              type="button"
+              onClick={() =>
+                setSendError("")
+              }
+              aria-label="Dismiss error"
+            >
+              ×
+            </button>
+
           </div>
         )}
 
         {isLoadingMessages &&
         !hasCachedMessages ? (
-          <div className="private-chat-empty">
-            <div className="private-chat-empty-icon">
-              💬
-            </div>
+          <div className="private-chat-loading">
+
+            <div className="private-chat-spinner" />
 
             <h2>
-              Loading messages…
+              Loading messages...
             </h2>
 
             <p>
               Connecting to your conversation.
             </p>
+
           </div>
         ) : visibleMessages.length ===
           0 ? (
           <div className="private-chat-empty">
+
             <div className="private-chat-empty-icon">
               {showSearch
-                ? "🔎"
+                ? "⌕"
                 : "💬"}
             </div>
 
@@ -3346,6 +4142,7 @@ const handleSendMessage = async (event) => {
                 ? "Try another search term."
                 : "Start the conversation by sending a message."}
             </p>
+
           </div>
         ) : (
           visibleMessages.map(
@@ -3378,6 +4175,7 @@ const handleSendMessage = async (event) => {
                   </p>
 
                   <div className="message-meta">
+
                     {item.edited && (
                       <span className="message-edited-label">
                         edited
@@ -3414,6 +4212,7 @@ const handleSendMessage = async (event) => {
                         ◷
                       </span>
                     )}
+
                   </div>
                 </button>
               </div>
@@ -3424,7 +4223,10 @@ const handleSendMessage = async (event) => {
         <div
           ref={messageEndRef}
         />
+
       </main>
+
+
 
       {/* =====================================
           EMOJI PICKER

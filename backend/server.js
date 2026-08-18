@@ -190,7 +190,7 @@ io.on("connection", (socket) => {
       }
 
       socket.join(
-        conversationId
+        String(conversationId)
       );
 
       console.log(
@@ -211,7 +211,7 @@ io.on("connection", (socket) => {
       }
 
       socket.leave(
-        conversationId
+        String(conversationId)
       );
 
       console.log(
@@ -248,7 +248,7 @@ io.on("connection", (socket) => {
       );
 
       socket
-        .to(conversationId)
+        .to(String(conversationId))
         .emit(
           "new-message",
           message
@@ -297,7 +297,7 @@ io.on("connection", (socket) => {
       );
 
       socket
-        .to(conversationId)
+        .to(String(conversationId))
         .emit(
           "message-edited",
           message
@@ -346,7 +346,7 @@ io.on("connection", (socket) => {
       );
 
       socket
-        .to(conversationId)
+        .to(String(conversationId))
         .emit(
           "message-deleted-for-everyone",
           message
@@ -385,11 +385,6 @@ io.on("connection", (socket) => {
           message.id
         }`
       );
-
-      /*
-       * Delete-for-me stays local to the
-       * requesting browser.
-       */
     }
   );
 
@@ -434,7 +429,7 @@ io.on("connection", (socket) => {
       );
 
       socket
-        .to(conversationId)
+        .to(String(conversationId))
         .emit(
           "message-undone",
           message
@@ -464,7 +459,7 @@ io.on("connection", (socket) => {
       );
 
       socket
-        .to(conversationId)
+        .to(String(conversationId))
         .emit(
           "message-delivered",
           {
@@ -496,7 +491,7 @@ io.on("connection", (socket) => {
       );
 
       socket
-        .to(conversationId)
+        .to(String(conversationId))
         .emit(
           "message-read",
           {
@@ -509,14 +504,6 @@ io.on("connection", (socket) => {
   // ==========================================
   // CALL — OFFER
   // ==========================================
-  //
-  // Caller sends the WebRTC offer to the
-  // intended receiver only.
-  //
-  // IMPORTANT:
-  // PrivateChat.js expects the receiver to
-  // receive "call-offer".
-  //
 
   socket.on(
     "call-offer",
@@ -551,22 +538,30 @@ io.on("connection", (socket) => {
       }
 
       console.log(
-        `Call offer: ${callerId} -> ${receiverId} (${callType})`
+        `CALL OFFER: ${callerId} -> ${receiverId} (${callType || "audio"})`
       );
 
       io.to(receiverRoom).emit(
         "call-offer",
         {
-          callerId,
-          receiverId,
+          callerId:
+            String(callerId),
+
+          receiverId:
+            String(receiverId),
+
           conversationId:
             conversationId || "",
+
           callType:
             callType || "audio",
+
           offer,
+
           callerName:
             callerName ||
             "ZenvaZapp User",
+
           callerAvatar:
             callerAvatar || "",
         }
@@ -577,13 +572,6 @@ io.on("connection", (socket) => {
   // ==========================================
   // CALL — ANSWER
   // ==========================================
-  //
-  // Receiver sends the WebRTC answer back
-  // to the caller.
-  //
-  // IMPORTANT:
-  // PrivateChat.js expects "call-answer".
-  //
 
   socket.on(
     "call-answer",
@@ -615,16 +603,21 @@ io.on("connection", (socket) => {
       }
 
       console.log(
-        `Call answer: ${receiverId} -> ${callerId}`
+        `CALL ANSWER: ${receiverId} -> ${callerId}`
       );
 
       io.to(callerRoom).emit(
         "call-answer",
         {
-          callerId,
-          receiverId,
+          callerId:
+            String(callerId),
+
+          receiverId:
+            String(receiverId),
+
           conversationId:
             conversationId || "",
+
           answer,
         }
       );
@@ -635,8 +628,16 @@ io.on("connection", (socket) => {
   // CALL — ICE CANDIDATE
   // ==========================================
   //
-  // IMPORTANT:
-  // PrivateChat.js expects "call-ice-candidate".
+  // Supports BOTH naming formats:
+  //
+  // senderId / receiverId
+  //
+  // and
+  //
+  // senderUserId / targetUserId
+  //
+  // This keeps the signaling compatible with
+  // the current PrivateChat implementation.
   //
 
   socket.on(
@@ -644,12 +645,22 @@ io.on("connection", (socket) => {
     ({
       targetUserId,
       senderUserId,
+      receiverId,
+      senderId,
       conversationId,
       candidate,
     } = {}) => {
+      const actualTargetUserId =
+        targetUserId ||
+        receiverId;
+
+      const actualSenderUserId =
+        senderUserId ||
+        senderId;
+
       if (
-        !targetUserId ||
-        !senderUserId ||
+        !actualTargetUserId ||
+        !actualSenderUserId ||
         !candidate
       ) {
         console.log(
@@ -661,7 +672,7 @@ io.on("connection", (socket) => {
 
       const targetRoom =
         getUserRoom(
-          targetUserId
+          actualTargetUserId
         );
 
       if (!targetRoom) {
@@ -669,16 +680,21 @@ io.on("connection", (socket) => {
       }
 
       console.log(
-        `ICE candidate: ${senderUserId} -> ${targetUserId}`
+        `ICE CANDIDATE: ${actualSenderUserId} -> ${actualTargetUserId}`
       );
 
       io.to(targetRoom).emit(
         "call-ice-candidate",
         {
-          targetUserId,
-          senderUserId,
           conversationId:
             conversationId || "",
+
+          senderId:
+            String(actualSenderUserId),
+
+          receiverId:
+            String(actualTargetUserId),
+
           candidate,
         }
       );
@@ -714,16 +730,21 @@ io.on("connection", (socket) => {
       }
 
       console.log(
-        `Call rejected: ${receiverId} -> ${callerId}`
+        `CALL REJECTED: ${receiverId} -> ${callerId}`
       );
 
       io.to(callerRoom).emit(
         "call-rejected",
         {
-          callerId,
-          receiverId,
+          callerId:
+            String(callerId),
+
+          receiverId:
+            String(receiverId),
+
           conversationId:
             conversationId || "",
+
           reason:
             reason ||
             "Call declined.",
@@ -735,24 +756,49 @@ io.on("connection", (socket) => {
   // ==========================================
   // CALL — ENDED
   // ==========================================
+  //
+  // Supports the current PrivateChat payload:
+  //
+  // callerId
+  // receiverId
+  //
+  // and the alternate:
+  //
+  // senderUserId
+  // targetUserId
+  //
 
   socket.on(
     "call-ended",
     ({
       targetUserId,
       senderUserId,
+      callerId,
+      receiverId,
       conversationId,
     } = {}) => {
+      const actualTargetUserId =
+        targetUserId ||
+        receiverId;
+
+      const actualSenderUserId =
+        senderUserId ||
+        callerId;
+
       if (
-        !targetUserId ||
-        !senderUserId
+        !actualTargetUserId ||
+        !actualSenderUserId
       ) {
+        console.log(
+          "Call ended rejected: user IDs missing."
+        );
+
         return;
       }
 
       const targetRoom =
         getUserRoom(
-          targetUserId
+          actualTargetUserId
         );
 
       if (!targetRoom) {
@@ -760,14 +806,24 @@ io.on("connection", (socket) => {
       }
 
       console.log(
-        `Call ended: ${senderUserId} -> ${targetUserId}`
+        `CALL ENDED: ${actualSenderUserId} -> ${actualTargetUserId}`
       );
 
       io.to(targetRoom).emit(
         "call-ended",
         {
-          targetUserId,
-          senderUserId,
+          targetUserId:
+            String(actualTargetUserId),
+
+          senderUserId:
+            String(actualSenderUserId),
+
+          callerId:
+            String(actualSenderUserId),
+
+          receiverId:
+            String(actualTargetUserId),
+
           conversationId:
             conversationId || "",
         }

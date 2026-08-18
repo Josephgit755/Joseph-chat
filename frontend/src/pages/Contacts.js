@@ -77,6 +77,8 @@ const normalizePhone = (phone) => {
 function ContactCard({
   contact,
   onOpenChat,
+  onCall,
+  onVideoCall,
   onToggleFavorite,
   onRemove,
   isFavoriteLoading,
@@ -119,6 +121,7 @@ function ContactCard({
       conversationId,
 
     name,
+
     fullName:
       person?.fullName ||
       "",
@@ -146,6 +149,10 @@ function ContactCard({
 
   return (
     <article className="contact-card">
+
+      {/* =====================================
+          CONTACT INFORMATION
+          ===================================== */}
 
       <button
         type="button"
@@ -192,7 +199,45 @@ function ContactCard({
 
       </button>
 
+      {/* =====================================
+          CONTACT ACTIONS
+          ===================================== */}
+
       <div className="contact-actions">
+
+        {/* VOICE CALL */}
+
+        <button
+          type="button"
+          className="contact-action call"
+          onClick={() =>
+            onCall?.(chat)
+          }
+          aria-label={`Call ${name}`}
+          title={`Call ${name}`}
+        >
+          <span aria-hidden="true">
+            📞
+          </span>
+        </button>
+
+        {/* VIDEO CALL */}
+
+        <button
+          type="button"
+          className="contact-action video"
+          onClick={() =>
+            onVideoCall?.(chat)
+          }
+          aria-label={`Video call ${name}`}
+          title={`Video call ${name}`}
+        >
+          <span aria-hidden="true">
+            🎥
+          </span>
+        </button>
+
+        {/* FAVORITE */}
 
         <button
           type="button"
@@ -225,6 +270,8 @@ function ContactCard({
             : "☆"}
         </button>
 
+        {/* MORE */}
+
         <button
           type="button"
           className="contact-action remove"
@@ -252,6 +299,8 @@ function ContactCard({
 function Contacts({
   user,
   onOpenChat,
+  onCall,
+  onVideoCall,
   onNavigate,
 }) {
   const API_URL =
@@ -1579,6 +1628,12 @@ function Contacts({
                     }
                     onOpenChat={
                       handleOpenContact
+                    }
+                    onCall={
+                      onCall
+                    }
+                    onVideoCall={
+                      onVideoCall
                     }
                     onToggleFavorite={
                       handleToggleFavorite

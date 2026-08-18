@@ -6,6 +6,13 @@
 .private-chat-page {
   position: fixed;
   inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  width: 100%;
+  height: 100%;
 
   display: flex;
   flex-direction: column;
@@ -22,7 +29,12 @@
 ========================================= */
 
 .private-chat-header {
+  position: relative;
+  top: 0;
+
+  width: 100%;
   min-height: 70px;
+  height: 70px;
 
   display: flex;
   align-items: center;
@@ -31,11 +43,16 @@
 
   padding: 10px 16px;
 
+  box-sizing: border-box;
+
   background: #21101c;
 
   border-bottom: 1px solid #3d1b35;
 
+  flex: 0 0 70px;
   flex-shrink: 0;
+
+  z-index: 50;
 }
 
 .private-chat-back {
@@ -530,7 +547,7 @@
 ========================================= */
 
 .private-chat-empty {
-  min-height: 60%;
+  height: 100%;
 
   display: flex;
   flex-direction: column;
@@ -541,6 +558,8 @@
   padding: 30px;
 
   text-align: center;
+
+  box-sizing: border-box;
 }
 
 .private-chat-empty-icon {
