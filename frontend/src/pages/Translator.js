@@ -68,82 +68,170 @@ function Translator({ onBack }) {
   // API URL
   // ==========================================
 
-  const API_URL =
+  const API_URL = (
     process.env.REACT_APP_API_URL ||
-    "https://joseph-backend.onrender.com";
+    "https://joseph-backend.onrender.com"
+  ).replace(/\/+$/, "");
 
   // ==========================================
   // TRANSLATE
   // ==========================================
 
   const handleTranslate = async () => {
-    if (!message.trim()) {
+    const trimmedMessage = message.trim();
+
+    if (!trimmedMessage) {
+      return;
+    }
+
+    if (sourceLanguage === targetLanguage) {
+      setTranslatedText(trimmedMessage);
+      setErrorMessage("");
+      setCopied(false);
       return;
     }
 
     setIsTranslating(true);
-
     setErrorMessage("");
-
     setTranslatedText("");
-
     setCopied(false);
 
     try {
-      const response =
-        await fetch(
-          `${API_URL}/api/translator/translate`,
-          {
-            method: "POST",
+      const endpoint =
+        `${API_URL}/api/translator/translate`;
 
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-
-            body: JSON.stringify({
-              text: message,
-
-              sourceLanguage:
-                sourceLanguage,
-
-              targetLanguage:
-                targetLanguage,
-            }),
-          }
-        );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data?.message ||
-            "Unable to translate the message."
-        );
-      }
-
-      if (!data?.translatedText) {
-        throw new Error(
-          "No translation was returned."
-        );
-      }
-
-      setTranslatedText(
-        data.translatedText
+      console.log(
+        "ZenvaZapp translation request:",
+        endpoint
       );
 
+      const response = await fetch(
+        endpoint,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+
+          body: JSON.stringify({
+            text: trimmedMessage,
+
+            sourceLanguage:
+              sourceLanguage,
+
+            targetLanguage:
+              targetLanguage,
+          }),
+        }
+      );
+
+      // ======================================
+      // READ RESPONSE SAFELY
+      // ======================================
+
+      const responseText =
+        await response.text();
+
+      let data = null;
+
+      try {
+        data =
+          responseText
+            ? JSON.parse(responseText)
+            : null;
+      } catch (parseError) {
+        console.error(
+          "Translation response was not valid JSON:",
+          responseText
+        );
+      }
+
+      // ======================================
+      // HTTP ERROR
+      // ======================================
+
+      if (!response.ok) {
+        const backendMessage =
+          data?.message ||
+          data?.error ||
+          `Translation request failed with status ${response.status}.`;
+
+        throw new Error(
+          backendMessage
+        );
+      }
+
+      // ======================================
+      // SUCCESS RESPONSE VALIDATION
+      // ======================================
+
+      if (!data) {
+        throw new Error(
+          "The translation server returned an empty response."
+        );
+      }
+
+      if (
+        data.success === false
+      ) {
+        throw new Error(
+          data.message ||
+          "The translation server rejected the request."
+        );
+      }
+
+      if (
+        !data.translatedText ||
+        !String(
+          data.translatedText
+        ).trim()
+      ) {
+        throw new Error(
+          "The translation server did not return translated text."
+        );
+      }
+
+      // ======================================
+      // DISPLAY TRANSLATION
+      // ======================================
+
+      setTranslatedText(
+        String(
+          data.translatedText
+        ).trim()
+      );
+
+      setErrorMessage("");
       setCopied(false);
+
     } catch (error) {
       console.error(
-        "Translation request failed:",
+        "ZenvaZapp translation request failed:",
         error
       );
 
+      // ======================================
+      // FRIENDLY ERROR MESSAGE
+      // ======================================
+
+      let messageToShow =
+        error?.message ||
+        "Unable to translate the message right now.";
+
+      if (
+        error?.name ===
+        "TypeError"
+      ) {
+        messageToShow =
+          "Unable to connect to the ZenvaZapp translation server. Please check that the backend is running and deployed.";
+      }
+
       setErrorMessage(
-        error.message ||
-          "Unable to translate the message right now."
+        messageToShow
       );
+
     } finally {
       setIsTranslating(false);
     }
@@ -163,9 +251,7 @@ function Translator({ onBack }) {
     );
 
     setTranslatedText("");
-
     setErrorMessage("");
-
     setCopied(false);
   };
 
@@ -175,11 +261,8 @@ function Translator({ onBack }) {
 
   const handleClear = () => {
     setMessage("");
-
     setTranslatedText("");
-
     setErrorMessage("");
-
     setCopied(false);
   };
 
@@ -202,6 +285,7 @@ function Translator({ onBack }) {
       setTimeout(() => {
         setCopied(false);
       }, 1800);
+
     } catch (error) {
       console.error(
         "Unable to copy translation:",
@@ -214,7 +298,9 @@ function Translator({ onBack }) {
   // GET LANGUAGE NAME
   // ==========================================
 
-  const getLanguageName = (languageId) => {
+  const getLanguageName = (
+    languageId
+  ) => {
     return (
       languages.find(
         (language) =>
@@ -240,6 +326,7 @@ function Translator({ onBack }) {
         <button
           className="translator-back-button"
           onClick={onBack}
+          type="button"
         >
           ←
         </button>
@@ -304,7 +391,6 @@ function Translator({ onBack }) {
                 );
 
                 setTranslatedText("");
-
                 setErrorMessage("");
               }}
             >
@@ -332,6 +418,7 @@ function Translator({ onBack }) {
               handleSwapLanguages
             }
             aria-label="Swap languages"
+            type="button"
           >
             ⇄
           </button>
@@ -351,7 +438,6 @@ function Translator({ onBack }) {
                 );
 
                 setTranslatedText("");
-
                 setErrorMessage("");
               }}
             >
@@ -393,6 +479,7 @@ function Translator({ onBack }) {
                 !message &&
                 !translatedText
               }
+              type="button"
             >
               Clear
             </button>
@@ -422,11 +509,14 @@ function Translator({ onBack }) {
 
             <button
               className="translate-button"
-              onClick={handleTranslate}
+              onClick={
+                handleTranslate
+              }
               disabled={
                 !message.trim() ||
                 isTranslating
               }
+              type="button"
             >
               {isTranslating
                 ? "Translating..."
@@ -464,9 +554,14 @@ function Translator({ onBack }) {
         =================================== */}
 
         {translatedText && (
-          <section className="translation-result">
+          <section
+            className="translation-result"
+          >
 
-            <div className="translation-result-header">
+            <div
+              className=
+                "translation-result-header"
+            >
 
               <div>
 
@@ -485,6 +580,7 @@ function Translator({ onBack }) {
 
               <button
                 onClick={handleCopy}
+                type="button"
               >
                 {copied
                   ? "✓ Copied"
@@ -506,7 +602,10 @@ function Translator({ onBack }) {
             CHAT TRANSLATION INFO
         =================================== */}
 
-        <section className="message-translation-info">
+        <section
+          className=
+            "message-translation-info"
+        >
 
           <div className="info-icon">
             A
@@ -535,7 +634,9 @@ function Translator({ onBack }) {
             SUPPORTED LANGUAGES
         =================================== */}
 
-        <section className="supported-languages">
+        <section
+          className="supported-languages"
+        >
 
           <h3>
             Supported languages

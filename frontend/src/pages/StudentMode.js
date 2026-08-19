@@ -1,24 +1,64 @@
-import { useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import "./student-mode.css";
 
-function StudentMode({ onBack }) {
-  const [activeSection, setActiveSection] = useState("rooms");
+function StudentMode({
+  user,
+  onBack,
+}) {
+  const [activeSection, setActiveSection] =
+    useState("rooms");
+
+  // ==========================================
+  // API
+  // ==========================================
+
+  const API_URL =
+    process.env.REACT_APP_API_URL ||
+    "http://localhost:5000";
+
+  // ==========================================
+  // ROOM STATE
+  // ==========================================
+
+  const [rooms, setRooms] =
+    useState([]);
+
+  const [roomsLoading, setRoomsLoading] =
+    useState(true);
+
+  const [roomsError, setRoomsError] =
+    useState("");
+
+  // ==========================================
+  // CREATE ROOM
+  // ==========================================
 
   const [showCreateRoom, setShowCreateRoom] =
     useState(false);
 
-  const [showInviteStudents, setShowInviteStudents] =
+  const [roomName, setRoomName] =
+    useState("");
+
+  const [creatingRoom, setCreatingRoom] =
     useState(false);
 
-  const [showInviteLink, setShowInviteLink] =
+  const [createRoomError, setCreateRoomError] =
+    useState("");
+
+  // ==========================================
+  // INVITE STUDENTS
+  // ==========================================
+
+  const [showInviteStudents, setShowInviteStudents] =
     useState(false);
 
   const [selectedRoom, setSelectedRoom] =
     useState(null);
-
-  const [roomName, setRoomName] =
-    useState("");
 
   const [contactSearch, setContactSearch] =
     useState("");
@@ -26,73 +66,30 @@ function StudentMode({ onBack }) {
   const [selectedStudents, setSelectedStudents] =
     useState([]);
 
+  const [contacts, setContacts] =
+    useState([]);
+
+  const [contactsLoading, setContactsLoading] =
+    useState(false);
+
+  const [contactsError, setContactsError] =
+    useState("");
+
+  const [invitingStudents, setInvitingStudents] =
+    useState(false);
+
+  // ==========================================
+  // INVITE LINK
+  // ==========================================
+
+  const [showInviteLink, setShowInviteLink] =
+    useState(false);
+
   const [inviteLink, setInviteLink] =
     useState("");
 
-  // ==========================================
-  // DEMO STUDENT ROOMS
-  // ==========================================
-
-  const [rooms, setRooms] = useState([
-    {
-      id: 1,
-      name: "Computer Engineering 2026",
-      members: 24,
-      subject: "Computer Engineering",
-      activity: "12 new messages",
-    },
-    {
-      id: 2,
-      name: "Web Development Study",
-      members: 8,
-      subject: "Web Development",
-      activity: "3 new assignments",
-    },
-  ]);
-
-  // ==========================================
-  // DEMO CONTACTS
-  // Later this comes from MongoDB
-  // ==========================================
-
-  const contacts = [
-    {
-      id: 1,
-      name: "John",
-      username: "@john",
-      avatar: "J",
-    },
-    {
-      id: 2,
-      name: "Mary",
-      username: "@mary",
-      avatar: "M",
-    },
-    {
-      id: 3,
-      name: "David",
-      username: "@david",
-      avatar: "D",
-    },
-    {
-      id: 4,
-      name: "Sarah",
-      username: "@sarah",
-      avatar: "S",
-    },
-    {
-      id: 5,
-      name: "Michael",
-      username: "@michael",
-      avatar: "M",
-    },
-    {
-      id: 6,
-      name: "Grace",
-      username: "@grace",
-      avatar: "G",
-    },
-  ];
+  const [inviteLoading, setInviteLoading] =
+    useState(false);
 
   // ==========================================
   // STUDENT MODE SECTIONS
@@ -127,74 +124,324 @@ function StudentMode({ onBack }) {
   ];
 
   // ==========================================
-  // CREATE ROOM
+  // GET CURRENT USER ID
   // ==========================================
 
-  const handleCreateRoom = () => {
-    if (!roomName.trim()) {
+  const currentUserId =
+    user?._id ||
+    user?.id ||
+    user?.userId ||
+    "";
+
+  // ==========================================
+  // LOAD USER ROOMS
+  // ==========================================
+
+  const loadRooms = async () => {
+    if (!currentUserId) {
+      setRooms([]);
+      setRoomsLoading(false);
+      setRoomsError(
+        "Your user ID is not available. Please log in again."
+      );
       return;
     }
 
-    const newRoom = {
-      id: Date.now(),
-      name: roomName.trim(),
-      members: 1,
-      subject: "New Student Room",
-      activity: "Room created",
-    };
+    setRoomsLoading(true);
+    setRoomsError("");
 
-    setRooms((previousRooms) => [
-      newRoom,
-      ...previousRooms,
-    ]);
+    try {
+      const response = await fetch(
+        `${API_URL}/api/student-rooms/user/${currentUserId}`
+      );
 
-    setRoomName("");
-    setShowCreateRoom(false);
+      let data = null;
+
+      try {
+        data = await response.json();
+      } catch (error) {
+        data = null;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            `Unable to load student rooms. Server returned ${response.status}.`
+        );
+      }
+
+      if (!data?.success) {
+        throw new Error(
+          data?.message ||
+            "Unable to load student rooms."
+        );
+      }
+
+      setRooms(
+        Array.isArray(data.rooms)
+          ? data.rooms
+          : []
+      );
+    } catch (error) {
+      console.error(
+        "Load student rooms error:",
+        error
+      );
+
+      setRoomsError(
+        error.message ||
+          "Unable to load student rooms."
+      );
+    } finally {
+      setRoomsLoading(false);
+    }
+  };
+
+  // ==========================================
+  // LOAD ROOMS WHEN STUDENT MODE OPENS
+  // ==========================================
+
+  useEffect(() => {
+    loadRooms();
+  }, [currentUserId]);
+
+  // ==========================================
+  // LOAD REGISTERED USERS
+  // ==========================================
+
+  const loadContacts = async () => {
+    setContactsLoading(true);
+    setContactsError("");
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/users`
+      );
+
+      let data = null;
+
+      try {
+        data = await response.json();
+      } catch (error) {
+        data = null;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            `Unable to load users. Server returned ${response.status}.`
+        );
+      }
+
+      if (!data?.success) {
+        throw new Error(
+          data?.message ||
+            "Unable to load users."
+        );
+      }
+
+      const users =
+        Array.isArray(data.users)
+          ? data.users
+          : [];
+
+      // --------------------------------------
+      // REMOVE CURRENT USER
+      // --------------------------------------
+
+      const otherUsers =
+        users.filter(
+          (item) =>
+            item.id?.toString() !==
+            currentUserId?.toString()
+        );
+
+      setContacts(otherUsers);
+    } catch (error) {
+      console.error(
+        "Load student contacts error:",
+        error
+      );
+
+      setContactsError(
+        error.message ||
+          "Unable to load registered users."
+      );
+    } finally {
+      setContactsLoading(false);
+    }
+  };
+
+  // ==========================================
+  // CREATE ROOM
+  // ==========================================
+
+  const handleCreateRoom = async () => {
+    if (!currentUserId) {
+      setCreateRoomError(
+        "Your user ID is not available. Please log in again."
+      );
+      return;
+    }
+
+    if (!roomName.trim()) {
+      setCreateRoomError(
+        "Please enter a room name."
+      );
+      return;
+    }
+
+    setCreatingRoom(true);
+    setCreateRoomError("");
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/student-rooms`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            userId: currentUserId,
+
+            name: roomName.trim(),
+
+            subject:
+              "New Student Room",
+
+            description: "",
+          }),
+        }
+      );
+
+      let data = null;
+
+      try {
+        data = await response.json();
+      } catch (error) {
+        data = null;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            `Unable to create room. Server returned ${response.status}.`
+        );
+      }
+
+      if (!data?.success) {
+        throw new Error(
+          data?.message ||
+            "Unable to create student room."
+        );
+      }
+
+      // --------------------------------------
+      // ADD SERVER ROOM TO UI
+      // --------------------------------------
+
+      if (data.room) {
+        setRooms((previousRooms) => [
+          data.room,
+          ...previousRooms.filter(
+            (room) =>
+              room.id !== data.room.id
+          ),
+        ]);
+      } else {
+        await loadRooms();
+      }
+
+      // --------------------------------------
+      // RESET
+      // --------------------------------------
+
+      setRoomName("");
+      setShowCreateRoom(false);
+    } catch (error) {
+      console.error(
+        "Create student room error:",
+        error
+      );
+
+      setCreateRoomError(
+        error.message ||
+          "Unable to create student room."
+      );
+    } finally {
+      setCreatingRoom(false);
+    }
   };
 
   // ==========================================
   // OPEN ADD STUDENTS
   // ==========================================
 
-  const openInviteStudents = (room) => {
+  const openInviteStudents = async (
+    room
+  ) => {
     setSelectedRoom(room);
 
     setSelectedStudents([]);
 
     setContactSearch("");
 
+    setContactsError("");
+
     setShowInviteStudents(true);
+
+    // --------------------------------------
+    // LOAD REAL USERS
+    // --------------------------------------
+
+    if (
+      contacts.length === 0
+    ) {
+      await loadContacts();
+    }
   };
 
   // ==========================================
   // SELECT / UNSELECT STUDENT
   // ==========================================
 
-  const toggleStudent = (student) => {
-    setSelectedStudents((previousStudents) => {
-      const alreadySelected =
-        previousStudents.some(
-          (item) => item.id === student.id
-        );
+  const toggleStudent = (
+    student
+  ) => {
+    setSelectedStudents(
+      (previousStudents) => {
+        const alreadySelected =
+          previousStudents.some(
+            (item) =>
+              item.id ===
+              student.id
+          );
 
-      if (alreadySelected) {
-        return previousStudents.filter(
-          (item) => item.id !== student.id
-        );
+        if (alreadySelected) {
+          return previousStudents.filter(
+            (item) =>
+              item.id !==
+              student.id
+          );
+        }
+
+        return [
+          ...previousStudents,
+          student,
+        ];
       }
-
-      return [
-        ...previousStudents,
-        student,
-      ];
-    });
+    );
   };
 
   // ==========================================
   // INVITE SELECTED STUDENTS
   // ==========================================
 
-  const inviteStudents = () => {
+  const inviteStudents = async () => {
     if (
       !selectedRoom ||
       selectedStudents.length === 0
@@ -202,143 +449,318 @@ function StudentMode({ onBack }) {
       return;
     }
 
-    setRooms((previousRooms) =>
-      previousRooms.map((room) => {
-        if (room.id !== selectedRoom.id) {
-          return room;
+    if (!currentUserId) {
+      return;
+    }
+
+    setInvitingStudents(true);
+
+    try {
+      const memberIds =
+        selectedStudents
+          .map(
+            (student) =>
+              student.id
+          )
+          .filter(Boolean);
+
+      const response = await fetch(
+        `${API_URL}/api/student-rooms/${selectedRoom.id}/members`,
+        {
+          method: "PATCH",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            userId:
+              currentUserId,
+
+            memberIds,
+          }),
         }
+      );
 
-        return {
-          ...room,
-          members:
-            room.members +
-            selectedStudents.length,
+      let data = null;
 
-          activity:
-            `${selectedStudents.length} student${
-              selectedStudents.length > 1
-                ? "s"
-                : ""
-            } invited`,
-        };
-      })
-    );
+      try {
+        data = await response.json();
+      } catch (error) {
+        data = null;
+      }
 
-    setShowInviteStudents(false);
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            `Unable to add students. Server returned ${response.status}.`
+        );
+      }
 
-    setSelectedStudents([]);
+      if (!data?.success) {
+        throw new Error(
+          data?.message ||
+            "Unable to add students."
+        );
+      }
 
-    setSelectedRoom(null);
+      // --------------------------------------
+      // UPDATE ROOM FROM SERVER
+      // --------------------------------------
+
+      if (data.room) {
+        setRooms(
+          (previousRooms) =>
+            previousRooms.map(
+              (room) =>
+                room.id ===
+                data.room.id
+                  ? data.room
+                  : room
+            )
+        );
+      } else {
+        await loadRooms();
+      }
+
+      // --------------------------------------
+      // CLOSE
+      // --------------------------------------
+
+      setShowInviteStudents(false);
+
+      setSelectedStudents([]);
+
+      setSelectedRoom(null);
+    } catch (error) {
+      console.error(
+        "Invite students error:",
+        error
+      );
+
+      setContactsError(
+        error.message ||
+          "Unable to add students."
+      );
+    } finally {
+      setInvitingStudents(false);
+    }
   };
 
   // ==========================================
   // FILTER CONTACTS
   // ==========================================
 
-  const filteredContacts = contacts.filter(
-    (contact) =>
-      contact.name
-        .toLowerCase()
-        .includes(
-          contactSearch.toLowerCase()
-        ) ||
-      contact.username
-        .toLowerCase()
-        .includes(
-          contactSearch.toLowerCase()
-        )
-  );
+  const filteredContacts =
+    useMemo(() => {
+      const search =
+        contactSearch
+          .trim()
+          .toLowerCase();
+
+      if (!search) {
+        return contacts;
+      }
+
+      return contacts.filter(
+        (contact) =>
+          contact.fullName
+            ?.toLowerCase()
+            .includes(search) ||
+          contact.username
+            ?.toLowerCase()
+            .includes(search) ||
+          contact.displayName
+            ?.toLowerCase()
+            .includes(search)
+      );
+    }, [
+      contacts,
+      contactSearch,
+    ]);
 
   // ==========================================
-  // GENERATE ROOM INVITE LINK
+  // GET REAL INVITE CODE
   // ==========================================
 
-  const generateInviteLink = (room) => {
-    const roomCode =
-      `${room.name
-        .replace(/[^a-zA-Z0-9]/g, "")
-        .substring(0, 8)
-        .toUpperCase()}-${room.id}`;
-
-    const link =
-      `${window.location.origin}/join/${roomCode}`;
+  const generateInviteLink = async (
+    room
+  ) => {
+    if (!currentUserId) {
+      return;
+    }
 
     setSelectedRoom(room);
 
-    setInviteLink(link);
+    setInviteLoading(true);
+
+    setInviteLink("");
 
     setShowInviteLink(true);
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/student-rooms/${room.id}/invite?userId=${encodeURIComponent(
+          currentUserId
+        )}`
+      );
+
+      let data = null;
+
+      try {
+        data = await response.json();
+      } catch (error) {
+        data = null;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            `Unable to load invite. Server returned ${response.status}.`
+        );
+      }
+
+      if (!data?.success) {
+        throw new Error(
+          data?.message ||
+            "Unable to load invite."
+        );
+      }
+
+      const inviteCode =
+        data.inviteCode;
+
+      if (!inviteCode) {
+        throw new Error(
+          "The server did not return an invite code."
+        );
+      }
+
+      // --------------------------------------
+      // REAL JOIN URL
+      // --------------------------------------
+
+      const link =
+        `${window.location.origin}/join/${inviteCode}`;
+
+      setInviteLink(link);
+
+      // --------------------------------------
+      // UPDATE ROOM
+      // --------------------------------------
+
+      setRooms(
+        (previousRooms) =>
+          previousRooms.map(
+            (item) =>
+              item.id === room.id
+                ? {
+                    ...item,
+                    inviteCode,
+                    inviteEnabled:
+                      data.inviteEnabled,
+                  }
+                : item
+          )
+      );
+    } catch (error) {
+      console.error(
+        "Generate invite link error:",
+        error
+      );
+
+      setInviteLink("");
+
+      alert(
+        error.message ||
+          "Unable to generate invite link."
+      );
+    } finally {
+      setInviteLoading(false);
+    }
   };
 
   // ==========================================
   // COPY INVITE LINK
   // ==========================================
 
-  const copyInviteLink = async () => {
-    if (!inviteLink) {
-      return;
-    }
+  const copyInviteLink =
+    async () => {
+      if (!inviteLink) {
+        return;
+      }
 
-    try {
-      await navigator.clipboard.writeText(
-        inviteLink
-      );
+      try {
+        await navigator.clipboard.writeText(
+          inviteLink
+        );
 
-      alert("Invite link copied!");
-    } catch (error) {
-      console.error(
-        "Could not copy invite link:",
-        error
-      );
-    }
-  };
+        alert(
+          "Invite link copied!"
+        );
+      } catch (error) {
+        console.error(
+          "Could not copy invite link:",
+          error
+        );
+
+        alert(
+          "Could not copy the invite link."
+        );
+      }
+    };
 
   // ==========================================
   // SHARE INVITE LINK
   // ==========================================
 
-  const shareInviteLink = async () => {
-    if (
-      !inviteLink ||
-      !selectedRoom
-    ) {
-      return;
-    }
-
-    const shareData = {
-      title:
-        `Join ${selectedRoom.name}`,
-
-      text:
-        `Join my ZenvaZapp student room: ${selectedRoom.name}`,
-
-      url: inviteLink,
-    };
-
-    if (
-      navigator.share &&
-      typeof navigator.share === "function"
-    ) {
-      try {
-        await navigator.share(
-          shareData
-        );
-      } catch (error) {
-        if (
-          error.name !== "AbortError"
-        ) {
-          console.error(
-            "Sharing failed:",
-            error
-          );
-        }
+  const shareInviteLink =
+    async () => {
+      if (
+        !inviteLink ||
+        !selectedRoom
+      ) {
+        return;
       }
 
-      return;
-    }
+      const shareData = {
+        title:
+          `Join ${selectedRoom.name}`,
 
-    await copyInviteLink();
-  };
+        text:
+          `Join my ZenvaZapp student room: ${selectedRoom.name}`,
+
+        url:
+          inviteLink,
+      };
+
+      if (
+        navigator.share &&
+        typeof navigator.share ===
+          "function"
+      ) {
+        try {
+          await navigator.share(
+            shareData
+          );
+        } catch (error) {
+          if (
+            error.name !==
+            "AbortError"
+          ) {
+            console.error(
+              "Sharing failed:",
+              error
+            );
+          }
+        }
+
+        return;
+      }
+
+      await copyInviteLink();
+    };
 
   // ==========================================
   // RENDER
@@ -479,31 +901,36 @@ function StudentMode({ onBack }) {
 
       <nav className="student-section-navigation">
 
-        {sections.map((section) => (
+        {sections.map(
+          (section) => (
 
-          <button
-            key={section.id}
-            className={
-              activeSection === section.id
-                ? "student-section-button active"
-                : "student-section-button"
-            }
-            onClick={() =>
-              setActiveSection(section.id)
-            }
-          >
+            <button
+              key={section.id}
+              className={
+                activeSection ===
+                section.id
+                  ? "student-section-button active"
+                  : "student-section-button"
+              }
+              onClick={() =>
+                setActiveSection(
+                  section.id
+                )
+              }
+            >
 
-            <span>
-              {section.icon}
-            </span>
+              <span>
+                {section.icon}
+              </span>
 
-            <small>
-              {section.label}
-            </small>
+              <small>
+                {section.label}
+              </small>
 
-          </button>
+            </button>
 
-        ))}
+          )
+        )}
 
       </nav>
 
@@ -532,9 +959,11 @@ function StudentMode({ onBack }) {
 
             <button
               className="create-room-button"
-              onClick={() =>
-                setShowCreateRoom(true)
-              }
+              onClick={() => {
+                setCreateRoomError("");
+                setRoomName("");
+                setShowCreateRoom(true);
+              }}
             >
               + Room
             </button>
@@ -542,71 +971,187 @@ function StudentMode({ onBack }) {
           </div>
 
 
-          <section className="student-rooms">
+          {/* =================================
+              LOADING
+          ================================= */}
 
-            {rooms.map((room) => (
+          {roomsLoading && (
 
-              <div
-                key={room.id}
-                className="student-room-card"
-              >
+            <section className="student-empty-state">
 
-                <div className="room-avatar">
-                  {room.name
-                    .charAt(0)
-                    .toUpperCase()}
-                </div>
-
-                <div className="room-information">
-
-                  <h3>
-                    {room.name}
-                  </h3>
-
-                  <p>
-                    {room.subject}
-                  </p>
-
-                  <small>
-                    👥 {room.members} members
-                    {" · "}
-                    {room.activity}
-                  </small>
-
-                </div>
-
-
-                {/* ROOM ACTIONS */}
-
-                <div className="room-actions">
-
-                  <button
-                    className="room-invite-button"
-                    onClick={() =>
-                      openInviteStudents(room)
-                    }
-                  >
-                    + Add
-                  </button>
-
-
-                  <button
-                    className="room-link-button"
-                    onClick={() =>
-                      generateInviteLink(room)
-                    }
-                    title="Invite by link"
-                  >
-                    🔗
-                  </button>
-
-                </div>
-
+              <div>
+                ⏳
               </div>
 
-            ))}
+              <h3>
+                Loading your rooms...
+              </h3>
 
-          </section>
+              <p>
+                Connecting to your ZenvaZapp student rooms.
+              </p>
+
+            </section>
+
+          )}
+
+
+          {/* =================================
+              ERROR
+          ================================= */}
+
+          {!roomsLoading &&
+            roomsError && (
+
+              <section className="student-empty-state">
+
+                <div>
+                  ⚠️
+                </div>
+
+                <h3>
+                  Unable to load rooms
+                </h3>
+
+                <p>
+                  {roomsError}
+                </p>
+
+                <button
+                  className="create-room-submit"
+                  onClick={loadRooms}
+                >
+                  Try Again
+                </button>
+
+              </section>
+
+            )}
+
+
+          {/* =================================
+              REAL MONGODB ROOMS
+          ================================= */}
+
+          {!roomsLoading &&
+            !roomsError &&
+            rooms.length > 0 && (
+
+              <section className="student-rooms">
+
+                {rooms.map(
+                  (room) => (
+
+                    <div
+                      key={room.id}
+                      className="student-room-card"
+                    >
+
+                      <div className="room-avatar">
+                        {room.name
+                          ?.charAt(0)
+                          .toUpperCase()}
+                      </div>
+
+                      <div className="room-information">
+
+                        <h3>
+                          {room.name}
+                        </h3>
+
+                        <p>
+                          {room.subject}
+                        </p>
+
+                        <small>
+                          👥{" "}
+                          {room.members || 0}
+                          {" members"}
+                          {" · "}
+                          {room.activity ||
+                            "Room created"}
+                        </small>
+
+                      </div>
+
+
+                      {/* ROOM ACTIONS */}
+
+                      <div className="room-actions">
+
+                        <button
+                          className="room-invite-button"
+                          onClick={() =>
+                            openInviteStudents(
+                              room
+                            )
+                          }
+                        >
+                          + Add
+                        </button>
+
+
+                        <button
+                          className="room-link-button"
+                          onClick={() =>
+                            generateInviteLink(
+                              room
+                            )
+                          }
+                          title="Invite by link"
+                        >
+                          🔗
+                        </button>
+
+                      </div>
+
+                    </div>
+
+                  )
+                )}
+
+              </section>
+
+            )}
+
+
+          {/* =================================
+              EMPTY
+          ================================= */}
+
+          {!roomsLoading &&
+            !roomsError &&
+            rooms.length === 0 && (
+
+              <section className="student-empty-state">
+
+                <div>
+                  👥
+                </div>
+
+                <h3>
+                  No student rooms yet
+                </h3>
+
+                <p>
+                  Create your first student room
+                  and invite your classmates.
+                </p>
+
+                <button
+                  className="create-room-submit"
+                  onClick={() => {
+                    setCreateRoomError("");
+                    setRoomName("");
+                    setShowCreateRoom(true);
+                  }}
+                >
+                  + Create Your First Room
+                </button>
+
+              </section>
+
+            )}
 
         </main>
       )}
@@ -637,7 +1182,9 @@ function StudentMode({ onBack }) {
             <button
               className="create-room-button"
               onClick={() =>
-                console.log("Create note")
+                console.log(
+                  "Create note"
+                )
               }
             >
               + Note
@@ -821,7 +1368,9 @@ function StudentMode({ onBack }) {
             <button
               className="create-room-button"
               onClick={() =>
-                console.log("Create event")
+                console.log(
+                  "Create event"
+                )
               }
             >
               + Event
@@ -965,20 +1514,49 @@ function StudentMode({ onBack }) {
 
             <input
               value={roomName}
-              onChange={(event) =>
+              onChange={(event) => {
                 setRoomName(
                   event.target.value
-                )
-              }
+                );
+
+                if (
+                  createRoomError
+                ) {
+                  setCreateRoomError("");
+                }
+              }}
               placeholder="e.g. Computer Engineering 2026"
+              disabled={creatingRoom}
             />
+
+
+            {createRoomError && (
+
+              <p
+                style={{
+                  color: "#ff6b9d",
+                  marginTop: "10px",
+                }}
+              >
+                {createRoomError}
+              </p>
+
+            )}
 
 
             <button
               className="create-room-submit"
-              onClick={handleCreateRoom}
+              onClick={
+                handleCreateRoom
+              }
+              disabled={
+                creatingRoom ||
+                !roomName.trim()
+              }
             >
-              Create Room
+              {creatingRoom
+                ? "Creating Room..."
+                : "Create Room"}
             </button>
 
           </div>
@@ -999,9 +1577,25 @@ function StudentMode({ onBack }) {
 
             <button
               className="student-modal-close"
-              onClick={() =>
-                setShowInviteStudents(false)
-              }
+              onClick={() => {
+                if (
+                  invitingStudents
+                ) {
+                  return;
+                }
+
+                setShowInviteStudents(
+                  false
+                );
+
+                setSelectedStudents(
+                  []
+                );
+
+                setSelectedRoom(
+                  null
+                );
+              }}
             >
               ×
             </button>
@@ -1018,8 +1612,8 @@ function StudentMode({ onBack }) {
 
 
             <p>
-              Invite people from your ZenvaZapp
-              chats and contacts to:
+              Invite registered ZenvaZapp
+              users to:
             </p>
 
 
@@ -1043,26 +1637,55 @@ function StudentMode({ onBack }) {
                     event.target.value
                   )
                 }
-                placeholder="Search chats or contacts..."
+                placeholder="Search students..."
               />
 
             </div>
+
+
+            {/* CONTACT ERROR */}
+
+            {contactsError && (
+
+              <div
+                className="no-students-found"
+                style={{
+                  color: "#ff6b9d",
+                }}
+              >
+                {contactsError}
+              </div>
+
+            )}
 
 
             {/* CONTACT LIST */}
 
             <div className="student-contact-list">
 
-              {filteredContacts.length === 0 ? (
+              {contactsLoading ? (
 
                 <div className="no-students-found">
-                  No contacts found
+                  Loading registered students...
+                </div>
+
+              ) : filteredContacts.length === 0 ? (
+
+                <div className="no-students-found">
+                  No registered students found
                 </div>
 
               ) : (
 
                 filteredContacts.map(
                   (contact) => {
+
+                    const isAlreadyMember =
+                      selectedRoom?.memberList?.some(
+                        (member) =>
+                          member.id?.toString() ===
+                          contact.id?.toString()
+                      );
 
                     const isSelected =
                       selectedStudents.some(
@@ -1072,12 +1695,17 @@ function StudentMode({ onBack }) {
                       );
 
                     return (
+
                       <button
                         key={contact.id}
                         className={
                           isSelected
                             ? "student-contact selected"
                             : "student-contact"
+                        }
+                        disabled={
+                          isAlreadyMember ||
+                          invitingStudents
                         }
                         onClick={() =>
                           toggleStudent(
@@ -1087,18 +1715,55 @@ function StudentMode({ onBack }) {
                       >
 
                         <div className="student-contact-avatar">
-                          {contact.avatar}
+                          {contact.profilePhoto ? (
+
+                            <img
+                              src={
+                                contact.profilePhoto
+                              }
+                              alt=""
+                              style={{
+                                width:
+                                  "100%",
+                                height:
+                                  "100%",
+                                objectFit:
+                                  "cover",
+                                borderRadius:
+                                  "50%",
+                              }}
+                            />
+
+                          ) : (
+
+                            (
+                              contact.displayName ||
+                              contact.fullName ||
+                              contact.username ||
+                              "U"
+                            )
+                              .charAt(0)
+                              .toUpperCase()
+
+                          )}
                         </div>
 
 
                         <div className="student-contact-info">
 
                           <strong>
-                            {contact.name}
+                            {contact.displayName ||
+                              contact.fullName ||
+                              contact.username}
                           </strong>
 
                           <small>
-                            {contact.username}
+                            {contact.username
+                              ? `@${contact.username.replace(
+                                  /^@/,
+                                  ""
+                                )}`
+                              : ""}
                           </small>
 
                         </div>
@@ -1111,15 +1776,19 @@ function StudentMode({ onBack }) {
                               : "student-check"
                           }
                         >
-                          {isSelected
+                          {isAlreadyMember
+                            ? "✓"
+                            : isSelected
                             ? "✓"
                             : ""}
                         </div>
 
                       </button>
+
                     );
                   }
                 )
+
               )}
 
             </div>
@@ -1127,7 +1796,8 @@ function StudentMode({ onBack }) {
 
             {/* SELECTED COUNT */}
 
-            {selectedStudents.length > 0 && (
+            {selectedStudents.length >
+              0 && (
 
               <div className="selected-students-count">
 
@@ -1136,7 +1806,8 @@ function StudentMode({ onBack }) {
                 {" "}
 
                 student
-                {selectedStudents.length > 1
+                {selectedStudents.length >
+                1
                   ? "s"
                   : ""}
 
@@ -1152,23 +1823,33 @@ function StudentMode({ onBack }) {
             <button
               className="create-room-submit"
               disabled={
-                selectedStudents.length === 0
+                selectedStudents.length ===
+                  0 ||
+                invitingStudents
               }
-              onClick={inviteStudents}
+              onClick={
+                inviteStudents
+              }
             >
-              Invite{" "}
-              {selectedStudents.length > 0
-                ? selectedStudents.length
-                : ""}{" "}
-              Student
-              {selectedStudents.length === 1
-                ? ""
-                : "s"}
+              {invitingStudents
+                ? "Adding Students..."
+                : `Invite ${
+                    selectedStudents.length >
+                    0
+                      ? selectedStudents.length
+                      : ""
+                  } Student${
+                    selectedStudents.length ===
+                    1
+                      ? ""
+                      : "s"
+                  }`}
             </button>
 
           </div>
 
         </div>
+
       )}
 
 
@@ -1241,9 +1922,25 @@ function StudentMode({ onBack }) {
 
             <div className="invite-link-box">
 
-              <span>
-                {inviteLink}
-              </span>
+              {inviteLoading ? (
+
+                <span>
+                  Generating secure invite...
+                </span>
+
+              ) : inviteLink ? (
+
+                <span>
+                  {inviteLink}
+                </span>
+
+              ) : (
+
+                <span>
+                  Unable to generate invite.
+                </span>
+
+              )}
 
             </div>
 
@@ -1253,16 +1950,28 @@ function StudentMode({ onBack }) {
             <div className="invite-link-actions">
 
               <button
-                onClick={copyInviteLink}
+                onClick={
+                  copyInviteLink
+                }
                 className="invite-copy-button"
+                disabled={
+                  !inviteLink ||
+                  inviteLoading
+                }
               >
                 📋 Copy Link
               </button>
 
 
               <button
-                onClick={shareInviteLink}
+                onClick={
+                  shareInviteLink
+                }
                 className="invite-share-button"
+                disabled={
+                  !inviteLink ||
+                  inviteLoading
+                }
               >
                 📤 Share Invite
               </button>
@@ -1271,14 +1980,14 @@ function StudentMode({ onBack }) {
 
 
             <p className="invite-link-note">
-              Classmates who don't have ZenvaZapp
-              will later be directed to download
-              the app before joining the room.
+              This invitation uses a real
+              MongoDB-backed room invite code.
             </p>
 
           </div>
 
         </div>
+
       )}
 
     </div>

@@ -8,6 +8,7 @@ const messageRoutes = require("./routes/messageRoutes");
 const userRoutes = require("./routes/userRoutes");
 const contactRoutes = require("./routes/contactRoutes");
 const translatorRoutes = require("./routes/translatorRoutes");
+const studentRoomRoutes = require("./routes/studentRoomRoutes");
 
 dotenv.config();
 
@@ -18,7 +19,12 @@ const app = express();
 // ==========================================
 
 app.use(cors());
-app.use(express.json());
+
+app.use(
+  express.json({
+    limit: "10mb",
+  })
+);
 
 // ==========================================
 // HEALTH CHECK
@@ -27,7 +33,8 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "ZenvaZapp API is running",
+    message:
+      "ZenvaZapp API is running",
   });
 });
 
@@ -79,22 +86,46 @@ app.use(
 // ==========================================
 // TRANSLATOR ROUTES
 // ==========================================
-//
-// POST /api/translator/translate
-//
-// Body:
-//
-// {
-//   "text": "Hello",
-//   "sourceLanguage": "english",
-//   "targetLanguage": "french"
-// }
-//
-// ==========================================
 
 app.use(
   "/api/translator",
   translatorRoutes
+);
+
+// ==========================================
+// STUDENT ROOM ROUTES
+// ==========================================
+//
+// Student Mode room management.
+//
+// Available endpoints:
+//
+// POST
+// /api/student-rooms
+//
+// GET
+// /api/student-rooms/user/:userId
+//
+// GET
+// /api/student-rooms/:roomId
+//
+// PATCH
+// /api/student-rooms/:roomId/members
+//
+// GET
+// /api/student-rooms/:roomId/invite
+//
+// POST
+// /api/student-rooms/join
+//
+// PATCH
+// /api/student-rooms/:roomId/leave
+//
+// ==========================================
+
+app.use(
+  "/api/student-rooms",
+  studentRoomRoutes
 );
 
 // ==========================================
@@ -104,8 +135,10 @@ app.use(
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: "Route not found",
-    path: req.originalUrl,
+    message:
+      "Route not found",
+    path:
+      req.originalUrl,
   });
 });
 
