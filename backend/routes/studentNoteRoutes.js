@@ -5,7 +5,7 @@ const {
   createNote,
   updateNote,
   deleteNote,
-} = require("../controllers/studentNoteController");
+} = require("../controller/studentNoteController");
 
 const router = express.Router();
 
@@ -64,5 +64,9 @@ router.delete(
   "/:noteId",
   deleteNote
 );
+
+// ==========================================
+// EXPORT
+// ==========================================
 
 module.exports = router;

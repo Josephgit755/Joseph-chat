@@ -5,8 +5,6 @@ const {
   getUserRooms,
   getRoom,
   addMembers,
-  getInvite,
-  joinRoom,
   leaveRoom,
 } = require("../controller/studentRoomController");
 
@@ -39,32 +37,6 @@ router.post(
 router.get(
   "/user/:userId",
   getUserRooms
-);
-
-// ==========================================
-// JOIN USING INVITE CODE
-// ==========================================
-//
-// POST /api/student-rooms/join
-//
-// ==========================================
-
-router.post(
-  "/join",
-  joinRoom
-);
-
-// ==========================================
-// GET INVITE
-// ==========================================
-//
-// GET /api/student-rooms/:roomId/invite
-//
-// ==========================================
-
-router.get(
-  "/:roomId/invite",
-  getInvite
 );
 
 // ==========================================
@@ -105,5 +77,9 @@ router.get(
   "/:roomId",
   getRoom
 );
+
+// ==========================================
+// EXPORT
+// ==========================================
 
 module.exports = router;
