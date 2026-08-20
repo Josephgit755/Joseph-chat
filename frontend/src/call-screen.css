@@ -1,0 +1,674 @@
+/* =========================================================
+   ZENVAZAPP PROFESSIONAL CALL SCREEN
+   ========================================================= */
+
+.zenvazapp-call-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  color: #ffffff;
+
+  background:
+    radial-gradient(
+      circle at 50% 25%,
+      rgba(139, 92, 246, 0.28),
+      transparent 35%
+    ),
+    linear-gradient(
+      145deg,
+      #09060f 0%,
+      #16091f 45%,
+      #08050c 100%
+    );
+
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+/* =========================================================
+   TOP BAR
+   ========================================================= */
+
+.zenvazapp-call-top {
+  position: relative;
+  z-index: 20;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  width: 100%;
+  padding: 28px 32px;
+
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.45),
+      transparent
+    );
+}
+
+.zenvazapp-call-contact {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.zenvazapp-call-contact h1 {
+  margin: 0;
+
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.zenvazapp-call-contact p {
+  margin: 4px 0 0;
+
+  font-size: 13px;
+
+  color: rgba(
+    255,
+    255,
+    255,
+    0.72
+  );
+}
+
+.zenvazapp-call-type {
+  padding: 8px 14px;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.12);
+
+  border-radius: 999px;
+
+  background:
+    rgba(255, 255, 255, 0.08);
+
+  font-size: 12px;
+}
+
+.zenvazapp-call-mini-avatar {
+  width: 46px;
+  height: 46px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  border-radius: 50%;
+
+  background:
+    linear-gradient(
+      135deg,
+      #7c3aed,
+      #db2777
+    );
+
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.zenvazapp-call-mini-avatar img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+/* =========================================================
+   AUDIO STAGE
+   ========================================================= */
+
+.zenvazapp-call-audio-stage {
+  position: absolute;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  pointer-events: none;
+}
+
+.zenvazapp-call-audio-glow {
+  position: absolute;
+
+  width: min(55vw, 520px);
+  height: min(55vw, 520px);
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(168, 85, 247, 0.28),
+      transparent 68%
+    );
+
+  filter: blur(8px);
+}
+
+.zenvazapp-call-avatar-large {
+  position: relative;
+
+  width: 210px;
+  height: 210px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  border: 5px solid
+    rgba(255, 255, 255, 0.14);
+
+  border-radius: 50%;
+
+  background:
+    linear-gradient(
+      135deg,
+      #7c3aed,
+      #db2777
+    );
+
+  box-shadow:
+    0 0 0 18px
+      rgba(168, 85, 247, 0.06),
+    0 30px 90px
+      rgba(0, 0, 0, 0.5);
+
+  font-size: 72px;
+  font-weight: 700;
+}
+
+.zenvazapp-call-avatar-large img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+/* =========================================================
+   AUDIO INFO
+   ========================================================= */
+
+.zenvazapp-call-audio-info {
+  position: absolute;
+  top: 52%;
+  left: 50%;
+
+  z-index: 10;
+
+  transform: translate(-50%, -50%);
+
+  text-align: center;
+
+  pointer-events: none;
+}
+
+.zenvazapp-call-audio-info h2 {
+  margin: 0;
+
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.zenvazapp-call-audio-info p {
+  margin: 8px 0 0;
+
+  font-size: 16px;
+
+  color: rgba(
+    255,
+    255,
+    255,
+    0.8
+  );
+}
+
+.zenvazapp-call-audio-info span {
+  display: block;
+
+  margin-top: 5px;
+
+  font-size: 13px;
+
+  color: rgba(
+    255,
+    255,
+    255,
+    0.5
+  );
+}
+
+/* =========================================================
+   VIDEO STAGE
+   ========================================================= */
+
+.zenvazapp-call-video-stage {
+  position: absolute;
+  inset: 0;
+
+  background: #050408;
+}
+
+.zenvazapp-call-remote-video {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
+
+  background: #050408;
+}
+
+.zenvazapp-call-local-video-wrapper {
+  position: absolute;
+
+  right: 28px;
+  bottom: 150px;
+
+  z-index: 15;
+
+  width: 210px;
+  height: 140px;
+
+  overflow: hidden;
+
+  border: 2px solid
+    rgba(255, 255, 255, 0.3);
+
+  border-radius: 16px;
+
+  background: #100c16;
+
+  box-shadow:
+    0 16px 45px
+      rgba(0, 0, 0, 0.45);
+}
+
+.zenvazapp-call-local-video {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+.zenvazapp-call-local-video.hidden {
+  display: none;
+}
+
+.zenvazapp-call-local-camera-off {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    linear-gradient(
+      135deg,
+      #20122b,
+      #0e0913
+    );
+
+  color: rgba(
+    255,
+    255,
+    255,
+    0.75
+  );
+
+  font-size: 14px;
+}
+
+.zenvazapp-call-video-disabled {
+  position: absolute;
+  inset: 0;
+
+  z-index: 4;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 16px;
+
+  background:
+    radial-gradient(
+      circle,
+      #24112e,
+      #08050c 65%
+    );
+}
+
+.zenvazapp-call-video-avatar {
+  width: 150px;
+  height: 150px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  border-radius: 50%;
+
+  background:
+    linear-gradient(
+      135deg,
+      #7c3aed,
+      #db2777
+    );
+
+  font-size: 54px;
+  font-weight: 700;
+}
+
+.zenvazapp-call-video-avatar img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+/* =========================================================
+   CONTROLS
+   ========================================================= */
+
+.zenvazapp-call-controls {
+  position: absolute;
+
+  left: 50%;
+  bottom: 34px;
+
+  z-index: 30;
+
+  transform: translateX(-50%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 14px;
+
+  padding: 14px 18px;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.1);
+
+  border-radius: 28px;
+
+  background:
+    rgba(12, 8, 18, 0.82);
+
+  box-shadow:
+    0 20px 70px
+      rgba(0, 0, 0, 0.45);
+
+  
+}
+
+.zenvazapp-call-control,
+.zenvazapp-call-end {
+  width: 68px;
+  height: 68px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 5px;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.08);
+
+  border-radius: 50%;
+
+  cursor: pointer;
+
+  color: #ffffff;
+
+  background:
+    rgba(255, 255, 255, 0.09);
+
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.zenvazapp-call-control:hover,
+.zenvazapp-call-end:hover {
+  transform: translateY(-3px);
+
+  background:
+    rgba(255, 255, 255, 0.16);
+
+  border-color:
+    rgba(255, 255, 255, 0.2);
+}
+
+.zenvazapp-call-control.active {
+  background:
+    rgba(168, 85, 247, 0.22);
+
+  border-color:
+    rgba(192, 132, 252, 0.3);
+}
+
+.zenvazapp-call-control.disabled {
+  background:
+    rgba(239, 68, 68, 0.2);
+
+  border-color:
+    rgba(248, 113, 113, 0.25);
+}
+
+.zenvazapp-call-control span,
+.zenvazapp-call-end span {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.zenvazapp-call-control small,
+.zenvazapp-call-end small {
+  font-size: 9px;
+
+  color: rgba(
+    255,
+    255,
+    255,
+    0.7
+  );
+}
+
+.zenvazapp-call-end {
+  margin-left: 8px;
+
+  border: none;
+
+  background:
+    linear-gradient(
+      135deg,
+      #ef4444,
+      #dc2626
+    );
+
+  box-shadow:
+    0 8px 28px
+      rgba(220, 38, 38, 0.35);
+}
+
+.zenvazapp-call-end:hover {
+  background:
+    linear-gradient(
+      135deg,
+      #f87171,
+      #ef4444
+    );
+}
+
+/* =========================================================
+   MORE MENU
+   ========================================================= */
+
+.zenvazapp-call-more-menu {
+  position: absolute;
+
+  right: 32px;
+  bottom: 125px;
+
+  z-index: 50;
+
+  min-width: 190px;
+
+  padding: 8px;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.1);
+
+  border-radius: 16px;
+
+  background:
+    rgba(16, 10, 23, 0.96);
+
+  box-shadow:
+    0 20px 60px
+      rgba(0, 0, 0, 0.5);
+
+ 
+}
+
+.zenvazapp-call-more-menu button {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 12px;
+
+  border: none;
+  border-radius: 10px;
+
+  cursor: pointer;
+
+  color: #ffffff;
+
+  background: transparent;
+
+  text-align: left;
+}
+
+.zenvazapp-call-more-menu button:hover {
+  background:
+    rgba(255, 255, 255, 0.08);
+}
+
+.zenvazapp-call-more-menu span {
+  font-size: 13px;
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 700px) {
+  .zenvazapp-call-top {
+    padding: 20px 16px;
+  }
+
+  .zenvazapp-call-contact h1 {
+    font-size: 17px;
+  }
+
+  .zenvazapp-call-avatar-large {
+    width: 155px;
+    height: 155px;
+
+    font-size: 55px;
+  }
+
+  .zenvazapp-call-audio-info {
+    top: 52%;
+  }
+
+  .zenvazapp-call-audio-info h2 {
+    font-size: 23px;
+  }
+
+  .zenvazapp-call-local-video-wrapper {
+    right: 14px;
+    bottom: 135px;
+
+    width: 120px;
+    height: 165px;
+
+    border-radius: 14px;
+  }
+
+  .zenvazapp-call-controls {
+    bottom: 16px;
+
+    width: calc(
+      100% - 24px
+    );
+
+    gap: 7px;
+
+    padding: 10px;
+  }
+
+  .zenvazapp-call-control,
+  .zenvazapp-call-end {
+    width: 56px;
+    height: 56px;
+  }
+
+  .zenvazapp-call-control span,
+  .zenvazapp-call-end span {
+    font-size: 18px;
+  }
+
+  .zenvazapp-call-more-menu {
+    right: 12px;
+    bottom: 95px;
+  }
+}
+
+@media (max-width: 420px) {
+  .zenvazapp-call-control,
+  .zenvazapp-call-end {
+    width: 49px;
+    height: 49px;
+  }
+
+  .zenvazapp-call-control small,
+  .zenvazapp-call-end small {
+    display: none;
+  }
+
+  .zenvazapp-call-controls {
+    border-radius: 22px;
+  }
+}

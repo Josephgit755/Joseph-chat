@@ -1,6 +1,5 @@
 import {
   useEffect,
-  useMemo,
   useState,
 } from "react";
 
@@ -10,6 +9,10 @@ function StudentMode({
   user,
   onBack,
 }) {
+  // ==========================================
+  // ACTIVE SECTION
+  // ==========================================
+
   const [activeSection, setActiveSection] =
     useState("rooms");
 
@@ -20,6 +23,18 @@ function StudentMode({
   const API_URL =
     process.env.REACT_APP_API_URL ||
     "http://localhost:5000";
+
+  // ==========================================
+  // CURRENT USER ID
+  // ==========================================
+
+  const currentUserId =
+    user?._id ||
+    user?.id ||
+    user?.userId ||
+    user?.user?._id ||
+    user?.user?.id ||
+    "";
 
   // ==========================================
   // ROOM STATE
@@ -51,7 +66,7 @@ function StudentMode({
     useState("");
 
   // ==========================================
-  // INVITE STUDENTS
+  // ADD STUDENT / PHONE INVITATION
   // ==========================================
 
   const [showInviteStudents, setShowInviteStudents] =
@@ -60,23 +75,17 @@ function StudentMode({
   const [selectedRoom, setSelectedRoom] =
     useState(null);
 
-  const [contactSearch, setContactSearch] =
+  const [phoneNumber, setPhoneNumber] =
     useState("");
-
-  const [selectedStudents, setSelectedStudents] =
-    useState([]);
-
-  const [contacts, setContacts] =
-    useState([]);
-
-  const [contactsLoading, setContactsLoading] =
-    useState(false);
 
   const [contactsError, setContactsError] =
     useState("");
 
   const [invitingStudents, setInvitingStudents] =
     useState(false);
+
+  const [inviteTargetPhone, setInviteTargetPhone] =
+    useState("");
 
   // ==========================================
   // INVITE LINK
@@ -90,6 +99,66 @@ function StudentMode({
 
   const [inviteLoading, setInviteLoading] =
     useState(false);
+
+  // ==========================================
+  // NOTES STATE
+  // ==========================================
+
+  const [notes, setNotes] =
+    useState([]);
+
+  const [notesLoading, setNotesLoading] =
+    useState(false);
+
+  const [notesError, setNotesError] =
+    useState("");
+
+  // ==========================================
+  // NOTE EDITOR
+  // ==========================================
+
+  const [showNoteEditor, setShowNoteEditor] =
+    useState(false);
+
+  const [editingNote, setEditingNote] =
+    useState(null);
+
+  const [noteTitle, setNoteTitle] =
+    useState("");
+
+  const [noteContent, setNoteContent] =
+    useState("");
+
+  const [noteSubject, setNoteSubject] =
+    useState("");
+
+  const [noteColor, setNoteColor] =
+    useState("purple");
+
+  const [notePinned, setNotePinned] =
+    useState(false);
+
+  const [savingNote, setSavingNote] =
+    useState(false);
+
+  const [noteEditorError, setNoteEditorError] =
+    useState("");
+
+  // ==========================================
+  // QUIZ STATE
+  // ==========================================
+
+  const [quizFile, setQuizFile] =
+    useState(null);
+
+  const [quizLoading, setQuizLoading] =
+    useState(false);
+
+  const [quizError, setQuizError] =
+    useState("");
+
+  const [quizResult, setQuizResult] =
+    useState(null);
 
   // ==========================================
   // STUDENT MODE SECTIONS
@@ -124,19 +193,7 @@ function StudentMode({
   ];
 
   // ==========================================
-  // GET CURRENT USER ID
-  // ==========================================
-
-  const currentUserId =
-    user?._id ||
-    user?.id ||
-    user?.userId ||
-    user?.user?._id ||
-    user?.user?.id ||
-    "";
-
-  // ==========================================
-  // NORMALIZE USER ID
+  // GET USER ID
   // ==========================================
 
   const getUserId = (item) => {
@@ -157,53 +214,19 @@ function StudentMode({
   // ==========================================
   // NORMALIZE ROOM
   // ==========================================
-  //
-  // IMPORTANT:
-  //
-  // Backend formatRoom() returns:
-  //
-  // members: NUMBER
-  //
-  // memberList: ARRAY
-  //
-  // Therefore we must not assume that
-  // room.members is always an array.
-  // ==========================================
 
   const normalizeRoom = (room) => {
     if (!room) {
       return null;
     }
 
-    // ----------------------------------------
-    // BACKEND MEMBER LIST
-    // ----------------------------------------
-
-    const backendMemberList =
-      Array.isArray(room.memberList)
-        ? room.memberList
-        : [];
-
-    // ----------------------------------------
-    // SUPPORT ARRAY MEMBER RESPONSES TOO
-    // ----------------------------------------
-
     const membersArray =
       Array.isArray(room.members)
         ? room.members
         : [];
 
-    // ----------------------------------------
-    // BUILD MEMBER LIST
-    // ----------------------------------------
-
-    const sourceMembers =
-      backendMemberList.length > 0
-        ? backendMemberList
-        : membersArray;
-
     const memberList =
-      sourceMembers
+      membersArray
         .map((member) => {
           const memberUser =
             member?.user || member;
@@ -224,29 +247,12 @@ function StudentMode({
             Boolean(member.id)
         );
 
-    // ----------------------------------------
-    // REAL SERVER MEMBER COUNT
-    // ----------------------------------------
-
-    let memberCount = 0;
-
-    if (
-      typeof room.members ===
-      "number"
-    ) {
-      memberCount =
-        room.members;
-    } else if (
-      Number.isFinite(
-        Number(room.memberCount)
-      )
-    ) {
-      memberCount =
-        Number(room.memberCount);
-    } else {
-      memberCount =
-        memberList.length;
-    }
+    const memberCount =
+      typeof room.members === "number"
+        ? room.members
+        : typeof room.memberCount === "number"
+        ? room.memberCount
+        : memberList.length;
 
     return {
       ...room,
@@ -272,11 +278,6 @@ function StudentMode({
         room.activity ||
         "Room created",
 
-      // ======================================
-      // IMPORTANT:
-      // THIS IS ALWAYS THE SERVER COUNT
-      // ======================================
-
       members:
         memberCount,
 
@@ -294,6 +295,12 @@ function StudentMode({
 
       isActive:
         room.isActive !== false,
+
+      createdAt:
+        room.createdAt,
+
+      updatedAt:
+        room.updatedAt,
     };
   };
 
@@ -359,11 +366,6 @@ function StudentMode({
           .map(normalizeRoom)
           .filter(Boolean);
 
-      console.log(
-        "ZenvaZapp student rooms loaded:",
-        normalizedRooms
-      );
-
       setRooms(
         normalizedRooms
       );
@@ -383,26 +385,32 @@ function StudentMode({
   };
 
   // ==========================================
-  // LOAD ROOMS WHEN STUDENT MODE OPENS
+  // LOAD USER NOTES
   // ==========================================
 
-  useEffect(() => {
-    loadRooms();
-  }, [currentUserId]);
+  const loadNotes = async () => {
+    if (!currentUserId) {
+      setNotes([]);
 
-  // ==========================================
-  // LOAD REGISTERED USERS
-  // ==========================================
+      setNotesLoading(false);
 
-  const loadContacts = async () => {
-    setContactsLoading(true);
+      setNotesError(
+        "Your user ID is not available. Please log in again."
+      );
 
-    setContactsError("");
+      return;
+    }
+
+    setNotesLoading(true);
+
+    setNotesError("");
 
     try {
       const response =
         await fetch(
-          `${API_URL}/api/users`
+          `${API_URL}/api/student-notes/user/${encodeURIComponent(
+            currentUserId
+          )}`
         );
 
       let data = null;
@@ -417,57 +425,53 @@ function StudentMode({
       if (!response.ok) {
         throw new Error(
           data?.message ||
-            `Unable to load users. Server returned ${response.status}.`
+            `Unable to load notes. Server returned ${response.status}.`
         );
       }
 
       if (!data?.success) {
         throw new Error(
           data?.message ||
-            "Unable to load registered users."
+            "Unable to load notes."
         );
       }
 
-      const registeredUsers =
-        Array.isArray(
-          data.users
-        )
-          ? data.users
+      const serverNotes =
+        Array.isArray(data.notes)
+          ? data.notes
           : [];
 
-      const filteredUsers =
-        registeredUsers.filter(
-          (account) => {
-            const accountId =
-              getUserId(account);
-
-            return (
-              accountId &&
-              String(accountId) !==
-                String(
-                  currentUserId
-                )
-            );
-          }
-        );
-
-      setContacts(
-        filteredUsers
-      );
+      setNotes(serverNotes);
     } catch (error) {
       console.error(
-        "Load student contacts error:",
+        "Load student notes error:",
         error
       );
 
-      setContactsError(
+      setNotesError(
         error.message ||
-          "Unable to load registered users."
+          "Unable to load notes."
       );
     } finally {
-      setContactsLoading(false);
+      setNotesLoading(false);
     }
   };
+
+  // ==========================================
+  // LOAD ROOMS WHEN STUDENT MODE OPENS
+  // ==========================================
+
+  useEffect(() => {
+    loadRooms();
+  }, [currentUserId]);
+
+  // ==========================================
+  // LOAD NOTES WHEN STUDENT MODE OPENS
+  // ==========================================
+
+  useEffect(() => {
+    loadNotes();
+  }, [currentUserId]);
 
   // ==========================================
   // CREATE ROOM
@@ -581,9 +585,7 @@ function StudentMode({
 
       setCreateRoomError("");
 
-      setShowCreateRoom(
-        false
-      );
+      setShowCreateRoom(false);
     } catch (error) {
       console.error(
         "Create student room error:",
@@ -603,135 +605,118 @@ function StudentMode({
   // OPEN ADD STUDENTS
   // ==========================================
 
-  const openInviteStudents =
-    async (room) => {
-      const normalizedRoom =
-        normalizeRoom(room);
-
-      setSelectedRoom(
-        normalizedRoom
-      );
-
-      setSelectedStudents([]);
-
-      setContactSearch("");
-
-      setContactsError("");
-
-      setShowInviteStudents(
-        true
-      );
-
-      if (
-        contacts.length === 0
-      ) {
-        await loadContacts();
-      }
-    };
-
-  // ==========================================
-  // SELECT / UNSELECT STUDENT
-  // ==========================================
-
-  const toggleStudent = (
-    student
+  const openInviteStudents = (
+    room
   ) => {
-    const studentId =
-      getUserId(student);
+    const normalizedRoom =
+      normalizeRoom(room);
 
-    if (!studentId) {
-      return;
-    }
+    setSelectedRoom(
+      normalizedRoom
+    );
 
-    // ----------------------------------------
-    // CURRENT USER
-    // ----------------------------------------
+    setPhoneNumber("");
 
-    if (
-      String(studentId) ===
-      String(currentUserId)
-    ) {
-      return;
-    }
+    setInviteTargetPhone("");
 
-    // ----------------------------------------
-    // ALREADY MEMBER
-    // ----------------------------------------
+    setContactsError("");
 
-    const isAlreadyMember =
-      selectedRoom?.memberList?.some(
-        (member) =>
-          String(
-            member.id
-          ) ===
-          String(
-            studentId
-          )
-      );
-
-    if (isAlreadyMember) {
-      return;
-    }
-
-    setSelectedStudents(
-      (previousStudents) => {
-        const alreadySelected =
-          previousStudents.some(
-            (item) =>
-              String(
-                getUserId(
-                  item
-                )
-              ) ===
-              String(
-                studentId
-              )
-          );
-
-        if (
-          alreadySelected
-        ) {
-          return previousStudents.filter(
-            (item) =>
-              String(
-                getUserId(
-                  item
-                )
-              ) !==
-              String(
-                studentId
-              )
-          );
-        }
-
-        return [
-          ...previousStudents,
-          student,
-        ];
-      }
+    setShowInviteStudents(
+      true
     );
   };
 
   // ==========================================
-  // INVITE SELECTED STUDENTS
+  // PHONE KEYPAD
   // ==========================================
 
-  const inviteStudents =
-    async () => {
+  const handlePhoneKey = (
+    value
+  ) => {
+    if (invitingStudents) {
+      return;
+    }
+
+    if (
+      value === "backspace"
+    ) {
+      setPhoneNumber(
+        (previous) =>
+          previous.slice(0, -1)
+      );
+
+      return;
+    }
+
+    if (
+      value === "clear"
+    ) {
+      setPhoneNumber("");
+
+      setContactsError("");
+
+      return;
+    }
+
+    if (
+      value === "+"
+    ) {
       if (
-        !selectedRoom
+        phoneNumber.length === 0
       ) {
-        return;
+        setPhoneNumber("+");
       }
 
-      if (
-        selectedStudents.length ===
-        0
-      ) {
-        setContactsError(
-          "Select at least one student."
-        );
+      return;
+    }
 
+    const isNumber =
+      /^[0-9]$/.test(
+        value
+      );
+
+    if (!isNumber) {
+      return;
+    }
+
+    if (
+      phoneNumber.replace(
+        /\D/g,
+        ""
+      ).length >= 15
+    ) {
+      return;
+    }
+
+    setPhoneNumber(
+      (previous) =>
+        `${previous}${value}`
+    );
+
+    setContactsError("");
+  };
+
+  // ==========================================
+  // PHONE FORMAT
+  // ==========================================
+
+  const getCleanPhoneNumber =
+    () => {
+      return phoneNumber
+        .trim()
+        .replace(
+          /\s+/g,
+          ""
+        );
+    };
+
+  // ==========================================
+  // ADD STUDENT BY PHONE
+  // ==========================================
+
+  const inviteStudentByPhone =
+    async () => {
+      if (!selectedRoom) {
         return;
       }
 
@@ -743,22 +728,28 @@ function StudentMode({
         return;
       }
 
-      const memberIds =
-        selectedStudents
-          .map(
-            (student) =>
-              getUserId(
-                student
-              )
-          )
-          .filter(Boolean);
+      const cleanedPhone =
+        getCleanPhoneNumber();
+
+      if (!cleanedPhone) {
+        setContactsError(
+          "Please enter a phone number."
+        );
+
+        return;
+      }
+
+      const digits =
+        cleanedPhone.replace(
+          /\D/g,
+          ""
+        );
 
       if (
-        memberIds.length ===
-        0
+        digits.length < 7
       ) {
         setContactsError(
-          "No valid students were selected."
+          "Please enter a valid phone number."
         );
 
         return;
@@ -771,33 +762,6 @@ function StudentMode({
       setContactsError("");
 
       try {
-        console.log(
-          "=========================================="
-        );
-
-        console.log(
-          "INVITING STUDENTS TO ROOM"
-        );
-
-        console.log(
-          "Room ID:",
-          selectedRoom.id
-        );
-
-        console.log(
-          "Owner ID:",
-          currentUserId
-        );
-
-        console.log(
-          "Member IDs:",
-          memberIds
-        );
-
-        console.log(
-          "=========================================="
-        );
-
         const response =
           await fetch(
             `${API_URL}/api/student-rooms/${encodeURIComponent(
@@ -815,7 +779,8 @@ function StudentMode({
                 userId:
                   currentUserId,
 
-                memberIds,
+                phone:
+                  cleanedPhone,
               }),
             }
           );
@@ -829,100 +794,100 @@ function StudentMode({
           data = null;
         }
 
-        console.log(
-          "Add students response:",
-          data
-        );
-
         if (!response.ok) {
           throw new Error(
             data?.message ||
-              `Unable to add students. Server returned ${response.status}.`
+              `Unable to process phone number. Server returned ${response.status}.`
           );
         }
 
         if (!data?.success) {
           throw new Error(
             data?.message ||
-              "Unable to add students."
+              "Unable to process this phone number."
           );
         }
-
-        // --------------------------------------
-        // SERVER RETURNED ROOM
-        // --------------------------------------
-
-        const updatedRoom =
-          normalizeRoom(
-            data.room
-          );
 
         if (
-          updatedRoom
+          data.contactMatched &&
+          data.room
         ) {
-          console.log(
-            "Updated room from add-members response:",
-            updatedRoom
+          const updatedRoom =
+            normalizeRoom(
+              data.room
+            );
+
+          if (updatedRoom) {
+            setRooms(
+              (previousRooms) =>
+                previousRooms.map(
+                  (room) =>
+                    String(
+                      room.id
+                    ) ===
+                    String(
+                      updatedRoom.id
+                    )
+                      ? updatedRoom
+                      : room
+                )
+            );
+
+            setSelectedRoom(
+              updatedRoom
+            );
+          }
+
+          await loadRooms();
+
+          setShowInviteStudents(
+            false
           );
 
-          setRooms(
-            (previousRooms) =>
-              previousRooms.map(
-                (room) =>
-                  String(
-                    room.id
-                  ) ===
-                  String(
-                    updatedRoom.id
-                  )
-                    ? updatedRoom
-                    : room
-              )
-          );
+          setPhoneNumber("");
 
-          setSelectedRoom(
-            updatedRoom
-          );
+          setInviteTargetPhone("");
+
+          setSelectedRoom(null);
+
+          setContactsError("");
+
+          return;
         }
 
-        // --------------------------------------
-        // IMPORTANT:
-        // GET THE ROOM LIST AGAIN FROM MONGODB
-        // --------------------------------------
+        if (
+          data.inviteRequired
+        ) {
+          setInviteTargetPhone(
+            cleanedPhone
+          );
 
-        await loadRooms();
+          setShowInviteStudents(
+            false
+          );
 
-        // --------------------------------------
-        // CLOSE MODAL ONLY AFTER SUCCESS
-        // --------------------------------------
+          setPhoneNumber("");
 
-        setShowInviteStudents(
-          false
+          await generateInviteLink(
+            selectedRoom
+          );
+
+          return;
+        }
+
+        throw new Error(
+          "The server could not determine how to process this phone number."
         );
-
-        setSelectedStudents(
-          []
-        );
-
-        setSelectedRoom(
-          null
-        );
-
-        setContactSearch("");
-
-        setContactsError("");
       } catch (error) {
         console.error(
-          "Invite students error:",
+          "Add student by phone error:",
           error
         );
 
         setContactsError(
           error.message ||
-            "Unable to add students."
+            "Unable to process this phone number."
         );
-
-        return;
       } finally {
         setInvitingStudents(
           false
@@ -931,108 +896,23 @@ function StudentMode({
     };
 
   // ==========================================
-  // FILTER CONTACTS
-  // ==========================================
-
-  const filteredContacts =
-    useMemo(() => {
-      const search =
-        contactSearch
-          .trim()
-          .toLowerCase();
-
-      if (!search) {
-        return contacts;
-      }
-
-      return contacts.filter(
-        (contact) =>
-          contact.fullName
-            ?.toLowerCase()
-            .includes(
-              search
-            ) ||
-          contact.username
-            ?.toLowerCase()
-            .includes(
-              search
-            ) ||
-          contact.displayName
-            ?.toLowerCase()
-            .includes(
-              search
-            )
-      );
-    }, [
-      contacts,
-      contactSearch,
-    ]);
-
-  // ==========================================
-  // CHECK ROOM MEMBER
-  // ==========================================
-
-  const isStudentRoomMember = (
-    room,
-    student
-  ) => {
-    const studentId =
-      getUserId(student);
-
-    if (!studentId) {
-      return false;
-    }
-
-    return Boolean(
-      room?.memberList?.some(
-        (member) =>
-          String(
-            member.id
-          ) ===
-          String(
-            studentId
-          )
-      )
-    );
-  };
-
-  // ==========================================
-  // CHECK SELECTED
-  // ==========================================
-
-  const isStudentSelected = (
-    student
-  ) => {
-    const studentId =
-      getUserId(student);
-
-    if (!studentId) {
-      return false;
-    }
-
-    return selectedStudents.some(
-      (item) =>
-        String(
-          getUserId(item)
-        ) ===
-        String(
-          studentId
-        )
-    );
-  };
-
-  // ==========================================
   // GENERATE REAL INVITE LINK
   // ==========================================
 
   const generateInviteLink =
-    async (room) => {
+    async (
+      room
+    ) => {
       if (!currentUserId) {
         return;
       }
 
       const normalizedRoom =
         normalizeRoom(room);
+
+      if (!normalizedRoom) {
+        return;
+      }
 
       setSelectedRoom(
         normalizedRoom
@@ -1090,10 +970,6 @@ function StudentMode({
           );
         }
 
-        // --------------------------------------
-        // REAL JOIN URL
-        // --------------------------------------
-
         const link =
           `${window.location.origin}/join/${inviteCode}`;
 
@@ -1101,9 +977,18 @@ function StudentMode({
           link
         );
 
-        // --------------------------------------
-        // UPDATE LOCAL ROOM
-        // --------------------------------------
+        const updatedRoom =
+          normalizeRoom({
+            ...normalizedRoom,
+
+            inviteCode,
+
+            inviteEnabled:
+              data.inviteEnabled !==
+              undefined
+                ? data.inviteEnabled
+                : normalizedRoom.inviteEnabled,
+          });
 
         setRooms(
           (previousRooms) =>
@@ -1115,33 +1000,13 @@ function StudentMode({
                 String(
                   normalizedRoom.id
                 )
-                  ? normalizeRoom({
-                      ...item,
-
-                      inviteCode,
-
-                      inviteEnabled:
-                        data.inviteEnabled !==
-                        undefined
-                          ? data.inviteEnabled
-                          : item.inviteEnabled,
-                    })
+                  ? updatedRoom
                   : item
             )
         );
 
         setSelectedRoom(
-          normalizeRoom({
-            ...normalizedRoom,
-
-            inviteCode,
-
-            inviteEnabled:
-              data.inviteEnabled !==
-              undefined
-                ? data.inviteEnabled
-                : normalizedRoom.inviteEnabled,
-          })
+          updatedRoom
         );
       } catch (error) {
         console.error(
@@ -1244,7 +1109,7 @@ function StudentMode({
     };
 
   // ==========================================
-  // CLOSE INVITE STUDENTS
+  // CLOSE ADD STUDENTS
   // ==========================================
 
   const closeInviteStudents =
@@ -1259,17 +1124,556 @@ function StudentMode({
         false
       );
 
-      setSelectedStudents(
-        []
-      );
+      setPhoneNumber("");
+
+      setInviteTargetPhone("");
 
       setSelectedRoom(
         null
       );
 
-      setContactSearch("");
-
       setContactsError("");
+    };
+
+  // ==========================================
+  // OPEN NEW NOTE
+  // ==========================================
+
+  const openNewNote = () => {
+    setEditingNote(null);
+
+    setNoteTitle("");
+
+    setNoteContent("");
+
+    setNoteSubject("");
+
+    setNoteColor("purple");
+
+    setNotePinned(false);
+
+    setNoteEditorError("");
+
+    setShowNoteEditor(true);
+  };
+
+  // ==========================================
+  // OPEN EDIT NOTE
+  // ==========================================
+
+  const openEditNote = (
+    note
+  ) => {
+    if (!note) {
+      return;
+    }
+
+    setEditingNote(note);
+
+    setNoteTitle(
+      note.title || ""
+    );
+
+    setNoteContent(
+      note.content || ""
+    );
+
+    setNoteSubject(
+      note.subject || ""
+    );
+
+    setNoteColor(
+      note.color || "purple"
+    );
+
+    setNotePinned(
+      Boolean(note.pinned)
+    );
+
+    setNoteEditorError("");
+
+    setShowNoteEditor(true);
+  };
+
+  // ==========================================
+  // CLOSE NOTE EDITOR
+  // ==========================================
+
+  const closeNoteEditor = () => {
+    if (savingNote) {
+      return;
+    }
+
+    setShowNoteEditor(false);
+
+    setEditingNote(null);
+
+    setNoteTitle("");
+
+    setNoteContent("");
+
+    setNoteSubject("");
+
+    setNoteColor("purple");
+
+    setNotePinned(false);
+
+    setNoteEditorError("");
+  };
+
+  // ==========================================
+  // SAVE NOTE
+  // ==========================================
+
+  const saveNote = async () => {
+    if (!currentUserId) {
+      setNoteEditorError(
+        "Your user ID is not available. Please log in again."
+      );
+
+      return;
+    }
+
+    const trimmedTitle =
+      noteTitle.trim();
+
+    const trimmedContent =
+      noteContent.trim();
+
+    const trimmedSubject =
+      noteSubject.trim();
+
+    if (!trimmedTitle) {
+      setNoteEditorError(
+        "Note title is required."
+      );
+
+      return;
+    }
+
+    if (
+      trimmedTitle.length >
+      200
+    ) {
+      setNoteEditorError(
+        "Note title cannot exceed 200 characters."
+      );
+
+      return;
+    }
+
+    if (
+      trimmedContent.length >
+      50000
+    ) {
+      setNoteEditorError(
+        "Note content cannot exceed 50,000 characters."
+      );
+
+      return;
+    }
+
+    setSavingNote(true);
+
+    setNoteEditorError("");
+
+    try {
+      const isEditing =
+        Boolean(
+          editingNote?._id ||
+          editingNote?.id
+        );
+
+      const noteId =
+        editingNote?._id ||
+        editingNote?.id ||
+        "";
+
+      const endpoint =
+        isEditing
+          ? `${API_URL}/api/student-notes/${encodeURIComponent(
+              noteId
+            )}`
+          : `${API_URL}/api/student-notes`;
+
+      const method =
+        isEditing
+          ? "PATCH"
+          : "POST";
+
+      const response =
+        await fetch(
+          endpoint,
+          {
+            method,
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              userId:
+                currentUserId,
+
+              title:
+                trimmedTitle,
+
+              content:
+                trimmedContent,
+
+              subject:
+                trimmedSubject,
+
+              color:
+                noteColor ||
+                "purple",
+
+              pinned:
+                notePinned,
+            }),
+          }
+        );
+
+      let data = null;
+
+      try {
+        data =
+          await response.json();
+      } catch (error) {
+        data = null;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            `Unable to save note. Server returned ${response.status}.`
+        );
+      }
+
+      if (!data?.success) {
+        throw new Error(
+          data?.message ||
+            "Unable to save note."
+        );
+      }
+
+      if (data.note) {
+        setNotes(
+          (previousNotes) => {
+            const withoutDuplicate =
+              previousNotes.filter(
+                (item) =>
+                  String(
+                    item._id ||
+                    item.id
+                  ) !==
+                  String(
+                    data.note._id ||
+                    data.note.id
+                  )
+              );
+
+            return [
+              data.note,
+              ...withoutDuplicate,
+            ].sort(
+              (a, b) => {
+                if (
+                  Boolean(a.pinned) !==
+                  Boolean(b.pinned)
+                ) {
+                  return a.pinned
+                    ? -1
+                    : 1;
+                }
+
+                const aDate =
+                  new Date(
+                    a.updatedAt ||
+                      a.createdAt ||
+                      0
+                  ).getTime();
+
+                const bDate =
+                  new Date(
+                    b.updatedAt ||
+                      b.createdAt ||
+                      0
+                  ).getTime();
+
+                return (
+                  bDate - aDate
+                );
+              }
+            );
+          }
+        );
+      }
+
+      await loadNotes();
+
+      closeNoteEditor();
+    } catch (error) {
+      console.error(
+        "Save student note error:",
+        error
+      );
+
+      setNoteEditorError(
+        error.message ||
+          "Unable to save note."
+      );
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  // ==========================================
+  // DELETE NOTE
+  // ==========================================
+
+  const deleteNote = async (
+    note
+  ) => {
+    if (!note) {
+      return;
+    }
+
+    if (!currentUserId) {
+      setNotesError(
+        "Your user ID is not available. Please log in again."
+      );
+
+      return;
+    }
+
+    const noteId =
+      note._id ||
+      note.id ||
+      "";
+
+    if (!noteId) {
+      setNotesError(
+        "This note does not have a valid ID."
+      );
+
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        `Delete "${note.title || "this note"}"? This cannot be undone.`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setNotesError("");
+
+      const response =
+        await fetch(
+          `${API_URL}/api/student-notes/${encodeURIComponent(
+            noteId
+          )}`,
+          {
+            method: "DELETE",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              userId:
+                currentUserId,
+            }),
+          }
+        );
+
+      let data = null;
+
+      try {
+        data =
+          await response.json();
+      } catch (error) {
+        data = null;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            `Unable to delete note. Server returned ${response.status}.`
+        );
+      }
+
+      if (!data?.success) {
+        throw new Error(
+          data?.message ||
+            "Unable to delete note."
+        );
+      }
+
+      setNotes(
+        (previousNotes) =>
+          previousNotes.filter(
+            (item) =>
+              String(
+                item._id ||
+                item.id
+              ) !==
+              String(noteId)
+          )
+      );
+
+      await loadNotes();
+    } catch (error) {
+      console.error(
+        "Delete student note error:",
+        error
+      );
+
+      setNotesError(
+        error.message ||
+          "Unable to delete note."
+      );
+    }
+  };
+
+  // ==========================================
+  // QUIZ FILE SELECT
+  // ==========================================
+
+  const handleQuizFileChange =
+    (event) => {
+      const file =
+        event.target.files?.[0];
+
+      if (!file) {
+        return;
+      }
+
+      setQuizFile(file);
+
+      setQuizError("");
+
+      setQuizResult(null);
+    };
+
+  // ==========================================
+  // QUIZ GENERATOR
+  // ==========================================
+
+  const generateQuiz =
+    async () => {
+      if (!quizFile) {
+        setQuizError(
+          "Please upload a study document first."
+        );
+
+        return;
+      }
+
+      setQuizLoading(true);
+
+      setQuizError("");
+
+      setQuizResult(null);
+
+      try {
+        setQuizResult({
+          status:
+            "ready",
+
+          fileName:
+            quizFile.name,
+
+          message:
+            "Your study document is ready for the Zenva AI quiz generator.",
+        });
+      } catch (error) {
+        console.error(
+          "Quiz generation error:",
+          error
+        );
+
+        setQuizError(
+          error.message ||
+            "Unable to generate quiz."
+        );
+      } finally {
+        setQuizLoading(false);
+      }
+    };
+
+  // ==========================================
+  // ROOM MEMBER CHECK
+  // ==========================================
+
+  const getRoomMemberCount =
+    (room) => {
+      const normalizedRoom =
+        normalizeRoom(room);
+
+      return (
+        normalizedRoom?.memberCount ||
+        0
+      );
+    };
+
+  // ==========================================
+  // FORMAT NOTE DATE
+  // ==========================================
+
+  const formatNoteDate = (
+    date
+  ) => {
+    if (!date) {
+      return "";
+    }
+
+    const parsedDate =
+      new Date(date);
+
+    if (
+      Number.isNaN(
+        parsedDate.getTime()
+      )
+    ) {
+      return "";
+    }
+
+    return parsedDate.toLocaleDateString(
+      undefined,
+      {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }
+    );
+  };
+
+  // ==========================================
+  // NOTE COLOR CLASS
+  // ==========================================
+
+  const getNoteColorClass =
+    (color) => {
+      const allowedColors = [
+        "purple",
+        "pink",
+        "blue",
+        "green",
+        "orange",
+      ];
+
+      return allowedColors.includes(
+        color
+      )
+        ? color
+        : "purple";
     };
 
   // ==========================================
@@ -1287,7 +1691,9 @@ function StudentMode({
 
         <button
           className="student-back-button"
-          onClick={onBack}
+          onClick={
+            onBack
+          }
           type="button"
         >
           ←
@@ -1310,6 +1716,7 @@ function StudentMode({
         </div>
 
       </header>
+
 
       {/* =====================================
           HERO
@@ -1336,6 +1743,7 @@ function StudentMode({
 
       </section>
 
+
       {/* =====================================
           AI QUICK TOOLS
       ===================================== */}
@@ -1361,7 +1769,7 @@ function StudentMode({
             </strong>
 
             <small>
-              Ask questions and learn faster
+              Ask questions and understand lessons
             </small>
 
           </span>
@@ -1371,6 +1779,38 @@ function StudentMode({
           </b>
 
         </button>
+
+
+        <button
+          className="student-ai-card"
+          type="button"
+          onClick={() =>
+            setActiveSection("quiz")
+          }
+        >
+
+          <span className="student-ai-card-icon">
+            🧠
+          </span>
+
+          <span>
+
+            <strong>
+              Quiz Generator
+            </strong>
+
+            <small>
+              Turn documents into practice quizzes
+            </small>
+
+          </span>
+
+          <b>
+            →
+          </b>
+
+        </button>
+
 
         <button
           className="student-ai-card"
@@ -1404,6 +1844,7 @@ function StudentMode({
 
       </section>
 
+
       {/* =====================================
           SECTION NAVIGATION
       ===================================== */}
@@ -1412,8 +1853,11 @@ function StudentMode({
 
         {sections.map(
           (section) => (
+
             <button
-              key={section.id}
+              key={
+                section.id
+              }
               type="button"
               className={
                 activeSection ===
@@ -1437,6 +1881,7 @@ function StudentMode({
               </small>
 
             </button>
+
           )
         )}
 
@@ -1462,7 +1907,30 @@ function StudentMode({
 
         </button>
 
+        <button
+          type="button"
+          className={
+            activeSection === "quiz"
+              ? "student-section-button active"
+              : "student-section-button"
+          }
+          onClick={() =>
+            setActiveSection("quiz")
+          }
+        >
+
+          <span>
+            🧠
+          </span>
+
+          <small>
+            Quiz
+          </small>
+
+        </button>
+
       </nav>
+
 
       {/* =====================================
           ROOMS
@@ -1481,7 +1949,8 @@ function StudentMode({
               </h2>
 
               <p>
-                Create rooms and collaborate with classmates.
+                Create rooms and collaborate
+                with classmates.
               </p>
 
             </div>
@@ -1491,7 +1960,9 @@ function StudentMode({
               className="create-room-button"
               onClick={() => {
                 setCreateRoomError("");
+
                 setRoomName("");
+
                 setShowCreateRoom(
                   true
                 );
@@ -1502,9 +1973,6 @@ function StudentMode({
 
           </div>
 
-          {/* =================================
-              LOADING
-          ================================= */}
 
           {roomsLoading && (
 
@@ -1526,168 +1994,176 @@ function StudentMode({
 
           )}
 
-          {/* =================================
-              ERROR
-          ================================= */}
 
           {!roomsLoading &&
             roomsError && (
 
-              <section className="student-empty-state">
+            <section className="student-empty-state">
 
-                <div>
-                  ⚠️
-                </div>
+              <div>
+                ⚠️
+              </div>
 
-                <h3>
-                  Unable to load rooms
-                </h3>
+              <h3>
+                Unable to load rooms
+              </h3>
 
-                <p>
-                  {roomsError}
-                </p>
+              <p>
+                {roomsError}
+              </p>
 
-                <button
-                  type="button"
-                  className="create-room-submit"
-                  onClick={
-                    loadRooms
-                  }
-                >
-                  Try Again
-                </button>
+              <button
+                type="button"
+                className="create-room-submit"
+                onClick={
+                  loadRooms
+                }
+              >
+                Try Again
+              </button>
 
-              </section>
+            </section>
 
-            )}
+          )}
 
-          {/* =================================
-              REAL MONGODB ROOMS
-          ================================= */}
 
           {!roomsLoading &&
             !roomsError &&
             rooms.length > 0 && (
 
-              <section className="student-rooms">
+            <section className="student-rooms">
 
-                {rooms.map(
-                  (room) => (
+              {rooms.map(
+                (room) => (
 
-                    <div
-                      key={room.id}
-                      className="student-room-card"
-                    >
+                  <article
+                    className="student-room-card"
+                    key={
+                      room.id
+                    }
+                  >
 
-                      <div className="room-avatar">
-                        {room.name
-                          ?.charAt(0)
-                          .toUpperCase()}
-                      </div>
+                    <div className="room-avatar">
 
-                      <div className="room-information">
-
-                        <h3>
-                          {room.name}
-                        </h3>
-
-                        <p>
-                          {room.subject}
-                        </p>
-
-                        <small>
-                          👥{" "}
-                          {room.memberCount}
-                          {" members"}
-                          {" · "}
-                          {room.activity ||
-                            "Room created"}
-                        </small>
-
-                      </div>
-
-                      <div className="room-actions">
-
-                        <button
-                          className="room-invite-button"
-                          type="button"
-                          onClick={() =>
-                            openInviteStudents(
-                              room
-                            )
-                          }
-                        >
-                          + Add
-                        </button>
-
-                        <button
-                          className="room-link-button"
-                          type="button"
-                          onClick={() =>
-                            generateInviteLink(
-                              room
-                            )
-                          }
-                          title="Invite by link"
-                        >
-                          🔗
-                        </button>
-
-                      </div>
+                      {room.name
+                        ?.charAt(0)
+                        ?.toUpperCase() ||
+                        "R"}
 
                     </div>
 
-                  )
-                )}
 
-              </section>
+                    <div className="room-information">
 
-            )}
+                      <h3>
+                        {room.name}
+                      </h3>
 
-          {/* =================================
-              EMPTY
-          ================================= */}
+                      <p>
+                        {room.subject}
+                      </p>
+
+                      <small>
+                        {getRoomMemberCount(
+                          room
+                        )}{" "}
+                        {getRoomMemberCount(
+                          room
+                        ) === 1
+                          ? "member"
+                          : "members"}
+                        {" • "}
+                        {room.activity ||
+                          "Room created"}
+                      </small>
+
+                    </div>
+
+
+                    <div className="room-actions">
+
+                      <button
+                        className="room-invite-button"
+                        type="button"
+                        onClick={() =>
+                          openInviteStudents(
+                            room
+                          )
+                        }
+                      >
+                        + Add
+                      </button>
+
+
+                      <button
+                        className="room-link-button"
+                        type="button"
+                        onClick={() =>
+                          generateInviteLink(
+                            room
+                          )
+                        }
+                        title="Invite by link"
+                        aria-label="Generate room invite link"
+                      >
+                        🔗
+                      </button>
+
+                    </div>
+
+                  </article>
+
+                )
+              )}
+
+            </section>
+
+          )}
+
 
           {!roomsLoading &&
             !roomsError &&
             rooms.length === 0 && (
 
-              <section className="student-empty-state">
+            <section className="student-empty-state">
 
-                <div>
-                  👥
-                </div>
+              <div>
+                👥
+              </div>
 
-                <h3>
-                  No student rooms yet
-                </h3>
+              <h3>
+                No student rooms yet
+              </h3>
 
-                <p>
-                  Create your first student room
-                  and invite your classmates.
-                </p>
+              <p>
+                Create your first student room
+                and invite your classmates.
+              </p>
 
-                <button
-                  type="button"
-                  className="create-room-submit"
-                  onClick={() => {
-                    setCreateRoomError("");
-                    setRoomName("");
-                    setShowCreateRoom(
-                      true
-                    );
-                  }}
-                >
-                  + Create Your First Room
-                </button>
+              <button
+                type="button"
+                className="create-room-submit"
+                onClick={() => {
+                  setCreateRoomError("");
 
-              </section>
+                  setRoomName("");
 
-            )}
+                  setShowCreateRoom(
+                    true
+                  );
+                }}
+              >
+                + Create Your First Room
+              </button>
+
+            </section>
+
+          )}
 
         </main>
 
       )}
+
 
       {/* =====================================
           NOTES
@@ -1714,10 +2190,8 @@ function StudentMode({
             <button
               type="button"
               className="create-room-button"
-              onClick={() =>
-                console.log(
-                  "Create note"
-                )
+              onClick={
+                openNewNote
               }
             >
               + Note
@@ -1725,26 +2199,444 @@ function StudentMode({
 
           </div>
 
-          <section className="student-empty-state">
 
-            <div>
-              📝
-            </div>
+          {/* NOTES LOADING */}
 
-            <h3>
-              Your notes will appear here
-            </h3>
+          {notesLoading && (
 
-            <p>
-              Create notes for your courses,
-              lessons and study sessions.
-            </p>
+            <section className="student-empty-state">
 
-          </section>
+              <div>
+                ⏳
+              </div>
+
+              <h3>
+                Loading notes...
+              </h3>
+
+              <p>
+                Loading your saved notes from ZenvaZapp.
+              </p>
+
+            </section>
+
+          )}
+
+
+          {/* NOTES ERROR */}
+
+          {!notesLoading &&
+            notesError && (
+
+            <section className="student-empty-state">
+
+              <div>
+                ⚠️
+              </div>
+
+              <h3>
+                Unable to load notes
+              </h3>
+
+              <p>
+                {notesError}
+              </p>
+
+              <button
+                type="button"
+                className="create-room-submit"
+                onClick={
+                  loadNotes
+                }
+              >
+                Try Again
+              </button>
+
+            </section>
+
+          )}
+
+
+          {/* NOTES LIST */}
+
+          {!notesLoading &&
+            !notesError &&
+            notes.length > 0 && (
+
+            <section
+              className="student-notes-list"
+              style={{
+                display:
+                  "grid",
+
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(240px, 1fr))",
+
+                gap:
+                  "12px",
+
+                width:
+                  "100%",
+              }}
+            >
+
+              {notes.map(
+                (note) => {
+
+                  const noteId =
+                    note._id ||
+                    note.id;
+
+                  const noteColor =
+                    getNoteColorClass(
+                      note.color
+                    );
+
+                  return (
+
+                    <article
+                      key={
+                        noteId
+                      }
+                      className={`student-note-card student-note-${noteColor}`}
+                      style={{
+                        padding:
+                          "15px",
+
+                        border:
+                          "1px solid rgba(233,166,208,0.14)",
+
+                        borderRadius:
+                          "14px",
+
+                        background:
+                          "#160b12",
+
+                        minWidth:
+                          "0",
+                      }}
+                    >
+
+                      {/* NOTE HEADER */}
+
+                      <div
+                        style={{
+                          display:
+                            "flex",
+
+                          alignItems:
+                            "flex-start",
+
+                          justifyContent:
+                            "space-between",
+
+                          gap:
+                            "10px",
+                        }}
+                      >
+
+                        <div
+                          style={{
+                            minWidth:
+                              "0",
+                            flex:
+                              "1",
+                          }}
+                        >
+
+                          <h3
+                            style={{
+                              margin:
+                                "0",
+
+                              color:
+                                "#fff7fc",
+
+                              fontSize:
+                                "14px",
+
+                              lineHeight:
+                                "1.3",
+
+                              wordBreak:
+                                "break-word",
+                            }}
+                          >
+
+                            {note.title}
+
+                          </h3>
+
+                          {note.subject && (
+
+                            <small
+                              style={{
+                                display:
+                                  "block",
+
+                                marginTop:
+                                  "4px",
+
+                                color:
+                                  "#e9a6d0",
+
+                                fontSize:
+                                  "8px",
+
+                                fontWeight:
+                                  700,
+                              }}
+                            >
+                              {note.subject}
+                            </small>
+
+                          )}
+
+                        </div>
+
+
+                        {note.pinned && (
+
+                          <span
+                            title="Pinned note"
+                            style={{
+                              flexShrink:
+                                0,
+
+                              fontSize:
+                                "13px",
+                            }}
+                          >
+                            📌
+                          </span>
+
+                        )}
+
+                      </div>
+
+
+                      {/* NOTE CONTENT */}
+
+                      <p
+                        style={{
+                          margin:
+                            "12px 0",
+
+                          color:
+                            "#c7aebe",
+
+                          fontSize:
+                            "9px",
+
+                          lineHeight:
+                            "1.6",
+
+                          whiteSpace:
+                            "pre-wrap",
+
+                          wordBreak:
+                            "break-word",
+
+                          display:
+                            "-webkit-box",
+
+                          WebkitLineClamp:
+                            6,
+
+                          WebkitBoxOrient:
+                            "vertical",
+
+                          overflow:
+                            "hidden",
+                        }}
+                      >
+
+                        {note.content ||
+                          "No note content."}
+
+                      </p>
+
+
+                      {/* NOTE FOOTER */}
+
+                      <div
+                        style={{
+                          display:
+                            "flex",
+
+                          alignItems:
+                            "center",
+
+                          justifyContent:
+                            "space-between",
+
+                          gap:
+                            "8px",
+
+                          marginTop:
+                            "10px",
+
+                          paddingTop:
+                            "10px",
+
+                          borderTop:
+                            "1px solid rgba(233,166,208,0.08)",
+                        }}
+                      >
+
+                        <small
+                          style={{
+                            color:
+                              "#806878",
+
+                            fontSize:
+                              "7px",
+                          }}
+                        >
+                          {formatNoteDate(
+                            note.updatedAt ||
+                              note.createdAt
+                          )}
+                        </small>
+
+
+                        <div
+                          style={{
+                            display:
+                              "flex",
+
+                            gap:
+                              "6px",
+                          }}
+                        >
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openEditNote(
+                                note
+                              )
+                            }
+                            style={{
+                              border:
+                                "1px solid rgba(233,166,208,0.15)",
+
+                              borderRadius:
+                                "8px",
+
+                              background:
+                                "rgba(218,112,170,0.06)",
+
+                              color:
+                                "#e9a6d0",
+
+                              padding:
+                                "6px 8px",
+
+                              fontSize:
+                                "8px",
+
+                              fontWeight:
+                                700,
+
+                              cursor:
+                                "pointer",
+                            }}
+                          >
+                            📝 Edit
+                          </button>
+
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              deleteNote(
+                                note
+                              )
+                            }
+                            style={{
+                              border:
+                                "1px solid rgba(255,107,157,0.14)",
+
+                              borderRadius:
+                                "8px",
+
+                              background:
+                                "rgba(255,107,157,0.05)",
+
+                              color:
+                                "#ff8db2",
+
+                              padding:
+                                "6px 8px",
+
+                              fontSize:
+                                "8px",
+
+                              fontWeight:
+                                700,
+
+                              cursor:
+                                "pointer",
+                            }}
+                          >
+                            🗑️ Delete
+                          </button>
+
+                        </div>
+
+                      </div>
+
+                    </article>
+
+                  );
+                }
+              )}
+
+            </section>
+
+          )}
+
+
+          {/* EMPTY NOTES */}
+
+          {!notesLoading &&
+            !notesError &&
+            notes.length === 0 && (
+
+            <section className="student-empty-state">
+
+              <div>
+                📝
+              </div>
+
+              <h3>
+                Your notes will appear here
+              </h3>
+
+              <p>
+                Create notes for your courses,
+                lessons and study sessions.
+              </p>
+
+              <button
+                type="button"
+                className="create-room-submit"
+                onClick={
+                  openNewNote
+                }
+              >
+                + Create Your First Note
+              </button>
+
+            </section>
+
+          )}
 
         </main>
 
       )}
+
 
       {/* =====================================
           FILES
@@ -1759,57 +2651,42 @@ function StudentMode({
             <div>
 
               <h2>
-                Smart Files
+                Study Files
               </h2>
 
               <p>
-                Keep your study documents organized.
+                Share PDFs, documents, slides
+                and other learning materials.
               </p>
 
             </div>
 
           </div>
 
-          <div className="student-file-actions">
+
+          <section className="student-file-actions">
+
+            <button
+              type="button"
+            >
+              📄
+              <span>
+                Upload Document
+              </span>
+            </button>
+
 
             <button
               type="button"
               onClick={() =>
-                console.log(
-                  "Upload study file"
-                )
+                setActiveSection("quiz")
               }
             >
-              📤 Upload File
+              🧠
+              <span>
+                Create Quiz
+              </span>
             </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                console.log(
-                  "Open file library"
-                )
-              }
-            >
-              📁 File Library
-            </button>
-
-          </div>
-
-          <section className="student-empty-state">
-
-            <div>
-              📁
-            </div>
-
-            <h3>
-              No study files yet
-            </h3>
-
-            <p>
-              Upload notes, PDFs and other study
-              materials here.
-            </p>
 
           </section>
 
@@ -1817,12 +2694,12 @@ function StudentMode({
 
       )}
 
+
       {/* =====================================
           ASSIGNMENTS
       ===================================== */}
 
-      {activeSection ===
-        "assignments" && (
+      {activeSection === "assignments" && (
 
         <main className="student-content">
 
@@ -1835,12 +2712,20 @@ function StudentMode({
               </h2>
 
               <p>
-                Manage your assignments and study tasks.
+                Keep track of your academic work.
               </p>
 
             </div>
 
+            <button
+              type="button"
+              className="create-room-button"
+            >
+              + Assignment
+            </button>
+
           </div>
+
 
           <section className="student-empty-state">
 
@@ -1853,8 +2738,8 @@ function StudentMode({
             </h3>
 
             <p>
-              Your assignments and study tasks
-              will appear here.
+              Assignments from your student
+              rooms will appear here.
             </p>
 
           </section>
@@ -1863,12 +2748,12 @@ function StudentMode({
 
       )}
 
+
       {/* =====================================
           CALENDAR
       ===================================== */}
 
-      {activeSection ===
-        "calendar" && (
+      {activeSection === "calendar" && (
 
         <main className="student-content">
 
@@ -1881,12 +2766,21 @@ function StudentMode({
               </h2>
 
               <p>
-                Organize your classes and study schedule.
+                Organize classes, exams
+                and deadlines.
               </p>
 
             </div>
 
+            <button
+              type="button"
+              className="create-room-button"
+            >
+              + Event
+            </button>
+
           </div>
+
 
           <section className="student-empty-state">
 
@@ -1895,12 +2789,12 @@ function StudentMode({
             </div>
 
             <h3>
-              Your study calendar
+              Your calendar is empty
             </h3>
 
             <p>
-              Classes, deadlines and study sessions
-              will appear here.
+              Add classes, assignments,
+              exams and study sessions.
             </p>
 
           </section>
@@ -1909,8 +2803,9 @@ function StudentMode({
 
       )}
 
+
       {/* =====================================
-          AI
+          AI TUTOR
       ===================================== */}
 
       {activeSection === "ai" && (
@@ -1928,17 +2823,13 @@ function StudentMode({
             </h2>
 
             <p>
-              Ask questions, explain difficult
-              concepts and get help with your studies.
+              Ask questions about your lessons,
+              get explanations, practice problems
+              and study guidance.
             </p>
 
             <button
               type="button"
-              onClick={() =>
-                alert(
-                  "Zenva AI Tutor will be connected to the AI system."
-                )
-              }
             >
               Start AI Tutor
             </button>
@@ -1948,6 +2839,664 @@ function StudentMode({
         </main>
 
       )}
+
+
+      {/* =====================================
+          QUIZ GENERATOR
+      ===================================== */}
+
+      {activeSection === "quiz" && (
+
+        <main className="student-content">
+
+          <section className="student-ai-panel">
+
+            <div className="student-ai-panel-icon">
+              🧠
+            </div>
+
+            <h2>
+              Quiz Generator
+            </h2>
+
+            <p>
+              Upload a study document and Zenva
+              AI will generate questions to test
+              your understanding.
+            </p>
+
+
+            <div
+              className="quiz-actions"
+            >
+
+              <label
+                htmlFor="student-quiz-file"
+                className="quiz-actions button"
+                style={{
+                  display:
+                    "inline-flex",
+
+                  alignItems:
+                    "center",
+
+                  justifyContent:
+                    "center",
+
+                  minHeight:
+                    "38px",
+
+                  padding:
+                    "0 13px",
+
+                  borderRadius:
+                    "9px",
+
+                  background:
+                    "rgba(218,112,170,0.08)",
+
+                  border:
+                    "1px solid rgba(233,166,208,0.18)",
+
+                  color:
+                    "#e9a6d0",
+
+                  fontSize:
+                    "8px",
+
+                  fontWeight:
+                    800,
+
+                  cursor:
+                    "pointer",
+                }}
+              >
+                📄 Upload Document
+              </label>
+
+              <input
+                id="student-quiz-file"
+                type="file"
+                accept=".pdf,.doc,.docx,.txt,.ppt,.pptx"
+                onChange={
+                  handleQuizFileChange
+                }
+                style={{
+                  display:
+                    "none",
+                }}
+              />
+
+
+              <button
+                type="button"
+                onClick={
+                  generateQuiz
+                }
+                disabled={
+                  quizLoading ||
+                  !quizFile
+                }
+              >
+                {quizLoading
+                  ? "Preparing..."
+                  : "Generate Quiz"}
+              </button>
+
+            </div>
+
+
+            {quizFile && (
+
+              <p
+                style={{
+                  marginTop:
+                    "12px",
+
+                  color:
+                    "#e9a6d0",
+
+                  fontSize:
+                    "8px",
+                }}
+              >
+                Selected:{" "}
+                {quizFile.name}
+              </p>
+
+            )}
+
+
+            {quizError && (
+
+              <p
+                style={{
+                  marginTop:
+                    "10px",
+
+                  color:
+                    "#ff6b9d",
+
+                  fontSize:
+                    "8px",
+                }}
+              >
+                {quizError}
+              </p>
+
+            )}
+
+
+            {quizResult && (
+
+              <div
+                style={{
+                  marginTop:
+                    "15px",
+
+                  padding:
+                    "13px",
+
+                  border:
+                    "1px solid rgba(218,112,170,0.12)",
+
+                  borderRadius:
+                    "12px",
+
+                  background:
+                    "#160b12",
+                }}
+              >
+
+                <strong
+                  style={{
+                    display:
+                      "block",
+
+                    color:
+                      "#fff7fc",
+
+                    fontSize:
+                      "10px",
+
+                    marginBottom:
+                      "5px",
+                  }}
+                >
+                  Document ready
+                </strong>
+
+                <span
+                  style={{
+                    color:
+                      "#a98a9e",
+
+                    fontSize:
+                      "8px",
+
+                    lineHeight:
+                      1.5,
+                  }}
+                >
+                  {quizResult.message}
+                </span>
+
+              </div>
+
+            )}
+
+          </section>
+
+        </main>
+
+      )}
+
+
+      {/* =====================================
+          CREATE / EDIT NOTE MODAL
+      ===================================== */}
+
+      {showNoteEditor && (
+
+        <div
+          className="student-modal-overlay"
+          onClick={() => {
+            if (!savingNote) {
+              closeNoteEditor();
+            }
+          }}
+        >
+
+          <div
+            className="student-modal"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+            style={{
+              maxWidth:
+                "520px",
+            }}
+          >
+
+            <button
+              className="student-modal-close"
+              type="button"
+              onClick={
+                closeNoteEditor
+              }
+              disabled={
+                savingNote
+              }
+            >
+              ×
+            </button>
+
+
+            <div className="student-modal-icon">
+              📝
+            </div>
+
+
+            <h2>
+              {editingNote
+                ? "Edit Note"
+                : "Create Note"}
+            </h2>
+
+
+            <p>
+              {editingNote
+                ? "Update your study note and save your changes."
+                : "Create a study note and save it to your ZenvaZapp account."}
+            </p>
+
+
+            {/* TITLE */}
+
+            <input
+              value={
+                noteTitle
+              }
+              onChange={(event) => {
+                setNoteTitle(
+                  event.target.value
+                );
+
+                if (
+                  noteEditorError
+                ) {
+                  setNoteEditorError(
+                    ""
+                  );
+                }
+              }}
+              placeholder="Note title"
+              disabled={
+                savingNote
+              }
+              maxLength={200}
+              autoFocus
+            />
+
+
+            {/* SUBJECT */}
+
+            <input
+              value={
+                noteSubject
+              }
+              onChange={(event) => {
+                setNoteSubject(
+                  event.target.value
+                );
+              }}
+              placeholder="Subject (optional)"
+              disabled={
+                savingNote
+              }
+              maxLength={100}
+              style={{
+                marginTop:
+                  "9px",
+              }}
+            />
+
+
+            {/* CONTENT */}
+
+            <textarea
+              value={
+                noteContent
+              }
+              onChange={(event) => {
+                setNoteContent(
+                  event.target.value
+                );
+
+                if (
+                  noteEditorError
+                ) {
+                  setNoteEditorError(
+                    ""
+                  );
+                }
+              }}
+              placeholder="Write your note here..."
+              disabled={
+                savingNote
+              }
+              maxLength={50000}
+              rows={9}
+              style={{
+                width:
+                  "100%",
+
+                boxSizing:
+                  "border-box",
+
+                marginTop:
+                  "9px",
+
+                padding:
+                  "11px",
+
+                border:
+                  "1px solid rgba(233,166,208,0.18)",
+
+                borderRadius:
+                  "10px",
+
+                background:
+                  "#160b12",
+
+                color:
+                  "#fff7fc",
+
+                fontSize:
+                  "10px",
+
+                lineHeight:
+                  "1.5",
+
+                resize:
+                  "vertical",
+
+                outline:
+                  "none",
+
+                fontFamily:
+                  "inherit",
+              }}
+            />
+
+
+            {/* COLOR */}
+
+            <div
+              style={{
+                marginTop:
+                  "12px",
+              }}
+            >
+
+              <label
+                style={{
+                  display:
+                    "block",
+
+                  color:
+                    "#a98a9e",
+
+                  fontSize:
+                    "8px",
+
+                  marginBottom:
+                    "6px",
+
+                  fontWeight:
+                    700,
+                }}
+              >
+                Note color
+              </label>
+
+              <select
+                value={
+                  noteColor
+                }
+                onChange={(event) =>
+                  setNoteColor(
+                    event.target.value
+                  )
+                }
+                disabled={
+                  savingNote
+                }
+                style={{
+                  width:
+                    "100%",
+
+                  boxSizing:
+                    "border-box",
+
+                  minHeight:
+                    "38px",
+
+                  padding:
+                    "0 10px",
+
+                  border:
+                    "1px solid rgba(233,166,208,0.18)",
+
+                  borderRadius:
+                    "9px",
+
+                  background:
+                    "#160b12",
+
+                  color:
+                    "#fff7fc",
+
+                  fontSize:
+                    "9px",
+
+                  outline:
+                    "none",
+                }}
+              >
+
+                <option value="purple">
+                  Purple
+                </option>
+
+                <option value="pink">
+                  Pink
+                </option>
+
+                <option value="blue">
+                  Blue
+                </option>
+
+                <option value="green">
+                  Green
+                </option>
+
+                <option value="orange">
+                  Orange
+                </option>
+
+              </select>
+
+            </div>
+
+
+            {/* PIN */}
+
+            <label
+              style={{
+                display:
+                  "flex",
+
+                alignItems:
+                  "center",
+
+                gap:
+                  "8px",
+
+                marginTop:
+                  "12px",
+
+                color:
+                  "#c7aebe",
+
+                fontSize:
+                  "8px",
+
+                cursor:
+                  savingNote
+                    ? "not-allowed"
+                    : "pointer",
+              }}
+            >
+
+              <input
+                type="checkbox"
+                checked={
+                  notePinned
+                }
+                onChange={(event) =>
+                  setNotePinned(
+                    event.target.checked
+                  )
+                }
+                disabled={
+                  savingNote
+                }
+              />
+
+              Pin this note
+            </label>
+
+
+            {/* ERROR */}
+
+            {noteEditorError && (
+
+              <p
+                style={{
+                  color:
+                    "#ff6b9d",
+
+                  fontSize:
+                    "8px",
+
+                  lineHeight:
+                    "1.5",
+
+                  marginTop:
+                    "10px",
+
+                  marginBottom:
+                    "0",
+                }}
+              >
+                {noteEditorError}
+              </p>
+
+            )}
+
+
+            {/* ACTIONS */}
+
+            <div
+              style={{
+                display:
+                  "flex",
+
+                gap:
+                  "8px",
+
+                marginTop:
+                  "14px",
+              }}
+            >
+
+              <button
+                type="button"
+                onClick={
+                  closeNoteEditor
+                }
+                disabled={
+                  savingNote
+                }
+                style={{
+                  flex:
+                    "1",
+
+                  minHeight:
+                    "40px",
+
+                  border:
+                    "1px solid rgba(233,166,208,0.15)",
+
+                  borderRadius:
+                    "10px",
+
+                  background:
+                    "rgba(218,112,170,0.05)",
+
+                  color:
+                    "#c7aebe",
+
+                  fontSize:
+                    "8px",
+
+                  fontWeight:
+                    700,
+
+                  cursor:
+                    savingNote
+                      ? "not-allowed"
+                      : "pointer",
+                }}
+              >
+                Cancel
+              </button>
+
+
+              <button
+                type="button"
+                className="create-room-submit"
+                onClick={
+                  saveNote
+                }
+                disabled={
+                  savingNote ||
+                  !noteTitle.trim()
+                }
+                style={{
+                  flex:
+                    "1",
+
+                  marginTop:
+                    "0",
+                }}
+              >
+                {savingNote
+                  ? "Saving..."
+                  : editingNote
+                  ? "Save Changes"
+                  : "Create Note"}
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
 
       {/* =====================================
           CREATE ROOM MODAL
@@ -1974,54 +3523,76 @@ function StudentMode({
           >
 
             <button
-              type="button"
               className="student-modal-close"
+              type="button"
               onClick={() => {
                 if (
-                  !creatingRoom
+                  creatingRoom
                 ) {
-                  setShowCreateRoom(
-                    false
-                  );
+                  return;
                 }
+
+                setShowCreateRoom(
+                  false
+                );
+
+                setCreateRoomError("");
               }}
             >
               ×
             </button>
 
+
             <div className="student-modal-icon">
               👥
             </div>
+
 
             <h2>
               Create Student Room
             </h2>
 
+
             <p>
-              Create a private study room for your classmates.
+              Create a private study room
+              for your classmates.
             </p>
 
+
             <input
-              type="text"
-              value={roomName}
-              onChange={(event) =>
+              value={
+                roomName
+              }
+              onChange={(event) => {
                 setRoomName(
                   event.target.value
-                )
-              }
+                );
+
+                if (
+                  createRoomError
+                ) {
+                  setCreateRoomError(
+                    ""
+                  );
+                }
+              }}
               placeholder="Room name"
               disabled={
                 creatingRoom
               }
+              maxLength={100}
               autoFocus
             />
+
 
             {createRoomError && (
 
               <p
                 style={{
-                  color: "#ff8fbf",
-                  marginBottom:
+                  color:
+                    "#ff6b9d",
+
+                  marginTop:
                     "10px",
                 }}
               >
@@ -2030,6 +3601,7 @@ function StudentMode({
 
             )}
 
+
             <button
               type="button"
               className="create-room-submit"
@@ -2037,7 +3609,8 @@ function StudentMode({
                 createRoom
               }
               disabled={
-                creatingRoom
+                creatingRoom ||
+                !roomName.trim()
               }
             >
               {creatingRoom
@@ -2051,8 +3624,9 @@ function StudentMode({
 
       )}
 
+
       {/* =====================================
-          INVITE STUDENTS MODAL
+          ADD STUDENT PHONE KEYPAD
       ===================================== */}
 
       {showInviteStudents &&
@@ -2085,63 +3659,96 @@ function StudentMode({
               ×
             </button>
 
+
             <div className="student-modal-icon">
-              👥
+              📱
             </div>
+
 
             <h2>
-              Add Students
+              Add Student
             </h2>
 
+
             <p>
-              Add students to{" "}
-              <strong>
-                {selectedRoom.name}
-              </strong>
+              Enter the student's phone
+              number for:
             </p>
 
-            <span className="selected-room-name">
-              Current members:{" "}
-              {selectedRoom.memberCount}
-            </span>
 
-            <div className="student-contact-search">
+            <strong className="selected-room-name">
+              {selectedRoom.name}
+            </strong>
 
-              <span>
-                🔍
-              </span>
 
-              <input
-                type="text"
-                value={contactSearch}
-                onChange={(event) =>
-                  setContactSearch(
-                    event.target.value
-                  )
-                }
-                placeholder="Search registered users..."
-                disabled={
-                  invitingStudents
-                }
-              />
+            <div
+              style={{
+                width:
+                  "100%",
 
+                boxSizing:
+                  "border-box",
+
+                minHeight:
+                  "48px",
+
+                display:
+                  "flex",
+
+                alignItems:
+                  "center",
+
+                justifyContent:
+                  "center",
+
+                margin:
+                  "10px 0 14px",
+
+                padding:
+                  "0 12px",
+
+                border:
+                  "1px solid rgba(233,166,208,0.18)",
+
+                borderRadius:
+                  "12px",
+
+                background:
+                  "#160b12",
+
+                color:
+                  "#fff7fc",
+
+                fontSize:
+                  "16px",
+
+                fontWeight:
+                  700,
+
+                letterSpacing:
+                  "1px",
+              }}
+            >
+              {phoneNumber ||
+                "Enter phone number"}
             </div>
 
-            {contactsLoading && (
-
-              <p>
-                Loading registered users...
-              </p>
-
-            )}
 
             {contactsError && (
 
               <p
                 style={{
-                  color: "#ff8fbf",
-                  marginBottom:
-                    "10px",
+                  color:
+                    "#ff6b9d",
+
+                  fontSize:
+                    "8px",
+
+                  lineHeight:
+                    1.5,
+
+                  margin:
+                    "0 0 10px",
                 }}
               >
                 {contactsError}
@@ -2149,194 +3756,192 @@ function StudentMode({
 
             )}
 
-            {!contactsLoading && (
-              <div className="student-contact-list">
 
-                {filteredContacts.length ===
-                  0 ? (
+            <div
+              style={{
+                display:
+                  "grid",
 
-                  <div className="student-empty-state">
+                gridTemplateColumns:
+                  "repeat(3, 1fr)",
 
-                    <div>
-                      👤
-                    </div>
+                gap:
+                  "8px",
 
-                    <h3>
-                      No students found
-                    </h3>
+                marginTop:
+                  "10px",
+              }}
+            >
 
-                    <p>
-                      There are no available registered users to add.
-                    </p>
+              {[
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "+",
+                "0",
+                "backspace",
+              ].map(
+                (key) => (
 
-                  </div>
-
-                ) : (
-
-                  filteredContacts.map(
-                    (contact) => {
-
-                      const contactId =
-                        getUserId(
-                          contact
-                        );
-
-                      const alreadyMember =
-                        isStudentRoomMember(
-                          selectedRoom,
-                          contact
-                        );
-
-                      const selected =
-                        isStudentSelected(
-                          contact
-                        );
-
-                      return (
-                        <button
-                          key={
-                            contactId
-                          }
-                          type="button"
-                          className={
-                            selected
-                              ? "student-contact selected"
-                              : "student-contact"
-                          }
-                          onClick={() =>
-                            toggleStudent(
-                              contact
-                            )
-                          }
-                          disabled={
-                            alreadyMember ||
-                            invitingStudents
-                          }
-                        >
-
-                          <div className="student-contact-avatar">
-
-                            {contact.profilePhoto ? (
-
-                              <img
-                                src={
-                                  contact.profilePhoto
-                                }
-                                alt={
-                                  contact.displayName ||
-                                  contact.fullName ||
-                                  contact.username ||
-                                  "Student"
-                                }
-                                style={{
-                                  width:
-                                    "100%",
-                                  height:
-                                    "100%",
-                                  borderRadius:
-                                    "50%",
-                                  objectFit:
-                                    "cover",
-                                }}
-                              />
-
-                            ) : (
-
-                              (
-                                contact.displayName ||
-                                contact.fullName ||
-                                contact.username ||
-                                "S"
-                              )
-                                .charAt(0)
-                                .toUpperCase()
-
-                            )}
-
-                          </div>
-
-                          <div className="student-contact-info">
-
-                            <strong>
-                              {contact.displayName ||
-                                contact.fullName ||
-                                contact.username ||
-                                "Student"}
-                            </strong>
-
-                            <small>
-                              {contact.username
-                                ? `@${String(
-                                    contact.username
-                                  ).replace(
-                                    /^@/,
-                                    ""
-                                  )}`
-                                : "Registered ZenvaZapp user"}
-                            </small>
-
-                          </div>
-
-                          <div
-                            className={
-                              selected
-                                ? "student-check selected"
-                                : "student-check"
-                            }
-                          >
-                            {alreadyMember
-                              ? "✓"
-                              : selected
-                              ? "✓"
-                              : ""}
-                          </div>
-
-                        </button>
-                      );
+                  <button
+                    key={key}
+                    type="button"
+                    disabled={
+                      invitingStudents
                     }
-                  )
+                    onClick={() =>
+                      handlePhoneKey(
+                        key
+                      )
+                    }
+                    style={{
+                      minHeight:
+                        "48px",
 
-                )}
+                      border:
+                        "1px solid rgba(218,112,170,0.12)",
 
-              </div>
-            )}
+                      borderRadius:
+                        "12px",
 
-            <p className="selected-students-count">
-              {selectedStudents.length}{" "}
-              {selectedStudents.length ===
-              1
-                ? "student"
-                : "students"}{" "}
-              selected
-            </p>
+                      background:
+                        "#241020",
+
+                      color:
+                        "#fff7fc",
+
+                      fontSize:
+                        key ===
+                        "backspace"
+                          ? "15px"
+                          : "14px",
+
+                      fontWeight:
+                        700,
+
+                      cursor:
+                        invitingStudents
+                          ? "not-allowed"
+                          : "pointer",
+                    }}
+                  >
+                    {key ===
+                    "backspace"
+                      ? "⌫"
+                      : key}
+                  </button>
+
+                )
+              )}
+
+            </div>
+
+
+            <button
+              type="button"
+              disabled={
+                invitingStudents ||
+                !phoneNumber
+              }
+              onClick={() =>
+                handlePhoneKey(
+                  "clear"
+                )
+              }
+              style={{
+                width:
+                  "100%",
+
+                minHeight:
+                  "40px",
+
+                marginTop:
+                  "8px",
+
+                border:
+                  "1px solid rgba(233,166,208,0.15)",
+
+                borderRadius:
+                  "10px",
+
+                background:
+                  "rgba(218,112,170,0.06)",
+
+                color:
+                  "#e9a6d0",
+
+                fontSize:
+                  "8px",
+
+                fontWeight:
+                  700,
+
+                cursor:
+                  "pointer",
+              }}
+            >
+              Clear
+            </button>
+
 
             <button
               type="button"
               className="create-room-submit"
               onClick={
-                inviteStudents
+                inviteStudentByPhone
               }
               disabled={
-                selectedStudents.length ===
-                  0 ||
-                invitingStudents
+                invitingStudents ||
+                !phoneNumber
               }
+              style={{
+                marginTop:
+                  "10px",
+              }}
             >
               {invitingStudents
-                ? "Inviting..."
-                : `Invite ${selectedStudents.length} ${
-                    selectedStudents.length ===
-                    1
-                      ? "Student"
-                      : "Students"
-                  }`}
+                ? "Checking number..."
+                : "Add Student"}
             </button>
+
+
+            <p
+              style={{
+                marginTop:
+                  "12px",
+
+                color:
+                  "#8f7185",
+
+                fontSize:
+                  "7px",
+
+                lineHeight:
+                  1.5,
+
+                textAlign:
+                  "center",
+              }}
+            >
+              If the number belongs to a
+              ZenvaZapp user, they will be
+              added directly. Otherwise,
+              ZenvaZapp will create a room
+              invitation link for you to share.
+            </p>
 
           </div>
 
         </div>
 
       )}
+
 
       {/* =====================================
           INVITE LINK MODAL
@@ -2347,11 +3952,23 @@ function StudentMode({
 
         <div
           className="student-modal-overlay"
-          onClick={() =>
-            setShowInviteLink(
-              false
-            )
-          }
+          onClick={() => {
+            if (
+              !inviteLoading
+            ) {
+              setShowInviteLink(
+                false
+              );
+
+              setInviteLink("");
+
+              setInviteTargetPhone("");
+
+              setSelectedRoom(
+                null
+              );
+            }
+          }}
         >
 
           <div
@@ -2364,27 +3981,68 @@ function StudentMode({
             <button
               type="button"
               className="student-modal-close"
-              onClick={() =>
+              onClick={() => {
+                if (
+                  inviteLoading
+                ) {
+                  return;
+                }
+
                 setShowInviteLink(
                   false
-                )
-              }
+                );
+
+                setInviteLink("");
+
+                setInviteTargetPhone("");
+
+                setSelectedRoom(
+                  null
+                );
+              }}
             >
               ×
             </button>
+
 
             <div className="student-modal-icon">
               🔗
             </div>
 
+
             <h2>
-              Room Invite Link
+              Invite Classmate
             </h2>
 
+
             <p>
-              Share this real ZenvaZapp
-              invitation with your classmates.
+              This phone number is not currently
+              available as a ZenvaZapp member.
             </p>
+
+
+            <strong className="selected-room-name">
+              {selectedRoom.name}
+            </strong>
+
+
+            {inviteTargetPhone && (
+
+              <p
+                style={{
+                  color:
+                    "#c99ab8",
+
+                  fontSize:
+                    "8px",
+                }}
+              >
+                Number:{" "}
+                {inviteTargetPhone}
+              </p>
+
+            )}
+
 
             <div className="invite-preview">
 
@@ -2395,49 +4053,51 @@ function StudentMode({
               <div>
 
                 <strong>
-                  {selectedRoom.name}
+                  Join {selectedRoom.name}
                 </strong>
 
                 <span>
-                  {selectedRoom.memberCount} members
+                  ZenvaZapp Student Room
                 </span>
 
               </div>
 
             </div>
 
-            {inviteLoading ? (
 
-              <p>
-                Loading real invite URL...
-              </p>
+            <div className="invite-link-box">
 
-            ) : inviteLink ? (
+              {inviteLoading ? (
 
-              <div className="invite-link-box">
+                <span>
+                  Generating secure invite...
+                </span>
+
+              ) : inviteLink ? (
 
                 <span>
                   {inviteLink}
                 </span>
 
-              </div>
+              ) : (
 
-            ) : (
+                <span>
+                  Invite link unavailable.
+                </span>
 
-              <p>
-                Invite link unavailable.
-              </p>
+              )}
 
-            )}
+            </div>
+
 
             <div className="invite-link-actions">
 
               <button
                 type="button"
+                className="invite-copy-button"
                 onClick={
                   copyInviteLink
                 }
-                className="invite-copy-button"
                 disabled={
                   !inviteLink ||
                   inviteLoading
@@ -2446,12 +4106,13 @@ function StudentMode({
                 📋 Copy Link
               </button>
 
+
               <button
                 type="button"
+                className="invite-share-button"
                 onClick={
                   shareInviteLink
                 }
-                className="invite-share-button"
                 disabled={
                   !inviteLink ||
                   inviteLoading
@@ -2462,9 +4123,10 @@ function StudentMode({
 
             </div>
 
+
             <p className="invite-link-note">
-              This invitation uses a real
-              MongoDB-backed room invite code.
+              Anyone who receives this link can
+              use it to join this student room.
             </p>
 
           </div>

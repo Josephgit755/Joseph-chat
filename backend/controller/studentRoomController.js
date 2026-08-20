@@ -2,6 +2,7 @@ const crypto = require("crypto");
 
 const StudentRoom = require("../models/StudentRoom");
 const User = require("../models/User");
+const Contact = require("../models/Contact");
 
 // ==========================================
 // HELPERS
@@ -426,20 +427,32 @@ const getRoom = async (
 };
 
 // ==========================================
-// ADD MEMBERS
+// ADD MEMBERS / ADD BY PHONE
 // ==========================================
 //
 // PATCH /api/student-rooms/:roomId/members
 //
-// Body:
-//
+// Existing:
 // {
 //   "userId": "OWNER_ID",
-//   "memberIds": [
-//      "USER_ID_1",
-//      "USER_ID_2"
-//   ]
+//   "memberIds": ["USER_ID"]
 // }
+//
+// New phone flow:
+// {
+//   "userId": "OWNER_ID",
+//   "phone": "+237XXXXXXXXX"
+// }
+//
+// PHONE RULE:
+//
+// 1. Find the ZenvaZapp user by phone.
+// 2. Check whether that user is actually
+//    in the owner's contacts.
+// 3. If yes -> add them to the room.
+// 4. If no -> DO NOT add them.
+//    Return inviteRequired=true so the
+//    frontend generates the room link.
 //
 // ==========================================
 
@@ -455,35 +468,21 @@ const addMembers = async (
     const {
       userId,
       memberIds,
+      phone,
     } = req.body;
 
     const normalizedUserId =
       normalizeUserId(userId);
 
     // --------------------------------------
-    // VALIDATION
+    // VALIDATE OWNER
     // --------------------------------------
 
-    if (
-      !normalizedUserId
-    ) {
+    if (!normalizedUserId) {
       return res.status(400).json({
         success: false,
         message:
           "User ID is required.",
-      });
-    }
-
-    if (
-      !Array.isArray(
-        memberIds
-      ) ||
-      memberIds.length === 0
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "At least one student must be selected.",
       });
     }
 
@@ -520,6 +519,270 @@ const addMembers = async (
       });
     }
 
+    // ======================================
+    // PHONE-BASED ADD FLOW
+    // ======================================
+
+    if (
+      phone !== undefined &&
+      phone !== null
+    ) {
+      const cleanedPhone =
+        String(phone)
+          .trim();
+
+      const phoneDigits =
+        cleanedPhone.replace(
+          /\D/g,
+          ""
+        );
+
+      if (!phoneDigits) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Please enter a valid phone number.",
+        });
+      }
+
+      // ------------------------------------
+      // BUILD POSSIBLE PHONE FORMATS
+      // ------------------------------------
+
+      const phoneCandidates =
+        [
+          cleanedPhone,
+          phoneDigits,
+          `+${phoneDigits}`,
+          `00${phoneDigits}`,
+        ].filter(
+          (value, index, array) =>
+            value &&
+            array.indexOf(value) ===
+              index
+        );
+
+      // ------------------------------------
+      // FIND REGISTERED USER
+      // ------------------------------------
+
+      const targetUser =
+        await User.findOne({
+          phone: {
+            $in:
+              phoneCandidates,
+          },
+        }).select(
+          "_id fullName username phone profilePhoto displayName"
+        );
+
+      // ------------------------------------
+      // NUMBER NOT REGISTERED
+      // ------------------------------------
+      //
+      // IMPORTANT:
+      // We do NOT add them to the room.
+      //
+      // The frontend will generate the
+      // room invite link.
+      // ------------------------------------
+
+      if (!targetUser) {
+        return res.status(200).json({
+          success: true,
+
+          contactMatched:
+            false,
+
+          inviteRequired:
+            true,
+
+          registeredUser:
+            false,
+
+          phone:
+            cleanedPhone,
+
+          message:
+            "This number is not a registered ZenvaZapp user and is not one of your contacts. Share the room invitation link with them.",
+        });
+      }
+
+      // ------------------------------------
+      // CHECK WHETHER TARGET IS IN OWNER'S
+      // CONTACTS
+      // ------------------------------------
+
+      const contact =
+        await Contact.findOne({
+          owner:
+            normalizedUserId,
+
+          contact:
+            targetUser._id,
+        });
+
+      // ------------------------------------
+      // REGISTERED BUT NOT MY CONTACT
+      // ------------------------------------
+      //
+      // DO NOT ADD THEM.
+      //
+      // They receive the room link instead.
+      // ------------------------------------
+
+      if (!contact) {
+        return res.status(200).json({
+          success: true,
+
+          contactMatched:
+            false,
+
+          inviteRequired:
+            true,
+
+          registeredUser:
+            true,
+
+          phone:
+            cleanedPhone,
+
+          message:
+            "This ZenvaZapp user is not in your contacts. Share the room invitation link with them instead.",
+        });
+      }
+
+      // ------------------------------------
+      // CHECK WHETHER ALREADY MEMBER
+      // ------------------------------------
+
+      const alreadyMember =
+        room.members.some(
+          (member) =>
+            member.user.toString() ===
+            targetUser._id.toString()
+        );
+
+      if (alreadyMember) {
+        const populatedRoom =
+          await StudentRoom.findById(
+            room._id
+          )
+            .populate(
+              "owner",
+              "_id fullName username profilePhoto displayName"
+            )
+            .populate(
+              "members.user",
+              "_id fullName username phone profilePhoto displayName"
+            );
+
+        return res.status(200).json({
+          success: true,
+
+          contactMatched:
+            true,
+
+          inviteRequired:
+            false,
+
+          alreadyMember:
+            true,
+
+          addedCount:
+            0,
+
+          message:
+            "This contact is already a member of the room.",
+
+          room:
+            formatRoom(
+              populatedRoom
+            ),
+        });
+      }
+
+      // ------------------------------------
+      // ADD CONTACT TO ROOM
+      // ------------------------------------
+
+      room.members.push({
+        user:
+          targetUser._id,
+
+        role:
+          "member",
+
+        joinedAt:
+          new Date(),
+      });
+
+      room.activity =
+        `${targetUser.fullName || targetUser.username || "A student"} was added to the room`;
+
+      await room.save();
+
+      // ------------------------------------
+      // POPULATE UPDATED ROOM
+      // ------------------------------------
+
+      const populatedRoom =
+        await StudentRoom.findById(
+          room._id
+        )
+          .populate(
+            "owner",
+            "_id fullName username profilePhoto displayName"
+          )
+          .populate(
+            "members.user",
+            "_id fullName username phone profilePhoto displayName"
+          );
+
+      return res.status(200).json({
+        success: true,
+
+        contactMatched:
+          true,
+
+        inviteRequired:
+          false,
+
+        alreadyMember:
+          false,
+
+        addedCount:
+          1,
+
+        message:
+          "Contact added to the student room successfully.",
+
+        room:
+          formatRoom(
+            populatedRoom
+          ),
+      });
+    }
+
+    // ======================================
+    // EXISTING MEMBER-ID FLOW
+    // ======================================
+    //
+    // Keep this so existing functionality
+    // does not break.
+    // ======================================
+
+    if (
+      !Array.isArray(memberIds) ||
+      memberIds.length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Provide a phone number or at least one student.",
+      });
+    }
+
     // --------------------------------------
     // CLEAN MEMBER IDS
     // --------------------------------------
@@ -547,7 +810,7 @@ const addMembers = async (
             uniqueMemberIds,
         },
       }).select(
-        "_id fullName username profilePhoto displayName"
+        "_id fullName username phone profilePhoto displayName"
       );
 
     if (
@@ -582,14 +845,12 @@ const addMembers = async (
       const id =
         user._id.toString();
 
-      // Already inside room
       if (
         existingMemberIds.has(id)
       ) {
         continue;
       }
 
-      // Owner is already a member
       if (
         id ===
         room.owner.toString()
@@ -644,11 +905,17 @@ const addMembers = async (
         )
         .populate(
           "members.user",
-          "_id fullName username profilePhoto displayName"
+          "_id fullName username phone profilePhoto displayName"
         );
 
     return res.status(200).json({
       success: true,
+
+      contactMatched:
+        true,
+
+      inviteRequired:
+        false,
 
       message:
         newMembers.length > 0
@@ -677,305 +944,6 @@ const addMembers = async (
       success: false,
       message:
         "Server error while adding students.",
-    });
-  }
-};
-
-// ==========================================
-// GET INVITE
-// ==========================================
-//
-// GET /api/student-rooms/:roomId/invite
-//
-// ==========================================
-
-const getInvite = async (
-  req,
-  res
-) => {
-  try {
-    const {
-      roomId,
-    } = req.params;
-
-    const {
-      userId,
-    } = req.query;
-
-    if (
-      !userId
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "User ID is required.",
-      });
-    }
-
-    const room =
-      await StudentRoom.findOne({
-        _id: roomId,
-        isActive: true,
-      });
-
-    if (!room) {
-      return res.status(404).json({
-        success: false,
-        message:
-          "Student room not found.",
-      });
-    }
-
-    // --------------------------------------
-    // ONLY OWNER CAN ACCESS INVITE
-    // --------------------------------------
-
-    if (
-      room.owner.toString() !==
-      userId.toString()
-    ) {
-      return res.status(403).json({
-        success: false,
-        message:
-          "Only the room owner can manage this invite.",
-      });
-    }
-
-    // --------------------------------------
-    // CREATE CODE IF MISSING
-    // --------------------------------------
-
-    if (
-      !room.inviteCode
-    ) {
-      room.inviteCode =
-        await generateInviteCode();
-
-      await room.save();
-    }
-
-    return res.status(200).json({
-      success: true,
-
-      inviteCode:
-        room.inviteCode,
-
-      inviteEnabled:
-        room.inviteEnabled,
-    });
-  } catch (error) {
-    console.error(
-      "Get student room invite error:",
-      error
-    );
-
-    return res.status(500).json({
-      success: false,
-      message:
-        "Server error while loading invite.",
-    });
-  }
-};
-
-// ==========================================
-// JOIN ROOM USING INVITE CODE
-// ==========================================
-//
-// POST /api/student-rooms/join
-//
-// Body:
-//
-// {
-//   "userId": "...",
-//   "inviteCode": "ABC123"
-// }
-//
-// ==========================================
-
-const joinRoom = async (
-  req,
-  res
-) => {
-  try {
-    const {
-      userId,
-      inviteCode,
-    } = req.body;
-
-    const normalizedUserId =
-      normalizeUserId(userId);
-
-    // --------------------------------------
-    // VALIDATION
-    // --------------------------------------
-
-    if (
-      !normalizedUserId
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "User ID is required.",
-      });
-    }
-
-    if (
-      !inviteCode ||
-      !inviteCode.trim()
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Invite code is required.",
-      });
-    }
-
-    // --------------------------------------
-    // VERIFY USER
-    // --------------------------------------
-
-    const user =
-      await User.findById(
-        normalizedUserId
-      );
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message:
-          "User not found.",
-      });
-    }
-
-    // --------------------------------------
-    // FIND ROOM
-    // --------------------------------------
-
-    const room =
-      await StudentRoom.findOne({
-        inviteCode:
-          inviteCode
-            .trim()
-            .toUpperCase(),
-
-        inviteEnabled:
-          true,
-
-        isActive:
-          true,
-      });
-
-    if (!room) {
-      return res.status(404).json({
-        success: false,
-        message:
-          "Invalid or expired invite code.",
-      });
-    }
-
-    // --------------------------------------
-    // CHECK EXISTING MEMBER
-    // --------------------------------------
-
-    const alreadyMember =
-      room.members.some(
-        (member) =>
-          member.user.toString() ===
-          normalizedUserId.toString()
-      );
-
-    if (
-      alreadyMember
-    ) {
-      const populatedRoom =
-        await StudentRoom.findById(
-          room._id
-        )
-          .populate(
-            "owner",
-            "_id fullName username profilePhoto displayName"
-          )
-          .populate(
-            "members.user",
-            "_id fullName username profilePhoto displayName"
-          );
-
-      return res.status(200).json({
-        success: true,
-
-        message:
-          "You are already a member of this room.",
-
-        alreadyMember: true,
-
-        room:
-          formatRoom(
-            populatedRoom
-          ),
-      });
-    }
-
-    // --------------------------------------
-    // ADD MEMBER
-    // --------------------------------------
-
-    room.members.push({
-      user:
-        user._id,
-
-      role:
-        "member",
-
-      joinedAt:
-        new Date(),
-    });
-
-    room.activity =
-      `${user.fullName} joined the room`;
-
-    await room.save();
-
-    // --------------------------------------
-    // POPULATE
-    // --------------------------------------
-
-    const populatedRoom =
-      await StudentRoom.findById(
-        room._id
-      )
-        .populate(
-          "owner",
-          "_id fullName username profilePhoto displayName"
-        )
-        .populate(
-          "members.user",
-          "_id fullName username profilePhoto displayName"
-        );
-
-    return res.status(200).json({
-      success: true,
-
-      message:
-        "You joined the student room successfully.",
-
-      alreadyMember:
-        false,
-
-      room:
-        formatRoom(
-          populatedRoom
-        ),
-    });
-  } catch (error) {
-    console.error(
-      "Join student room error:",
-      error
-    );
-
-    return res.status(500).json({
-      success: false,
-      message:
-        "Server error while joining student room.",
     });
   }
 };
@@ -1113,7 +1081,5 @@ module.exports = {
   getUserRooms,
   getRoom,
   addMembers,
-  getInvite,
-  joinRoom,
   leaveRoom,
 };

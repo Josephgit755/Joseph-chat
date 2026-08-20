@@ -1,14 +1,24 @@
 const express = require("express");
+
 const cors = require("cors");
+
 const dotenv = require("dotenv");
 
 const authRoutes = require("./routes/authRoutes");
+
 const profileRoutes = require("./routes/profileRoutes");
+
 const messageRoutes = require("./routes/messageRoutes");
+
 const userRoutes = require("./routes/userRoutes");
+
 const contactRoutes = require("./routes/contactRoutes");
+
 const translatorRoutes = require("./routes/translatorRoutes");
+
 const studentRoomRoutes = require("./routes/studentRoomRoutes");
+
+const studentNoteRoutes = require("./routes/studentNoteRoutes");
 
 dotenv.config();
 
@@ -126,6 +136,33 @@ app.use(
 app.use(
   "/api/student-rooms",
   studentRoomRoutes
+);
+
+// ==========================================
+// STUDENT NOTES ROUTES
+// ==========================================
+//
+// Student Mode notes.
+//
+// Available endpoints:
+//
+// GET
+// /api/student-notes/user/:userId
+//
+// POST
+// /api/student-notes
+//
+// PATCH
+// /api/student-notes/:noteId
+//
+// DELETE
+// /api/student-notes/:noteId
+//
+// ==========================================
+
+app.use(
+  "/api/student-notes",
+  studentNoteRoutes
 );
 
 // ==========================================
