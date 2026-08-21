@@ -764,35 +764,6 @@ function PrivateChat({
   // SAVE DISAPPEARING SETTING
   // =========================================================
 
-  const saveDisappearingSetting =
-    useCallback(
-      (duration) => {
-
-        if (
-          !disappearingStorageKey
-        ) {
-          return;
-        }
-
-        try {
-
-          localStorage.setItem(
-            disappearingStorageKey,
-            duration
-          );
-
-        } catch (error) {
-
-          console.warn(
-            "Unable to save disappearing setting:",
-            error
-          );
-        }
-      },
-      [
-        disappearingStorageKey,
-      ]
-    );
 
 
   // =========================================================
@@ -3105,42 +3076,6 @@ function PrivateChat({
   // =========================================================
   // AVATAR HELPERS
   // =========================================================
-
-  const getAvatarLetter =
-    useCallback(
-      (person) => {
-
-        const name =
-          person?.fullName ||
-          person?.displayName ||
-          person?.username ||
-          person?.name ||
-          "U";
-
-        return String(
-          name
-        )
-          .charAt(0)
-          .toUpperCase();
-      },
-      []
-    );
-
-
-  const getDisplayName =
-    useCallback(
-      (person) => {
-
-        return (
-          person?.fullName ||
-          person?.displayName ||
-          person?.username ||
-          person?.name ||
-          "ZenvaZapp User"
-        );
-      },
-      []
-    );
 
 
   // =========================================================

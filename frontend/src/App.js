@@ -286,7 +286,8 @@ function App() {
         // -----------------------------------------------
 
         case "chats":
-
+          // Intentional fall-through to chatlist.
+          // eslint-disable-next-line no-fallthrough
         case "chatlist":
 
           setCurrentScreen(

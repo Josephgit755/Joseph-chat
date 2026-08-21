@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useState,
 } from "react";
@@ -215,7 +216,7 @@ function StudentMode({
   // NORMALIZE ROOM
   // ==========================================
 
-  const normalizeRoom = (room) => {
+  const normalizeRoom = useCallback((room) => {
     if (!room) {
       return null;
     }
@@ -302,13 +303,13 @@ function StudentMode({
       updatedAt:
         room.updatedAt,
     };
-  };
+  }, []);
 
   // ==========================================
   // LOAD USER ROOMS
   // ==========================================
 
-  const loadRooms = async () => {
+  const loadRooms = useCallback(async () => {
     if (!currentUserId) {
       setRooms([]);
 
@@ -382,13 +383,13 @@ function StudentMode({
     } finally {
       setRoomsLoading(false);
     }
-  };
+  }, [API_URL, currentUserId, normalizeRoom]);
 
   // ==========================================
   // LOAD USER NOTES
   // ==========================================
 
-  const loadNotes = async () => {
+  const loadNotes = useCallback(async () => {
     if (!currentUserId) {
       setNotes([]);
 
@@ -455,7 +456,7 @@ function StudentMode({
     } finally {
       setNotesLoading(false);
     }
-  };
+  }, [API_URL, currentUserId]);
 
   // ==========================================
   // LOAD ROOMS WHEN STUDENT MODE OPENS
@@ -463,7 +464,7 @@ function StudentMode({
 
   useEffect(() => {
     loadRooms();
-  }, [currentUserId]);
+  }, [loadRooms]);
 
   // ==========================================
   // LOAD NOTES WHEN STUDENT MODE OPENS
@@ -471,7 +472,7 @@ function StudentMode({
 
   useEffect(() => {
     loadNotes();
-  }, [currentUserId]);
+  }, [loadNotes]);
 
   // ==========================================
   // CREATE ROOM

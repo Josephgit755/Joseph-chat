@@ -2958,83 +2958,210 @@ export function CallProvider({
     ) : null;
 
 
-  // =======================================================
-  // INCOMING CALL SCREEN
-  // =======================================================
+  // =========================================================
+  // PROFESSIONAL GLOBAL INCOMING CALL SCREEN
+  // =========================================================
+  //
+  // IMPORTANT:
+  //
+  // This UI is rendered by CallManager, not PrivateChat.
+  // It is therefore available regardless of which page
+  // the receiving user is currently viewing.
+  //
+  // The critical styles are intentionally applied inline
+  // so the incoming-call UI cannot disappear behind:
+  //
+  // - PrivateChat
+  // - Contacts
+  // - ChatList
+  // - Tools
+  // - navigation bars
+  // - page overlays
+  // =========================================================
 
   const incomingScreen =
     incomingCall ? (
-
       <div
         className="zenvazapp-incoming-call"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Incoming call"
+        style={{
+          position: "fixed",
+          inset: 0,
+          width: "100vw",
+          height: "100vh",
+          zIndex: 2147483647,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "24px",
+          boxSizing: "border-box",
+          background:
+            "rgba(5, 10, 20, 0.78)",
+          backdropFilter:
+            "blur(14px)",
+          WebkitBackdropFilter:
+            "blur(14px)",
+        }}
       >
-
         <div
           className="zenvazapp-incoming-call-card"
+          style={{
+            width: "min(420px, 100%)",
+            maxWidth: "420px",
+            boxSizing: "border-box",
+            padding: "36px 28px 30px",
+            borderRadius: "28px",
+            background:
+              "rgba(255, 255, 255, 0.98)",
+            boxShadow:
+              "0 30px 90px rgba(0, 0, 0, 0.35)",
+            textAlign: "center",
+            position: "relative",
+            overflow: "hidden",
+          }}
         >
+          {/* ==========================================
+              CALL INDICATOR
+              ========================================== */}
+
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: "5px",
+              background:
+                "linear-gradient(90deg, #5b21b6, #7c3aed, #8b5cf6)",
+            }}
+          />
+
+          {/* ==========================================
+              CALLER AVATAR
+              ========================================== */}
 
           <div
             className="zenvazapp-incoming-avatar"
+            style={{
+              width: "112px",
+              height: "112px",
+              margin: "0 auto 20px",
+              borderRadius: "50%",
+              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "42px",
+              fontWeight: "700",
+              background:
+                "linear-gradient(135deg, #7c3aed, #4f46e5)",
+              color: "#ffffff",
+              boxShadow:
+                "0 12px 35px rgba(79, 70, 229, 0.30)",
+            }}
           >
-
             {incomingCall.callerAvatar &&
             String(
               incomingCall.callerAvatar
-            ).startsWith(
-              "http"
-            ) ? (
-
+            ).startsWith("http") ? (
               <img
                 src={
                   incomingCall.callerAvatar
                 }
-
                 alt={
                   incomingCall.callerName ||
                   "Caller"
                 }
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  display: "block",
+                }}
               />
-
             ) : (
-
-              incomingCall.callerAvatar ||
               (
-                incomingCall.callerName ||
-                "Z"
+                incomingCall.callerAvatar ||
+                (
+                  incomingCall.callerName ||
+                  "Z"
+                )
+                  .charAt(0)
+                  .toUpperCase()
               )
-                .charAt(0)
-                .toUpperCase()
-
             )}
-
           </div>
 
+          {/* ==========================================
+              CALL TYPE
+              ========================================== */}
 
-          <p>
-
+          <p
+            style={{
+              margin: "0 0 8px",
+              fontSize: "14px",
+              fontWeight: "600",
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              color: "#7c3aed",
+            }}
+          >
             Incoming{" "}
-
             {incomingCall.callType ===
             "video"
               ? "video"
               : "voice"}{" "}
-
             call
-
           </p>
 
+          {/* ==========================================
+              CALLER NAME
+              ========================================== */}
 
-          <h2>
-
+          <h2
+            style={{
+              margin: "0",
+              fontSize: "28px",
+              lineHeight: "1.2",
+              fontWeight: "700",
+              color: "#111827",
+            }}
+          >
             {incomingCall.callerName ||
               "ZenvaZapp User"}
-
           </h2>
 
+          <p
+            style={{
+              margin:
+                "10px 0 28px",
+              fontSize: "14px",
+              color: "#6b7280",
+            }}
+          >
+            {incomingCall.callType ===
+            "video"
+              ? "Video call"
+              : "Voice call"}{" "}
+            is waiting for you
+          </p>
+
+          {/* ==========================================
+              ACTIONS
+              ========================================== */}
 
           <div
             className="zenvazapp-incoming-actions"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "18px",
+            }}
           >
+            {/* DECLINE */}
 
             <button
               type="button"
@@ -3043,16 +3170,39 @@ export function CallProvider({
                 rejectCall
               }
               aria-label="Decline call"
+              style={{
+                width: "110px",
+                minHeight: "58px",
+                border: "none",
+                borderRadius: "18px",
+                background:
+                  "#fee2e2",
+                color: "#dc2626",
+                fontSize: "15px",
+                fontWeight: "700",
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "3px",
+              }}
             >
-
-              ✕
+              <span
+                style={{
+                  fontSize: "24px",
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </span>
 
               <span>
                 Decline
               </span>
-
             </button>
 
+            {/* ACCEPT */}
 
             <button
               type="button"
@@ -3061,25 +3211,41 @@ export function CallProvider({
                 acceptCall
               }
               aria-label="Accept call"
+              style={{
+                width: "110px",
+                minHeight: "58px",
+                border: "none",
+                borderRadius: "18px",
+                background:
+                  "#dcfce7",
+                color: "#16a34a",
+                fontSize: "15px",
+                fontWeight: "700",
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "3px",
+              }}
             >
-
-              ✓
+              <span
+                style={{
+                  fontSize: "24px",
+                  lineHeight: 1,
+                }}
+              >
+                ✓
+              </span>
 
               <span>
                 Accept
               </span>
-
             </button>
-
           </div>
-
         </div>
-
       </div>
-
     ) : null;
-
-
   // =======================================================
   // RENDER
   // =======================================================
