@@ -3084,131 +3084,206 @@ function PrivateChat({
 
   return (
     <div className="private-chat-page">
+ {/* =====================================
+    HEADER
+===================================== */}
 
-      {/* =====================================
-          HEADER
-      ===================================== */}
+<header className="private-chat-header">
 
-      <header
-        className="private-chat-header"
+  <div className="private-chat-header-left">
+
+    {/* BACK */}
+
+    <button
+      type="button"
+      className="private-chat-back"
+      onClick={() => {
+        onBack?.();
+      }}
+      aria-label="Back to chats"
+      title="Back"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path d="M15 18l-6-6 6-6" />
+      </svg>
+    </button>
+
+
+    {/* CONTACT AVATAR */}
+
+    <div className="private-chat-header-avatar">
+
+      {chat?.profilePhoto ? (
+
+        <img
+          src={chat.profilePhoto}
+          alt={chatName}
+        />
+
+      ) : (
+
+        <span>
+          {chatAvatar}
+        </span>
+
+      )}
+
+      <span
+        className="private-chat-header-online"
+        aria-hidden="true"
+      />
+
+    </div>
+
+
+    {/* CONTACT INFORMATION */}
+
+    <div className="private-chat-header-info">
+
+      <h1 title={chatName}>
+        {chatName}
+      </h1>
+
+      <span>
+        <span
+          className="private-chat-status-dot"
+          aria-hidden="true"
+        />
+
+        Online
+      </span>
+
+    </div>
+
+  </div>
+
+
+  {/* =================================
+      CALL BUTTONS
+  =================================
+
+      IMPORTANT:
+
+      These buttons DO NOT contain
+      WebRTC logic.
+
+      They send the call request to:
+
+      PrivateChat
+          ↓
+      App.js
+          ↓
+      CallManager
+          ↓
+      WebRTC
+  ================================= */}
+
+  <div className="private-chat-header-actions">
+
+    {/* VOICE CALL */}
+
+    <button
+      type="button"
+      className="private-chat-header-call"
+      onClick={() =>
+        onCall?.(chat)
+      }
+      aria-label="Voice call"
+      title="Voice call"
+    >
+
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 3.18 2 2 0 0 1 4.11 1h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.62 2.63a2 2 0 0 1-.45 2.11L8 8.73a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.85.29 1.73.5 2.63.62A2 2 0 0 1 22 15.92z" />
+      </svg>
+
+    </button>
+
+
+    {/* VIDEO CALL */}
+
+    <button
+      type="button"
+      className="private-chat-header-call"
+      onClick={() =>
+        onVideoCall?.(chat)
+      }
+      aria-label="Video call"
+      title="Video call"
+    >
+
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
       >
 
-        <div
-          className="private-chat-header-left"
-        >
+        <rect
+          x="2"
+          y="5"
+          width="14"
+          height="14"
+          rx="2"
+        />
 
-          <button
-            type="button"
-            className="private-chat-back"
-            onClick={() => {
-              onBack?.();
-            }}
-            aria-label="Back"
-          >
-            ←
-          </button>
+        <path
+          d="M16 10l5-3v10l-5-3z"
+        />
 
+      </svg>
 
-          <div
-            className="private-chat-header-avatar"
-          >
-
-            {chat?.profilePhoto ? (
-
-              <img
-                src={
-                  chat.profilePhoto
-                }
-                alt={
-                  chatName
-                }
-              />
-
-            ) : (
-
-              chatAvatar
-
-            )}
-
-          </div>
+    </button>
 
 
-          <div
-            className="private-chat-header-info"
-          >
+    {/* MORE OPTIONS */}
 
-            <h1>
-              {chatName}
-            </h1>
+    <button
+      type="button"
+      className="private-chat-header-more"
+      onClick={() =>
+        setShowChatMenu(
+          (previous) =>
+            !previous
+        )
+      }
+      aria-label="More options"
+      title="More options"
+    >
 
-            <span>
-              Online
-            </span>
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
 
-          </div>
+        <circle
+          cx="12"
+          cy="5"
+          r="1.5"
+        />
 
-        </div>
+        <circle
+          cx="12"
+          cy="12"
+          r="1.5"
+        />
 
+        <circle
+          cx="12"
+          cy="19"
+          r="1.5"
+        />
 
-        {/* =================================
-            CALL BUTTONS
-            =================================
-            
-            These buttons DO NOT start WebRTC.
+      </svg>
 
-            They hand the call to App.js,
-            which hands it to CallManager.
-        */}
+    </button>
 
-        <div
-          className="private-chat-header-actions"
-        >
+  </div>
 
-          <button
-            type="button"
-            className="private-chat-header-call"
-            onClick={() =>
-              onCall?.(chat)
-            }
-            aria-label="Voice call"
-            title="Voice call"
-          >
-            📞
-          </button>
-
-
-          <button
-            type="button"
-            className="private-chat-header-call"
-            onClick={() =>
-              onVideoCall?.(chat)
-            }
-            aria-label="Video call"
-            title="Video call"
-          >
-            🎥
-          </button>
-
-
-          <button
-            type="button"
-            className="private-chat-header-more"
-            onClick={() =>
-              setShowChatMenu(
-                (previous) =>
-                  !previous
-              )
-            }
-            aria-label="More options"
-          >
-            ⋮
-          </button>
-
-        </div>
-
-      </header>
-
-
+</header>
       {/* =====================================
           CHAT MENU
       ===================================== */}
@@ -3360,36 +3435,7 @@ function PrivateChat({
       )}
 
 
-      {/* =====================================
-          UNDO BAR
-      ===================================== */}
-
-      {undoMessageId && (
-        <div
-          className="private-chat-undo-bar"
-        >
-
-          <span>
-            Message sent
-          </span>
-
-          <span>
-            {undoSeconds}s
-          </span>
-
-          <button
-            type="button"
-            onClick={
-              handleUndoMessage
-            }
-          >
-            Undo
-          </button>
-
-        </div>
-      )}
-
-
+      
       {/* =====================================
           DELETE CONVERSATION
       ===================================== */}
@@ -3895,6 +3941,51 @@ function PrivateChat({
           event.stopPropagation()
         }
       >
+        {/* =====================================
+          PROFESSIONAL UNDO BAR
+        ===================================== */}
+
+        {undoMessageId && (
+         <div
+           className="private-chat-undo-bar"
+           role="status"
+           aria-live="polite"
+          >
+
+           <div className="private-chat-undo-info">
+
+             <span className="private-chat-undo-icon">
+               ✓
+             </span>
+
+             <div className="private-chat-undo-text">
+
+               <strong>
+                 Message sent
+               </strong>
+
+               <span>
+                 You can undo this message
+               </span>
+
+              </div>
+
+              <span className="private-chat-undo-timer">
+                {undoSeconds}s
+              </span>
+
+            </div>
+
+            <button
+             type="button"
+             className="private-chat-undo-button"
+             onClick={handleUndoMessage}
+            >
+             Undo
+           </button>
+
+          </div>
+        )}
 
         <form
           onSubmit={
