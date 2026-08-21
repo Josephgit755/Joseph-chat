@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import Splash from "./pages/Splash";
 import Login from "./pages/Login";
 import ProfileSetup from "./pages/ProfileSetup";
 import ChatList from "./pages/ChatList";
@@ -47,7 +48,7 @@ import "./styles/auth.css";
 function App() {
 
   const [currentScreen, setCurrentScreen] =
-    useState("login");
+    useState("splash");
 
   const [user, setUser] =
     useState(null);
@@ -665,6 +666,15 @@ function AppContent({
         "video"
       );
     };
+    if (currentScreen === "splash") {
+      return (
+        <Splash
+          onFinished={() => {
+           setCurrentScreen("login");
+          }}
+        />
+      );
+    }  
 
 
   // =======================================================
