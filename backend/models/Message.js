@@ -67,6 +67,15 @@ const messageSchema = new mongoose.Schema(
       default: "text",
       trim: true,
     },
+    // ========================================
+    // MEDIA URL
+    // ========================================
+
+    mediaUrl: {
+     type: String,
+     default: "",
+     trim: true,
+    },
 
     // ========================================
     // MESSAGE STATUS
