@@ -7,7 +7,7 @@ function Splash({ onFinished }) {
       if (typeof onFinished === "function") {
         onFinished();
       }
-    }, 20000);
+    }, 10000);
 
     return () => clearTimeout(timer);
   }, [onFinished]);
