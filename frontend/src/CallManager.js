@@ -12,9 +12,7 @@ import { io } from "socket.io-client";
 
 import CallScreen from "./callScreen";
 
-const CallContext =
-  createContext(null);
-
+const CallContext = createContext(null);
 
 // =========================================================
 // ZENVazAPP CALL MANAGER
@@ -32,31 +30,20 @@ const CallContext =
 // 8. Prevent socket recreation when call state changes.
 // =========================================================
 
-
-export function CallProvider({
-  user,
-  children,
-}) {
-
+export function CallProvider({ user, children }) {
   // =======================================================
   // SOCKET URL
   // =======================================================
 
   const SOCKET_URL =
-    process.env.REACT_APP_API_URL ||
-    "https://joseph-backend.onrender.com";
-
+    process.env.REACT_APP_API_URL || "https://joseph-backend.onrender.com";
 
   // =======================================================
   // USER INFORMATION
   // =======================================================
 
   const currentUserId =
-    user?._id ||
-    user?.id ||
-    user?.userId ||
-    user?.username ||
-    "";
+    user?._id || user?.id || user?.userId || user?.username || "";
 
   const currentUserName =
     user?.displayName ||
@@ -68,3260 +55,1770 @@ export function CallProvider({
   const currentUserAvatar =
     user?.profilePhoto ||
     user?.avatar ||
-    currentUserName
-      .charAt(0)
-      .toUpperCase();
+    currentUserName.charAt(0).toUpperCase();
 
+  const markCallAsRecent = useCallback(
+    async (contactUserId) => {
+      if (
+        !currentUserId ||
+        !contactUserId ||
+        String(currentUserId) === String(contactUserId)
+      ) {
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `${SOCKET_URL}/api/contacts/recently-contacted`,
+          {
+            method: "PATCH",
+
+            headers: {
+              "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify({
+              userId: currentUserId,
+
+              contactUserId: contactUserId,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          console.warn("Unable to mark call as recent:", response.status);
+        }
+      } catch (error) {
+        console.warn("Call recent update failed:", error);
+      }
+    },
+    [SOCKET_URL, currentUserId]
+  );
 
   // =======================================================
   // SOCKET
   // =======================================================
 
-  const socketRef =
-    useRef(null);
-
+  const socketRef = useRef(null);
 
   // =======================================================
   // WEBRTC
   // =======================================================
 
-  const peerConnectionRef =
-    useRef(null);
+  const peerConnectionRef = useRef(null);
 
-  const localStreamRef =
-    useRef(null);
+  const localStreamRef = useRef(null);
 
-  const remoteStreamRef =
-    useRef(null);
+  const remoteStreamRef = useRef(null);
 
-  const pendingIceCandidatesRef =
-    useRef([]);
-
+  const pendingIceCandidatesRef = useRef([]);
 
   // =======================================================
-  // VIDEO ELEMENTS
+  // VIDEO / AUDIO ELEMENTS
   // =======================================================
 
-  const localVideoRef =
-    useRef(null);
+  const localVideoRef = useRef(null);
 
-  const remoteVideoRef =
-    useRef(null);
+  const remoteVideoRef = useRef(null);
 
+  const remoteAudioRef = useRef(null);
 
   // =======================================================
   // CALL STATE
   // =======================================================
 
-  const [callState, setCallState] =
-    useState("idle");
+  const [callState, setCallState] = useState("idle");
 
-  const callStateRef =
-    useRef("idle");
+  const callStateRef = useRef("idle");
 
-  const [callType, setCallType] =
-    useState(null);
+  const [callType, setCallType] = useState(null);
 
-  const [activeCall, setActiveCall] =
-    useState(null);
+  const [activeCall, setActiveCall] = useState(null);
 
-  const activeCallRef =
-    useRef(null);
+  const activeCallRef = useRef(null);
 
-  const [incomingCall, setIncomingCall] =
-    useState(null);
+  const [incomingCall, setIncomingCall] = useState(null);
 
-  const [callSeconds, setCallSeconds] =
-    useState(0);
+  const [callSeconds, setCallSeconds] = useState(0);
 
-  const [microphoneEnabled, setMicrophoneEnabled] =
-    useState(true);
+  const [microphoneEnabled, setMicrophoneEnabled] = useState(true);
 
-  const [cameraEnabled, setCameraEnabled] =
-    useState(true);
+  const [cameraEnabled, setCameraEnabled] = useState(true);
 
-  const [speakerEnabled, setSpeakerEnabled] =
-    useState(true);
+  const [speakerEnabled, setSpeakerEnabled] = useState(true);
 
-  const [callError, setCallError] =
-    useState("");
+  const [callError, setCallError] = useState("");
 
-  const callTimerRef =
-    useRef(null);
-
+  const callTimerRef = useRef(null);
 
   // =======================================================
   // KEEP STATE REFS SYNCHRONIZED
   // =======================================================
 
   useEffect(() => {
-    callStateRef.current =
-      callState;
-  }, [
-    callState,
-  ]);
-
+    callStateRef.current = callState;
+  }, [callState]);
 
   useEffect(() => {
-    activeCallRef.current =
-      activeCall;
-  }, [
-    activeCall,
-  ]);
-
+    activeCallRef.current = activeCall;
+  }, [activeCall]);
 
   // =======================================================
-  // SET VIDEO STREAM
+  // SET VIDEO / AUDIO STREAM
   // =======================================================
 
-  const attachLocalStream =
-    useCallback(() => {
+  const attachLocalStream = useCallback(() => {
+    if (!localVideoRef.current) {
+      return;
+    }
 
-      if (
-        !localVideoRef.current
-      ) {
-        return;
-      }
+    const stream = localStreamRef.current;
 
-      const stream =
-        localStreamRef.current;
+    if (!stream) {
+      return;
+    }
 
-      if (!stream) {
-        return;
-      }
+    localVideoRef.current.srcObject = stream;
 
-      localVideoRef.current.srcObject =
-        stream;
+    localVideoRef.current.play().catch(() => {});
+  }, []);
 
-      localVideoRef.current
-        .play()
-        .catch(() => {});
+  const attachRemoteStream = useCallback(() => {
+    const stream = remoteStreamRef.current;
 
-    }, []);
+    if (!stream) {
+      return;
+    }
 
+    // =========================================
+    // VIDEO CALL
+    // =========================================
 
-  const attachRemoteStream =
-    useCallback(() => {
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = stream;
 
-      if (
-        !remoteVideoRef.current
-      ) {
-        return;
-      }
+      remoteVideoRef.current.play().catch((error) => {
+        console.warn("Unable to play remote video:", error);
+      });
+    }
 
-      const stream =
-        remoteStreamRef.current;
+    // =========================================
+    // VOICE CALL
+    // =========================================
 
-      if (!stream) {
-        return;
-      }
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.srcObject = stream;
 
-      remoteVideoRef.current.srcObject =
-        stream;
+      remoteAudioRef.current.muted = !speakerEnabled;
 
-      remoteVideoRef.current
-        .play()
-        .catch(() => {});
-
-    }, []);
-
+      remoteAudioRef.current.play().catch((error) => {
+        console.warn("Unable to play remote audio:", error);
+      });
+    }
+  }, [speakerEnabled]);
 
   // =======================================================
   // CALL TIMER
   // =======================================================
 
-  const stopCallTimer =
-    useCallback(() => {
+  const stopCallTimer = useCallback(() => {
+    if (callTimerRef.current) {
+      clearInterval(callTimerRef.current);
 
-      if (
-        callTimerRef.current
-      ) {
+      callTimerRef.current = null;
+    }
+  }, []);
 
-        clearInterval(
-          callTimerRef.current
-        );
+  const startCallTimer = useCallback(() => {
+    stopCallTimer();
 
-        callTimerRef.current =
-          null;
-      }
+    setCallSeconds(0);
 
-    }, []);
-
-
-  const startCallTimer =
-    useCallback(() => {
-
-      stopCallTimer();
-
-      setCallSeconds(
-        0
-      );
-
-      callTimerRef.current =
-        setInterval(() => {
-
-          setCallSeconds(
-            (previous) =>
-              previous + 1
-          );
-
-        }, 1000);
-
-    }, [
-      stopCallTimer,
-    ]);
-
+    callTimerRef.current = setInterval(() => {
+      setCallSeconds((previous) => previous + 1);
+    }, 1000);
+  }, [stopCallTimer]);
 
   // =======================================================
   // LOCAL MEDIA
   // =======================================================
 
-  const getLocalMedia =
-    useCallback(
-      async (
-        type
-      ) => {
+  const getLocalMedia = useCallback(async (type) => {
+    const constraints =
+      type === "video"
+        ? {
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            },
+            video: true,
+          }
+        : {
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            },
+            video: false,
+          };
 
-        const constraints =
-          type === "video"
-            ? {
-                audio: true,
-                video: true,
-              }
-            : {
-                audio: true,
-                video: false,
-              };
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error(
+        "Your browser does not support microphone and camera access."
+      );
+    }
 
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
-        if (
-          !navigator.mediaDevices ||
-          !navigator.mediaDevices
-            .getUserMedia
-        ) {
+    localStreamRef.current = stream;
 
-          throw new Error(
-            "Your browser does not support microphone and camera access."
-          );
-        }
+    const audioTracks = stream.getAudioTracks();
 
+    audioTracks.forEach((track) => {
+      track.enabled = true;
+    });
 
-        const stream =
-          await navigator.mediaDevices.getUserMedia(
-            constraints
-          );
+    setMicrophoneEnabled(audioTracks.length > 0);
 
-
-        localStreamRef.current =
-          stream;
-
-
-        setMicrophoneEnabled(
-          true
-        );
-
-
-        setCameraEnabled(
-          type === "video"
-        );
-
-
-        requestAnimationFrame(() => {
-          attachLocalStream();
-        });
-
-
-        return stream;
-
-      },
-      [
-        attachLocalStream,
-      ]
-    );
-
+    return stream;
+  }, []);
 
   // =======================================================
   // CREATE PEER CONNECTION
   // =======================================================
 
-  const createPeerConnection =
-    useCallback(
-      (
-        targetUserId
-      ) => {
+  const createPeerConnection = useCallback(
+    (targetUserId) => {
+      const configuration = {
+        iceServers: [
+          {
+            urls: "stun:stun.l.google.com:19302",
+          },
 
-        const configuration = {
+          {
+            urls: "stun:stun1.l.google.com:19302",
+          },
+        ],
+      };
 
-          iceServers: [
-            {
-              urls:
-                "stun:stun.l.google.com:19302",
-            },
+      const peerConnection = new RTCPeerConnection(configuration);
 
-            {
-              urls:
-                "stun:stun1.l.google.com:19302",
-            },
-          ],
+      peerConnectionRef.current = peerConnection;
 
-        };
+      // ===============================================
+      // ICE CANDIDATES
+      // ===============================================
 
+      peerConnection.onicecandidate = (event) => {
+        if (!event.candidate) {
+          return;
+        }
 
-        const peerConnection =
-          new RTCPeerConnection(
-            configuration
-          );
+        const socket = socketRef.current;
 
+        if (!socket?.connected || !currentUserId || !targetUserId) {
+          return;
+        }
 
-        peerConnectionRef.current =
-          peerConnection;
+        const call = activeCallRef.current;
 
+        socket.emit("call-ice-candidate", {
+          conversationId: call?.conversationId || "",
 
-        // ===============================================
-        // ICE CANDIDATES
-        // ===============================================
+          senderUserId: String(currentUserId),
 
-        peerConnection.onicecandidate =
-          (event) => {
+          targetUserId: String(targetUserId),
 
-            if (
-              !event.candidate
-            ) {
-              return;
-            }
+          candidate: event.candidate,
+        });
+      };
 
+      // ===============================================
+      // REMOTE TRACK
+      // ===============================================
 
-            const socket =
-              socketRef.current;
+      peerConnection.ontrack = (event) => {
+        console.log(
+          "ZenvaZapp remote WebRTC track received:",
+          event.track?.kind
+        );
 
+        if (!remoteStreamRef.current) {
+          remoteStreamRef.current = new MediaStream();
+        }
 
-            if (
-              !socket?.connected ||
-              !currentUserId ||
-              !targetUserId
-            ) {
+        const existingTrack = remoteStreamRef.current
+          .getTracks()
+          .find((track) => track.id === event.track.id);
 
-              return;
-            }
+        if (!existingTrack) {
+          remoteStreamRef.current.addTrack(event.track);
+        }
 
+        attachRemoteStream();
 
-            const call =
-              activeCallRef.current;
+        setSpeakerEnabled(true);
+      };
 
+      // ===============================================
+      // CONNECTION STATE
+      // ===============================================
 
-            socket.emit(
-              "call-ice-candidate",
-              {
-                conversationId:
-                  call?.conversationId ||
-                  "",
+      peerConnection.onconnectionstatechange = () => {
+        const state = peerConnection.connectionState;
 
-                senderUserId:
-                  String(
-                    currentUserId
-                  ),
+        console.log("ZenvaZapp WebRTC connection:", state);
 
-                targetUserId:
-                  String(
-                    targetUserId
-                  ),
+        if (state === "connected") {
+          setCallState("connected");
 
-                candidate:
-                  event.candidate,
-              }
-            );
+          startCallTimer();
+        }
 
-          };
+        if (state === "failed") {
+          setCallError("The call connection failed.");
+        }
 
+        if (state === "disconnected") {
+          setCallError("The call connection was interrupted.");
+        }
 
-        // ===============================================
-        // REMOTE TRACK
-        // ===============================================
+        if (state === "closed") {
+          setCallState("idle");
+        }
+      };
 
-        peerConnection.ontrack =
-          (event) => {
+      // ===============================================
+      // ICE CONNECTION STATE
+      // ===============================================
 
-            const stream =
-              event.streams?.[0];
+      peerConnection.oniceconnectionstatechange = () => {
+        const state = peerConnection.iceConnectionState;
 
+        console.log("ZenvaZapp ICE state:", state);
 
-            if (!stream) {
-              return;
-            }
+        if (state === "failed") {
+          setCallError("Unable to establish the call connection.");
+        }
+      };
 
-
-            remoteStreamRef.current =
-              stream;
-
-
-            requestAnimationFrame(() => {
-              attachRemoteStream();
-            });
-
-          };
-
-
-        // ===============================================
-        // CONNECTION STATE
-        // ===============================================
-
-        peerConnection.onconnectionstatechange =
-          () => {
-
-            const state =
-              peerConnection.connectionState;
-
-
-            console.log(
-              "ZenvaZapp WebRTC connection:",
-              state
-            );
-
-
-            if (
-              state === "connected"
-            ) {
-
-              setCallState(
-                "connected"
-              );
-
-              startCallTimer();
-            }
-
-
-            if (
-              state === "failed"
-            ) {
-
-              setCallError(
-                "The call connection failed."
-              );
-
-            }
-
-
-            if (
-              state === "disconnected"
-            ) {
-
-              setCallError(
-                "The call connection was interrupted."
-              );
-
-            }
-
-
-            if (
-              state === "closed"
-            ) {
-
-              setCallState(
-                "idle"
-              );
-
-            }
-
-          };
-
-
-        // ===============================================
-        // ICE CONNECTION STATE
-        // ===============================================
-
-        peerConnection.oniceconnectionstatechange =
-          () => {
-
-            const state =
-              peerConnection
-                .iceConnectionState;
-
-
-            console.log(
-              "ZenvaZapp ICE state:",
-              state
-            );
-
-
-            if (
-              state === "failed"
-            ) {
-
-              setCallError(
-                "Unable to establish the call connection."
-              );
-
-            }
-
-          };
-
-
-        return peerConnection;
-
-      },
-      [
-        attachRemoteStream,
-        currentUserId,
-        startCallTimer,
-      ]
-    );
-
+      return peerConnection;
+    },
+    [attachRemoteStream, currentUserId, startCallTimer]
+  );
 
   // =======================================================
   // ADD LOCAL TRACKS
   // =======================================================
 
-  const addLocalTracks =
-    useCallback(
-      (
-        peerConnection
-      ) => {
+  const addLocalTracks = useCallback((peerConnection) => {
+    const stream = localStreamRef.current;
 
-        const stream =
-          localStreamRef.current;
+    if (!stream || !peerConnection) {
+      return;
+    }
 
+    const existingTracks = peerConnection
+      .getSenders()
+      .map((sender) => sender.track?.id)
+      .filter(Boolean);
 
-        if (
-          !stream ||
-          !peerConnection
-        ) {
-          return;
-        }
+    stream.getTracks().forEach((track) => {
+      if (existingTracks.includes(track.id)) {
+        return;
+      }
 
-
-        const existingTracks =
-          peerConnection
-            .getSenders()
-            .map(
-              (sender) =>
-                sender.track?.id
-            )
-            .filter(Boolean);
-
-
-        stream
-          .getTracks()
-          .forEach(
-            (track) => {
-
-              if (
-                existingTracks.includes(
-                  track.id
-                )
-              ) {
-                return;
-              }
-
-
-              peerConnection.addTrack(
-                track,
-                stream
-              );
-
-            }
-          );
-
-      },
-      []
-    );
-
+      peerConnection.addTrack(track, stream);
+    });
+  }, []);
 
   // =======================================================
   // FLUSH PENDING ICE CANDIDATES
   // =======================================================
 
-  const flushPendingIceCandidates =
-    useCallback(
-      async () => {
+  const flushPendingIceCandidates = useCallback(async () => {
+    const peerConnection = peerConnectionRef.current;
 
-        const peerConnection =
-          peerConnectionRef.current;
+    if (!peerConnection) {
+      return;
+    }
 
+    const candidates = pendingIceCandidatesRef.current;
 
-        if (
-          !peerConnection
-        ) {
-          return;
-        }
+    pendingIceCandidatesRef.current = [];
 
-
-        const candidates =
-          pendingIceCandidatesRef.current;
-
-
-        pendingIceCandidatesRef.current =
-          [];
-
-
-        for (
-          const candidate of candidates
-        ) {
-
-          try {
-
-            await peerConnection.addIceCandidate(
-              new RTCIceCandidate(
-                candidate
-              )
-            );
-
-          } catch (
-            error
-          ) {
-
-            console.warn(
-              "Unable to add queued ICE candidate:",
-              error
-            );
-
-          }
-
-        }
-
-      },
-      []
-    );
-
+    for (const candidate of candidates) {
+      try {
+        await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (error) {
+        console.warn("Unable to add queued ICE candidate:", error);
+      }
+    }
+  }, []);
 
   // =======================================================
   // CLEANUP CALL
   // =======================================================
 
-  const cleanupCall =
-    useCallback(
-      ({
-        notifyRemote = true,
-      } = {}) => {
+  const cleanupCall = useCallback(
+    ({ notifyRemote = true } = {}) => {
+      const callToSave = activeCallRef.current;
 
-        const call =
-          activeCallRef.current;
+      const otherUserId = callToSave?.otherUserId;
 
+      if (otherUserId) {
+        void markCallAsRecent(otherUserId);
+      }
 
-        const socket =
-          socketRef.current;
+      const call = activeCallRef.current;
 
+      const socket = socketRef.current;
 
-        // ===============================================
-        // TELL REMOTE USER
-        // ===============================================
+      // ===============================================
+      // TELL REMOTE USER
+      // ===============================================
 
-        if (
-          notifyRemote &&
-          socket?.connected &&
-          call?.otherUserId
-        ) {
+      if (notifyRemote && socket?.connected && call?.otherUserId) {
+        socket.emit("call-ended", {
+          conversationId: call.conversationId || "",
 
-          socket.emit(
-            "call-ended",
-            {
-              conversationId:
-                call.conversationId ||
-                "",
+          senderUserId: String(currentUserId),
 
-              senderUserId:
-                String(
-                  currentUserId
-                ),
+          targetUserId: String(call.otherUserId),
+        });
+      }
 
-              targetUserId:
-                String(
-                  call.otherUserId
-                ),
-            }
-          );
+      // ===============================================
+      // STOP TIMER
+      // ===============================================
 
+      stopCallTimer();
+
+      // ===============================================
+      // CLOSE PEER CONNECTION
+      // ===============================================
+
+      const peerConnection = peerConnectionRef.current;
+
+      if (peerConnection) {
+        try {
+          peerConnection.ontrack = null;
+
+          peerConnection.onicecandidate = null;
+
+          peerConnection.onconnectionstatechange = null;
+
+          peerConnection.oniceconnectionstatechange = null;
+
+          peerConnection.close();
+        } catch (error) {
+          console.warn("Peer connection cleanup failed:", error);
         }
+      }
 
+      peerConnectionRef.current = null;
 
-        // ===============================================
-        // STOP TIMER
-        // ===============================================
+      // ===============================================
+      // STOP LOCAL MEDIA
+      // ===============================================
 
-        stopCallTimer();
+      const localStream = localStreamRef.current;
 
+      if (localStream) {
+        localStream.getTracks().forEach((track) => {
+          track.stop();
+        });
+      }
 
-        // ===============================================
-        // CLOSE PEER CONNECTION
-        // ===============================================
+      localStreamRef.current = null;
 
-        const peerConnection =
-          peerConnectionRef.current;
+      // ===============================================
+      // CLEAR REMOTE STREAM
+      // ===============================================
 
+      remoteStreamRef.current = null;
 
-        if (
-          peerConnection
-        ) {
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = null;
+      }
 
-          try {
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = null;
+      }
 
-            peerConnection.ontrack =
-              null;
+      if (remoteAudioRef.current) {
+        remoteAudioRef.current.pause();
 
-            peerConnection.onicecandidate =
-              null;
+        remoteAudioRef.current.srcObject = null;
+      }
 
-            peerConnection.onconnectionstatechange =
-              null;
+      // ===============================================
+      // CLEAR ICE
+      // ===============================================
 
-            peerConnection.oniceconnectionstatechange =
-              null;
+      pendingIceCandidatesRef.current = [];
 
-            peerConnection.close();
+      // ===============================================
+      // CLEAR CALL STATE
+      // ===============================================
 
-          } catch (
-            error
-          ) {
+      setIncomingCall(null);
 
-            console.warn(
-              "Peer connection cleanup failed:",
-              error
-            );
+      setActiveCall(null);
 
-          }
+      activeCallRef.current = null;
 
-        }
+      setCallType(null);
 
+      setCallState("idle");
 
-        peerConnectionRef.current =
-          null;
+      setCallSeconds(0);
 
+      setMicrophoneEnabled(true);
 
-        // ===============================================
-        // STOP LOCAL MEDIA
-        // ===============================================
+      setCameraEnabled(true);
 
-        const localStream =
-          localStreamRef.current;
-
-
-        if (
-          localStream
-        ) {
-
-          localStream
-            .getTracks()
-            .forEach(
-              (track) => {
-                track.stop();
-              }
-            );
-
-        }
-
-
-        localStreamRef.current =
-          null;
-
-
-        // ===============================================
-        // CLEAR REMOTE STREAM
-        // ===============================================
-
-        remoteStreamRef.current =
-          null;
-
-
-        if (
-          localVideoRef.current
-        ) {
-
-          localVideoRef.current.srcObject =
-            null;
-
-        }
-
-
-        if (
-          remoteVideoRef.current
-        ) {
-
-          remoteVideoRef.current.srcObject =
-            null;
-
-        }
-
-
-        // ===============================================
-        // CLEAR ICE
-        // ===============================================
-
-        pendingIceCandidatesRef.current =
-          [];
-
-
-        // ===============================================
-        // CLEAR CALL STATE
-        // ===============================================
-
-        setIncomingCall(
-          null
-        );
-
-        setActiveCall(
-          null
-        );
-
-        activeCallRef.current =
-          null;
-
-        setCallType(
-          null
-        );
-
-        setCallState(
-          "idle"
-        );
-
-        setCallSeconds(
-          0
-        );
-
-        setMicrophoneEnabled(
-          true
-        );
-
-        setCameraEnabled(
-          true
-        );
-
-        setSpeakerEnabled(
-          true
-        );
-
-      },
-      [
-        currentUserId,
-        stopCallTimer,
-      ]
-    );
-
+      setSpeakerEnabled(true);
+    },
+    [currentUserId, markCallAsRecent, stopCallTimer]
+  );
 
   // =======================================================
   // START OUTGOING CALL
   // =======================================================
 
-  const startCall =
-    useCallback(
-      async (
-        chat,
-        type
-      ) => {
+  const startCall = useCallback(
+    async (chat, type) => {
+      if (!chat) {
+        return;
+      }
 
-        if (!chat) {
-          return;
-        }
+      if (callStateRef.current !== "idle") {
+        return;
+      }
 
+      const otherUserId =
+        chat?._id || chat?.id || chat?.userId || chat?.username;
 
-        if (
-          callStateRef.current !==
-          "idle"
-        ) {
-          return;
-        }
+      if (!currentUserId || !otherUserId) {
+        setCallError("Unable to identify the contact.");
 
+        return;
+      }
 
-        const otherUserId =
-          chat?._id ||
-          chat?.id ||
-          chat?.userId ||
-          chat?.username;
+      const socket = socketRef.current;
 
+      if (!socket?.connected) {
+        setCallError("ZenvaZapp calling service is not connected.");
 
-        if (
-          !currentUserId ||
-          !otherUserId
-        ) {
+        console.warn("ZenvaZapp call blocked: socket is not connected.");
 
-          setCallError(
-            "Unable to identify the contact."
-          );
+        return;
+      }
 
-          return;
-        }
+      const conversationId =
+        chat?.conversationId ||
+        [currentUserId, otherUserId].filter(Boolean).sort().join("_");
 
+      const contactName =
+        chat?.name ||
+        chat?.fullName ||
+        chat?.displayName ||
+        chat?.username ||
+        "ZenvaZapp User";
 
-        const socket =
-          socketRef.current;
+      const contactAvatar =
+        chat?.profilePhoto ||
+        chat?.avatar ||
+        contactName.charAt(0).toUpperCase();
 
+      try {
+        setCallError("");
 
-        if (
-          !socket?.connected
-        ) {
+        const call = {
+          otherUserId: String(otherUserId),
 
-          setCallError(
-            "ZenvaZapp calling service is not connected."
-          );
+          conversationId,
 
-          console.warn(
-            "ZenvaZapp call blocked: socket is not connected."
-          );
+          name: contactName,
 
-          return;
-        }
+          avatar: contactAvatar,
 
+          profilePhoto: chat?.profilePhoto || "",
 
-        const conversationId =
-          chat?.conversationId ||
-          [
-            currentUserId,
-            otherUserId,
-          ]
-            .filter(Boolean)
-            .sort()
-            .join("_");
+          callType: type,
+        };
 
+        setActiveCall(call);
 
-        const contactName =
-          chat?.name ||
-          chat?.fullName ||
-          chat?.displayName ||
-          chat?.username ||
-          "ZenvaZapp User";
+        activeCallRef.current = call;
 
+        setCallType(type);
 
-        const contactAvatar =
-          chat?.profilePhoto ||
-          chat?.avatar ||
-          contactName
-            .charAt(0)
-            .toUpperCase();
+        setCallState("calling");
 
+        setCallSeconds(0);
 
-        try {
+        console.log("==========================================");
 
-          setCallError("");
+        console.log("ZenvaZapp OUTGOING CALL");
 
+        console.log("Caller:", currentUserId);
 
-          const call = {
+        console.log("Receiver:", otherUserId);
 
-            otherUserId:
-              String(
-                otherUserId
-              ),
+        console.log("Type:", type);
 
-            conversationId,
+        console.log("Socket:", socket.id);
 
-            name:
-              contactName,
+        console.log("Socket connected:", socket.connected);
 
-            avatar:
-              contactAvatar,
+        console.log("==========================================");
 
-            profilePhoto:
-              chat?.profilePhoto ||
-              "",
+        // =============================================
+        // GET MICROPHONE / CAMERA
+        // =============================================
 
-            callType:
-              type,
+        const stream = await getLocalMedia(type);
 
-          };
+        // =============================================
+        // CREATE PEER
+        // =============================================
 
+        const peerConnection = createPeerConnection(String(otherUserId));
 
-          setActiveCall(
-            call
-          );
+        addLocalTracks(peerConnection);
 
-          activeCallRef.current =
-            call;
+        // =============================================
+        // CREATE OFFER
+        // =============================================
 
+        const offer = await peerConnection.createOffer();
 
-          setCallType(
-            type
-          );
+        await peerConnection.setLocalDescription(offer);
 
+        // =============================================
+        // SEND OFFER
+        // =============================================
 
-          setCallState(
-            "calling"
-          );
+        console.log("ZenvaZapp sending call-offer:", {
+          callerId: currentUserId,
 
+          receiverId: otherUserId,
 
-          setCallSeconds(
-            0
-          );
+          callType: type,
+        });
 
+        socket.emit("call-offer", {
+          callerId: String(currentUserId),
 
-          console.log(
-            "=========================================="
-          );
+          receiverId: String(otherUserId),
 
-          console.log(
-            "ZenvaZapp OUTGOING CALL"
-          );
+          conversationId,
 
-          console.log(
-            "Caller:",
-            currentUserId
-          );
+          callType: type,
 
-          console.log(
-            "Receiver:",
-            otherUserId
-          );
+          offer: peerConnection.localDescription,
 
-          console.log(
-            "Type:",
-            type
-          );
+          callerName: currentUserName,
 
-          console.log(
-            "Socket:",
-            socket.id
-          );
+          callerAvatar: currentUserAvatar,
+        });
 
-          console.log(
-            "Socket connected:",
-            socket.connected
-          );
+        requestAnimationFrame(() => {
+          attachLocalStream();
+        });
 
-          console.log(
-            "=========================================="
-          );
+        void stream;
+      } catch (error) {
+        console.error("ZenvaZapp start call error:", error);
 
+        setCallError(error?.message || "Unable to start the call.");
 
-          // =============================================
-          // GET MICROPHONE / CAMERA
-          // =============================================
-
-          const stream =
-            await getLocalMedia(
-              type
-            );
-
-
-          // =============================================
-          // CREATE PEER
-          // =============================================
-
-          const peerConnection =
-            createPeerConnection(
-              String(
-                otherUserId
-              )
-            );
-
-
-          addLocalTracks(
-            peerConnection
-          );
-
-
-          // =============================================
-          // CREATE OFFER
-          // =============================================
-
-          const offer =
-            await peerConnection.createOffer();
-
-
-          await peerConnection.setLocalDescription(
-            offer
-          );
-
-
-          // =============================================
-          // SEND OFFER
-          // =============================================
-
-          console.log(
-            "ZenvaZapp sending call-offer:",
-            {
-              callerId:
-                currentUserId,
-
-              receiverId:
-                otherUserId,
-
-              callType:
-                type,
-            }
-          );
-
-
-          socket.emit(
-            "call-offer",
-            {
-              callerId:
-                String(
-                  currentUserId
-                ),
-
-              receiverId:
-                String(
-                  otherUserId
-                ),
-
-              conversationId,
-
-              callType:
-                type,
-
-              offer:
-                peerConnection.localDescription,
-
-              callerName:
-                currentUserName,
-
-              callerAvatar:
-                currentUserAvatar,
-            }
-          );
-
-
-          requestAnimationFrame(() => {
-            attachLocalStream();
-          });
-
-
-          void stream;
-
-        } catch (
-          error
-        ) {
-
-          console.error(
-            "ZenvaZapp start call error:",
-            error
-          );
-
-
-          setCallError(
-            error?.message ||
-              "Unable to start the call."
-          );
-
-
-          cleanupCall({
-            notifyRemote: false,
-          });
-
-        }
-
-      },
-      [
-        addLocalTracks,
-        attachLocalStream,
-        cleanupCall,
-        createPeerConnection,
-        currentUserAvatar,
-        currentUserId,
-        currentUserName,
-        getLocalMedia,
-      ]
-    );
-
+        cleanupCall({
+          notifyRemote: false,
+        });
+      }
+    },
+    [
+      addLocalTracks,
+      attachLocalStream,
+      cleanupCall,
+      createPeerConnection,
+      currentUserAvatar,
+      currentUserId,
+      currentUserName,
+      getLocalMedia,
+    ]
+  );
 
   // =======================================================
   // ACCEPT INCOMING CALL
   // =======================================================
 
-  const acceptCall =
-    useCallback(
-      async () => {
+  const acceptCall = useCallback(async () => {
+    const incoming = incomingCall;
 
-        const incoming =
-          incomingCall;
+    if (!incoming) {
+      return;
+    }
 
+    const {
+      callerId,
+      offer,
+      callType: incomingType,
+      conversationId,
+      callerName,
+      callerAvatar,
+    } = incoming;
 
-        if (!incoming) {
-          return;
-        }
+    if (!callerId || !offer) {
+      return;
+    }
 
+    try {
+      setCallError("");
 
-        const {
-          callerId,
-          offer,
-          callType:
-            incomingType,
-          conversationId,
-          callerName,
-          callerAvatar,
-        } = incoming;
+      const type = incomingType || "audio";
 
+      const call = {
+        otherUserId: String(callerId),
 
-        if (
-          !callerId ||
-          !offer
-        ) {
-          return;
-        }
+        conversationId: conversationId || "",
 
+        name: callerName || "ZenvaZapp User",
 
-        try {
+        avatar:
+          callerAvatar ||
+          (callerName || "Z").charAt(0).toUpperCase(),
 
-          setCallError("");
+        profilePhoto:
+          callerAvatar && String(callerAvatar).startsWith("http")
+            ? callerAvatar
+            : "",
 
+        callType: type,
+      };
 
-          const type =
-            incomingType ||
-            "audio";
+      setActiveCall(call);
 
+      activeCallRef.current = call;
 
-          const call = {
+      setCallType(type);
 
-            otherUserId:
-              String(
-                callerId
-              ),
+      setCallState("connecting");
 
-            conversationId:
-              conversationId ||
-              "",
+      setCallSeconds(0);
 
-            name:
-              callerName ||
-              "ZenvaZapp User",
+      console.log("ZenvaZapp accepting incoming call from:", callerId);
 
-            avatar:
-              callerAvatar ||
-              (
-                callerName ||
-                "Z"
-              )
-                .charAt(0)
-                .toUpperCase(),
+      // =============================================
+      // GET MEDIA
+      // =============================================
 
-            profilePhoto:
-              callerAvatar &&
-              String(
-                callerAvatar
-              ).startsWith(
-                "http"
-              )
-                ? callerAvatar
-                : "",
+      const stream = await getLocalMedia(type);
 
-            callType:
-              type,
+      // =============================================
+      // CREATE PEER
+      // =============================================
 
-          };
+      const peerConnection = createPeerConnection(String(callerId));
 
+      addLocalTracks(peerConnection);
 
-          setActiveCall(
-            call
-          );
+      // =============================================
+      // APPLY OFFER
+      // =============================================
 
-          activeCallRef.current =
-            call;
+      await peerConnection.setRemoteDescription(
+        new RTCSessionDescription(offer)
+      );
 
+      // =============================================
+      // APPLY QUEUED ICE
+      // =============================================
 
-          setCallType(
-            type
-          );
+      await flushPendingIceCandidates();
 
+      // =============================================
+      // CREATE ANSWER
+      // =============================================
 
-          setCallState(
-            "connecting"
-          );
+      const answer = await peerConnection.createAnswer();
 
+      await peerConnection.setLocalDescription(answer);
 
-          setCallSeconds(
-            0
-          );
+      // =============================================
+      // SEND ANSWER
+      // =============================================
 
+      const socket = socketRef.current;
 
-          console.log(
-            "ZenvaZapp accepting incoming call from:",
-            callerId
-          );
-
-
-          // =============================================
-          // GET MEDIA
-          // =============================================
-
-          const stream =
-            await getLocalMedia(
-              type
-            );
-
-
-          // =============================================
-          // CREATE PEER
-          // =============================================
-
-          const peerConnection =
-            createPeerConnection(
-              String(
-                callerId
-              )
-            );
-
-
-          addLocalTracks(
-            peerConnection
-          );
-
-
-          // =============================================
-          // APPLY OFFER
-          // =============================================
-
-          await peerConnection.setRemoteDescription(
-            new RTCSessionDescription(
-              offer
-            )
-          );
-
-
-          // =============================================
-          // APPLY QUEUED ICE
-          // =============================================
-
-          await flushPendingIceCandidates();
-
-
-          // =============================================
-          // CREATE ANSWER
-          // =============================================
-
-          const answer =
-            await peerConnection.createAnswer();
-
-
-          await peerConnection.setLocalDescription(
-            answer
-          );
-
-
-          // =============================================
-          // SEND ANSWER
-          // =============================================
-
-          const socket =
-            socketRef.current;
-
-
-          if (
-            socket?.connected
-          ) {
-
-            socket.emit(
-              "call-answer",
-              {
-                callerId:
-                  String(
-                    callerId
-                  ),
-
-                receiverId:
-                  String(
-                    currentUserId
-                  ),
-
-                conversationId:
-                  conversationId ||
-                  "",
-
-                answer:
-                  peerConnection.localDescription,
-              }
-            );
-
-          }
-
-
-          setIncomingCall(
-            null
-          );
-
-
-          requestAnimationFrame(() => {
-            attachLocalStream();
-          });
-
-
-          void stream;
-
-        } catch (
-          error
-        ) {
-
-          console.error(
-            "ZenvaZapp accept call error:",
-            error
-          );
-
-
-          setCallError(
-            error?.message ||
-              "Unable to accept the call."
-          );
-
-
-          cleanupCall({
-            notifyRemote: true,
-          });
-
-        }
-
-      },
-      [
-        addLocalTracks,
-        attachLocalStream,
-        cleanupCall,
-        createPeerConnection,
-        currentUserId,
-        flushPendingIceCandidates,
-        getLocalMedia,
-        incomingCall,
-      ]
-    );
-
+      if (socket?.connected) {
+        socket.emit("call-answer", {
+          callerId: String(callerId),
+
+          receiverId: String(currentUserId),
+
+          conversationId: conversationId || "",
+
+          answer: peerConnection.localDescription,
+        });
+      }
+
+      setIncomingCall(null);
+
+      requestAnimationFrame(() => {
+        attachLocalStream();
+      });
+
+      void stream;
+    } catch (error) {
+      console.error("ZenvaZapp accept call error:", error);
+
+      setCallError(error?.message || "Unable to accept the call.");
+
+      cleanupCall({
+        notifyRemote: true,
+      });
+    }
+  }, [
+    addLocalTracks,
+    attachLocalStream,
+    cleanupCall,
+    createPeerConnection,
+    currentUserId,
+    flushPendingIceCandidates,
+    getLocalMedia,
+    incomingCall,
+  ]);
 
   // =======================================================
   // REJECT INCOMING CALL
   // =======================================================
 
-  const rejectCall =
-    useCallback(
-      () => {
+  const rejectCall = useCallback(() => {
+    const incoming = incomingCall;
 
-        const incoming =
-          incomingCall;
+    if (!incoming) {
+      return;
+    }
 
+    const socket = socketRef.current;
 
-        if (!incoming) {
-          return;
-        }
+    if (socket?.connected && incoming.callerId) {
+      socket.emit("call-rejected", {
+        callerId: String(incoming.callerId),
 
+        receiverId: String(currentUserId),
 
-        const socket =
-          socketRef.current;
+        conversationId: incoming.conversationId || "",
 
+        reason: "Call declined.",
+      });
+    }
 
-        if (
-          socket?.connected &&
-          incoming.callerId
-        ) {
+    setIncomingCall(null);
 
-          socket.emit(
-            "call-rejected",
-            {
-              callerId:
-                String(
-                  incoming.callerId
-                ),
+    setCallState("idle");
 
-              receiverId:
-                String(
-                  currentUserId
-                ),
+    setCallType(null);
 
-              conversationId:
-                incoming.conversationId ||
-                "",
+    setCallSeconds(0);
 
-              reason:
-                "Call declined.",
-            }
-          );
-
-        }
-
-
-        setIncomingCall(
-          null
-        );
-
-        setCallState(
-          "idle"
-        );
-
-        setCallType(
-          null
-        );
-
-        setCallSeconds(
-          0
-        );
-
-        setCallError("");
-
-      },
-      [
-        currentUserId,
-        incomingCall,
-      ]
-    );
-
+    setCallError("");
+  }, [currentUserId, incomingCall]);
 
   // =======================================================
   // MICROPHONE
   // =======================================================
 
-  const toggleMicrophone =
-    useCallback(
-      () => {
+  const toggleMicrophone = useCallback(() => {
+    const stream = localStreamRef.current;
 
-        const stream =
-          localStreamRef.current;
+    if (!stream) {
+      return;
+    }
 
+    const audioTracks = stream.getAudioTracks();
 
-        if (!stream) {
-          return;
-        }
+    if (audioTracks.length === 0) {
+      return;
+    }
 
+    const nextState = !microphoneEnabled;
 
-        const audioTracks =
-          stream.getAudioTracks();
+    audioTracks.forEach((track) => {
+      track.enabled = nextState;
+    });
 
-
-        if (
-          audioTracks.length ===
-          0
-        ) {
-          return;
-        }
-
-
-        const nextState =
-          !microphoneEnabled;
-
-
-        audioTracks.forEach(
-          (track) => {
-
-            track.enabled =
-              nextState;
-
-          }
-        );
-
-
-        setMicrophoneEnabled(
-          nextState
-        );
-
-      },
-      [
-        microphoneEnabled,
-      ]
-    );
-
+    setMicrophoneEnabled(nextState);
+  }, [microphoneEnabled]);
 
   // =======================================================
   // CAMERA
   // =======================================================
 
-  const toggleCamera =
-    useCallback(
-      () => {
+  const toggleCamera = useCallback(() => {
+    const stream = localStreamRef.current;
 
-        const stream =
-          localStreamRef.current;
+    if (!stream) {
+      return;
+    }
 
+    const videoTracks = stream.getVideoTracks();
 
-        if (!stream) {
-          return;
-        }
+    if (videoTracks.length === 0) {
+      return;
+    }
 
+    const nextState = !cameraEnabled;
 
-        const videoTracks =
-          stream.getVideoTracks();
+    videoTracks.forEach((track) => {
+      track.enabled = nextState;
+    });
 
-
-        if (
-          videoTracks.length ===
-          0
-        ) {
-          return;
-        }
-
-
-        const nextState =
-          !cameraEnabled;
-
-
-        videoTracks.forEach(
-          (track) => {
-
-            track.enabled =
-              nextState;
-
-          }
-        );
-
-
-        setCameraEnabled(
-          nextState
-        );
-
-      },
-      [
-        cameraEnabled,
-      ]
-    );
-
+    setCameraEnabled(nextState);
+  }, [cameraEnabled]);
 
   // =======================================================
   // SPEAKER
   // =======================================================
 
-  const toggleSpeaker =
-    useCallback(
-      () => {
+  const toggleSpeaker = useCallback(() => {
+    const nextState = !speakerEnabled;
 
-        const video =
-          remoteVideoRef.current;
+    // =========================================
+    // VOICE CALL AUDIO
+    // =========================================
 
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.muted = !nextState;
 
-        const nextState =
-          !speakerEnabled;
+      if (nextState && remoteAudioRef.current.srcObject) {
+        remoteAudioRef.current.play().catch(() => {});
+      }
+    }
 
+    // =========================================
+    // VIDEO CALL AUDIO
+    // =========================================
 
-        if (video) {
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.muted = !nextState;
 
-          video.muted =
-            !nextState;
+      if (nextState && remoteVideoRef.current.srcObject) {
+        remoteVideoRef.current.play().catch(() => {});
+      }
+    }
 
-        }
-
-
-        setSpeakerEnabled(
-          nextState
-        );
-
-      },
-      [
-        speakerEnabled,
-      ]
-    );
-
+    setSpeakerEnabled(nextState);
+  }, [speakerEnabled]);
 
   // =======================================================
   // SCREEN SHARING
   // =======================================================
 
-  const shareScreen =
-    useCallback(
-      async () => {
+  const shareScreen = useCallback(async () => {
+    const peerConnection = peerConnectionRef.current;
 
-        const peerConnection =
-          peerConnectionRef.current;
+    if (!peerConnection || !navigator.mediaDevices?.getDisplayMedia) {
+      return false;
+    }
 
+    try {
+      const displayStream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false,
+      });
 
-        if (
-          !peerConnection ||
-          !navigator.mediaDevices
-            ?.getDisplayMedia
-        ) {
+      const screenTrack = displayStream.getVideoTracks()?.[0];
 
-          return false;
+      if (!screenTrack) {
+        return false;
+      }
 
+      const videoSender = peerConnection
+        .getSenders()
+        .find((sender) => sender.track?.kind === "video");
+
+      if (videoSender) {
+        await videoSender.replaceTrack(screenTrack);
+      } else {
+        peerConnection.addTrack(screenTrack, displayStream);
+      }
+
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = displayStream;
+
+        localVideoRef.current.play().catch(() => {});
+      }
+
+      screenTrack.onended = async () => {
+        const originalTrack = localStreamRef.current?.getVideoTracks()?.[0];
+
+        if (originalTrack && videoSender) {
+          try {
+            await videoSender.replaceTrack(originalTrack);
+          } catch (error) {
+            console.warn("Unable to restore camera track:", error);
+          }
         }
 
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = localStreamRef.current;
 
-        try {
-
-          const displayStream =
-            await navigator.mediaDevices.getDisplayMedia(
-              {
-                video: true,
-                audio: false,
-              }
-            );
-
-
-          const screenTrack =
-            displayStream
-              .getVideoTracks()?.[0];
-
-
-          if (
-            !screenTrack
-          ) {
-
-            return false;
-
-          }
-
-
-          const videoSender =
-            peerConnection
-              .getSenders()
-              .find(
-                (sender) =>
-                  sender.track?.kind ===
-                  "video"
-              );
-
-
-          if (
-            videoSender
-          ) {
-
-            await videoSender.replaceTrack(
-              screenTrack
-            );
-
-          } else {
-
-            peerConnection.addTrack(
-              screenTrack,
-              displayStream
-            );
-
-          }
-
-
-          if (
-            localVideoRef.current
-          ) {
-
-            localVideoRef.current.srcObject =
-              displayStream;
-
-            localVideoRef.current
-              .play()
-              .catch(() => {});
-
-          }
-
-
-          screenTrack.onended =
-            async () => {
-
-              const originalTrack =
-                localStreamRef.current
-                  ?.getVideoTracks()?.[0];
-
-
-              if (
-                originalTrack &&
-                videoSender
-              ) {
-
-                try {
-
-                  await videoSender.replaceTrack(
-                    originalTrack
-                  );
-
-                } catch (
-                  error
-                ) {
-
-                  console.warn(
-                    "Unable to restore camera track:",
-                    error
-                  );
-
-                }
-
-              }
-
-
-              if (
-                localVideoRef.current
-              ) {
-
-                localVideoRef.current.srcObject =
-                  localStreamRef.current;
-
-                localVideoRef.current
-                  .play()
-                  .catch(() => {});
-
-              }
-
-            };
-
-
-          return true;
-
-        } catch (
-          error
-        ) {
-
-          if (
-            error?.name !==
-            "NotAllowedError"
-          ) {
-
-            console.error(
-              "Screen sharing error:",
-              error
-            );
-
-          }
-
-
-          return false;
-
+          localVideoRef.current.play().catch(() => {});
         }
+      };
 
-      },
-      []
-    );
+      return true;
+    } catch (error) {
+      if (error?.name !== "NotAllowedError") {
+        console.error("Screen sharing error:", error);
+      }
 
+      return false;
+    }
+  }, []);
 
   // =======================================================
   // CALL ANSWER
   // =======================================================
 
-  const handleCallAnswer =
-    useCallback(
-      async (
-        data
-      ) => {
+  const handleCallAnswer = useCallback(
+    async (data) => {
+      if (!data?.answer) {
+        return;
+      }
 
-        if (
-          !data?.answer
-        ) {
-          return;
-        }
+      if (String(data.callerId) !== String(currentUserId)) {
+        return;
+      }
 
+      const peerConnection = peerConnectionRef.current;
 
-        if (
-          String(
-            data.callerId
-          ) !==
-          String(
-            currentUserId
-          )
-        ) {
-          return;
-        }
+      if (!peerConnection) {
+        return;
+      }
 
+      try {
+        console.log("ZenvaZapp received call-answer.");
 
-        const peerConnection =
-          peerConnectionRef.current;
+        await peerConnection.setRemoteDescription(
+          new RTCSessionDescription(data.answer)
+        );
 
+        await flushPendingIceCandidates();
 
-        if (
-          !peerConnection
-        ) {
-          return;
-        }
+        setCallState("connecting");
+      } catch (error) {
+        console.error("ZenvaZapp call answer error:", error);
 
-
-        try {
-
-          console.log(
-            "ZenvaZapp received call-answer."
-          );
-
-
-          await peerConnection.setRemoteDescription(
-            new RTCSessionDescription(
-              data.answer
-            )
-          );
-
-
-          await flushPendingIceCandidates();
-
-
-          setCallState(
-            "connecting"
-          );
-
-        } catch (
-          error
-        ) {
-
-          console.error(
-            "ZenvaZapp call answer error:",
-            error
-          );
-
-
-          setCallError(
-            "Unable to establish the call."
-          );
-
-        }
-
-      },
-      [
-        currentUserId,
-        flushPendingIceCandidates,
-      ]
-    );
-
+        setCallError("Unable to establish the call.");
+      }
+    },
+    [currentUserId, flushPendingIceCandidates]
+  );
 
   // =======================================================
   // CALL ICE CANDIDATE
   // =======================================================
 
-  const handleCallIceCandidate =
-    useCallback(
-      async (
-        data
-      ) => {
+  const handleCallIceCandidate = useCallback(
+    async (data) => {
+      if (!data?.candidate) {
+        return;
+      }
 
-        if (
-          !data?.candidate
-        ) {
-          return;
+      const peerConnection = peerConnectionRef.current;
+
+      if (!peerConnection) {
+        return;
+      }
+
+      const senderId =
+        data.senderUserId || data.callerId || data.receiverId;
+
+      const targetId =
+        data.targetUserId || data.receiverId || data.callerId;
+
+      if (
+        senderId &&
+        targetId &&
+        String(targetId) !== String(currentUserId) &&
+        String(senderId) !== String(currentUserId)
+      ) {
+        return;
+      }
+
+      const candidate = new RTCIceCandidate(data.candidate);
+
+      if (peerConnection.remoteDescription) {
+        try {
+          await peerConnection.addIceCandidate(candidate);
+        } catch (error) {
+          console.warn("Unable to add ICE candidate:", error);
         }
-
-
-        const peerConnection =
-          peerConnectionRef.current;
-
-
-        if (
-          !peerConnection
-        ) {
-          return;
-        }
-
-
-        const senderId =
-          data.senderUserId ||
-          data.callerId ||
-          data.receiverId;
-
-
-        const targetId =
-          data.targetUserId ||
-          data.receiverId ||
-          data.callerId;
-
-
-        /*
-         * Ignore ICE packets that are not related
-         * to the current user/call.
-         */
-
-        if (
-          senderId &&
-          targetId &&
-          String(
-            targetId
-          ) !==
-          String(
-            currentUserId
-          ) &&
-          String(
-            senderId
-          ) !==
-          String(
-            currentUserId
-          )
-        ) {
-
-          return;
-
-        }
-
-
-        const candidate =
-          new RTCIceCandidate(
-            data.candidate
-          );
-
-
-        if (
-          peerConnection.remoteDescription
-        ) {
-
-          try {
-
-            await peerConnection.addIceCandidate(
-              candidate
-            );
-
-          } catch (
-            error
-          ) {
-
-            console.warn(
-              "Unable to add ICE candidate:",
-              error
-            );
-
-          }
-
-        } else {
-
-          pendingIceCandidatesRef.current.push(
-            data.candidate
-          );
-
-        }
-
-      },
-      [
-        currentUserId,
-      ]
-    );
-
+      } else {
+        pendingIceCandidatesRef.current.push(data.candidate);
+      }
+    },
+    [currentUserId]
+  );
 
   // =======================================================
   // CALL REJECTED
   // =======================================================
 
-  const handleCallRejected =
-    useCallback(
-      (
-        data
-      ) => {
+  const handleCallRejected = useCallback(
+    (data) => {
+      if (!data) {
+        return;
+      }
 
-        if (
-          !data
-        ) {
-          return;
-        }
+      if (String(data.callerId) !== String(currentUserId)) {
+        return;
+      }
 
+      setCallError(data.reason || "Call declined.");
 
-        if (
-          String(
-            data.callerId
-          ) !==
-          String(
-            currentUserId
-          )
-        ) {
-
-          return;
-
-        }
-
-
-        setCallError(
-          data.reason ||
-            "Call declined."
-        );
-
-
-        cleanupCall({
-          notifyRemote: false,
-        });
-
-      },
-      [
-        cleanupCall,
-        currentUserId,
-      ]
-    );
-
+      cleanupCall({
+        notifyRemote: false,
+      });
+    },
+    [cleanupCall, currentUserId]
+  );
 
   // =======================================================
   // CALL ENDED
   // =======================================================
 
-  const handleCallEnded =
-    useCallback(
-      (
-        data
-      ) => {
+  const handleCallEnded = useCallback(
+    (data) => {
+      if (!data) {
+        return;
+      }
 
-        if (
-          !data
-        ) {
-          return;
-        }
+      const senderId = data.senderUserId || data.callerId;
 
+      const targetId = data.targetUserId || data.receiverId;
 
-        const senderId =
-          data.senderUserId ||
-          data.callerId;
+      const relevant =
+        String(senderId) === String(currentUserId) ||
+        String(targetId) === String(currentUserId);
 
+      if (!relevant) {
+        return;
+      }
 
-        const targetId =
-          data.targetUserId ||
-          data.receiverId;
+      console.log("ZenvaZapp remote user ended the call.");
 
-
-        const relevant =
-          String(
-            senderId
-          ) ===
-            String(
-              currentUserId
-            ) ||
-          String(
-            targetId
-          ) ===
-            String(
-              currentUserId
-            );
-
-
-        if (
-          !relevant
-        ) {
-          return;
-        }
-
-
-        console.log(
-          "ZenvaZapp remote user ended the call."
-        );
-
-
-        cleanupCall({
-          notifyRemote: false,
-        });
-
-      },
-      [
-        cleanupCall,
-        currentUserId,
-      ]
-    );
-
+      cleanupCall({
+        notifyRemote: false,
+      });
+    },
+    [cleanupCall, currentUserId]
+  );
 
   // =======================================================
   // INCOMING CALL
   // =======================================================
 
-  const handleCallOffer =
-    useCallback(
-      (
-        data
-      ) => {
+  const handleCallOffer = useCallback(
+    (data) => {
+      console.log("ZenvaZapp received call-offer:", data);
 
-        console.log(
-          "ZenvaZapp received call-offer:",
-          data
+      if (!data) {
+        return;
+      }
+
+      if (String(data.receiverId) !== String(currentUserId)) {
+        return;
+      }
+
+      if (String(data.callerId) === String(currentUserId)) {
+        return;
+      }
+
+      if (!data.offer) {
+        console.warn("ZenvaZapp call-offer has no WebRTC offer.");
+
+        return;
+      }
+
+      if (callStateRef.current !== "idle") {
+        console.warn(
+          "ZenvaZapp ignored incoming call because another call is active."
         );
 
+        return;
+      }
 
-        if (
-          !data
-        ) {
-          return;
-        }
+      console.log("==========================================");
 
+      console.log("ZenvaZapp INCOMING CALL");
 
-        if (
-          String(
-            data.receiverId
-          ) !==
-          String(
-            currentUserId
-          )
-        ) {
+      console.log("Caller:", data.callerId);
 
-          return;
+      console.log("Receiver:", data.receiverId);
 
-        }
+      console.log("Type:", data.callType);
 
+      console.log("==========================================");
 
-        if (
-          String(
-            data.callerId
-          ) ===
-          String(
-            currentUserId
-          )
-        ) {
+      setIncomingCall(data);
 
-          return;
+      setCallType(data.callType || "audio");
 
-        }
+      setCallState("ringing");
 
+      setCallSeconds(0);
 
-        if (
-          !data.offer
-        ) {
-
-          console.warn(
-            "ZenvaZapp call-offer has no WebRTC offer."
-          );
-
-          return;
-        }
-
-
-        if (
-          callStateRef.current !==
-          "idle"
-        ) {
-
-          console.warn(
-            "ZenvaZapp ignored incoming call because another call is active."
-          );
-
-          return;
-
-        }
-
-
-        console.log(
-          "=========================================="
-        );
-
-        console.log(
-          "ZenvaZapp INCOMING CALL"
-        );
-
-        console.log(
-          "Caller:",
-          data.callerId
-        );
-
-        console.log(
-          "Receiver:",
-          data.receiverId
-        );
-
-        console.log(
-          "Type:",
-          data.callType
-        );
-
-        console.log(
-          "=========================================="
-        );
-
-
-        setIncomingCall(
-          data
-        );
-
-
-        setCallType(
-          data.callType ||
-            "audio"
-        );
-
-
-        setCallState(
-          "ringing"
-        );
-
-
-        setCallSeconds(
-          0
-        );
-
-
-        setCallError("");
-
-      },
-      [
-        currentUserId,
-      ]
-    );
-
+      setCallError("");
+    },
+    [currentUserId]
+  );
 
   // =======================================================
   // KEEP SOCKET HANDLERS IN REFS
   // =======================================================
-  //
-  // THIS IS THE IMPORTANT FIX.
-  //
-  // The Socket.IO connection must NOT be recreated
-  // whenever activeCall, callState, cleanupCall, etc.
-  // changes.
-  //
-  // The socket remains alive.
-  //
-  // The refs simply point to the newest handlers.
-  // =======================================================
 
-  const handleCallOfferRef =
-    useRef(
-      handleCallOffer
-    );
+  const handleCallOfferRef = useRef(handleCallOffer);
 
-  const handleCallAnswerRef =
-    useRef(
-      handleCallAnswer
-    );
+  const handleCallAnswerRef = useRef(handleCallAnswer);
 
-  const handleCallIceCandidateRef =
-    useRef(
-      handleCallIceCandidate
-    );
+  const handleCallIceCandidateRef = useRef(handleCallIceCandidate);
 
-  const handleCallRejectedRef =
-    useRef(
-      handleCallRejected
-    );
+  const handleCallRejectedRef = useRef(handleCallRejected);
 
-  const handleCallEndedRef =
-    useRef(
-      handleCallEnded
-    );
-
+  const handleCallEndedRef = useRef(handleCallEnded);
 
   useEffect(() => {
-
-    handleCallOfferRef.current =
-      handleCallOffer;
-
-  }, [
-    handleCallOffer,
-  ]);
-
+    handleCallOfferRef.current = handleCallOffer;
+  }, [handleCallOffer]);
 
   useEffect(() => {
-
-    handleCallAnswerRef.current =
-      handleCallAnswer;
-
-  }, [
-    handleCallAnswer,
-  ]);
-
+    handleCallAnswerRef.current = handleCallAnswer;
+  }, [handleCallAnswer]);
 
   useEffect(() => {
-
-    handleCallIceCandidateRef.current =
-      handleCallIceCandidate;
-
-  }, [
-    handleCallIceCandidate,
-  ]);
-
+    handleCallIceCandidateRef.current = handleCallIceCandidate;
+  }, [handleCallIceCandidate]);
 
   useEffect(() => {
-
-    handleCallRejectedRef.current =
-      handleCallRejected;
-
-  }, [
-    handleCallRejected,
-  ]);
-
+    handleCallRejectedRef.current = handleCallRejected;
+  }, [handleCallRejected]);
 
   useEffect(() => {
-
-    handleCallEndedRef.current =
-      handleCallEnded;
-
-  }, [
-    handleCallEnded,
-  ]);
-
+    handleCallEndedRef.current = handleCallEnded;
+  }, [handleCallEnded]);
 
   // =======================================================
   // GLOBAL SOCKET INITIALIZATION
   // =======================================================
-  //
-  // ONLY currentUserId and SOCKET_URL can cause this
-  // effect to recreate the socket.
-  //
-  // activeCall DOES NOT.
-  //
-  // callState DOES NOT.
-  //
-  // cleanupCall DOES NOT.
-  //
-  // WebRTC callback changes DO NOT.
-  // =======================================================
 
   useEffect(() => {
-
-    if (
-      !currentUserId
-    ) {
-
-      console.warn(
-        "ZenvaZapp call socket waiting for user ID."
-      );
+    if (!currentUserId) {
+      console.warn("ZenvaZapp call socket waiting for user ID.");
 
       return undefined;
-
     }
 
+    console.log("==========================================");
 
-    console.log(
-      "=========================================="
-    );
+    console.log("ZenvaZapp initializing GLOBAL call socket");
 
-    console.log(
-      "ZenvaZapp initializing GLOBAL call socket"
-    );
+    console.log("User:", currentUserId);
 
-    console.log(
-      "User:",
-      currentUserId
-    );
+    console.log("Server:", SOCKET_URL);
 
-    console.log(
-      "Server:",
-      SOCKET_URL
-    );
+    console.log("==========================================");
 
-    console.log(
-      "=========================================="
-    );
+    const socket = io(SOCKET_URL, {
+      transports: ["websocket", "polling"],
 
+      upgrade: true,
 
-    const socket =
-      io(
-        SOCKET_URL,
-        {
-          transports: [
-            "websocket",
-            "polling",
-          ],
+      reconnection: true,
 
-          upgrade: true,
+      reconnectionAttempts: Infinity,
 
-          reconnection:
-            true,
+      reconnectionDelay: 1000,
 
-          reconnectionAttempts:
-            Infinity,
+      reconnectionDelayMax: 5000,
+    });
 
-          reconnectionDelay:
-            1000,
-
-          reconnectionDelayMax:
-            5000,
-        }
-      );
-
-
-    socketRef.current =
-      socket;
-
+    socketRef.current = socket;
 
     // ===================================================
     // CONNECT
     // ===================================================
 
-    socket.on(
-      "connect",
-      () => {
+    socket.on("connect", () => {
+      console.log("==========================================");
 
-        console.log(
-          "=========================================="
-        );
+      console.log("ZenvaZapp CALL SOCKET CONNECTED");
 
-        console.log(
-          "ZenvaZapp CALL SOCKET CONNECTED"
-        );
+      console.log("Socket ID:", socket.id);
 
-        console.log(
-          "Socket ID:",
-          socket.id
-        );
+      console.log("User ID:", currentUserId);
 
-        console.log(
-          "User ID:",
-          currentUserId
-        );
+      console.log("==========================================");
 
-        console.log(
-          "=========================================="
-        );
-
-
-        /*
-         * Register this browser with the backend.
-         *
-         * The server uses this registration to place
-         * the socket into:
-         *
-         * user:<userId>
-         *
-         * which is how call-offer reaches the other
-         * browser.
-         */
-
-        socket.emit(
-          "register-user",
-          String(
-            currentUserId
-          )
-        );
-
-      }
-    );
-
+      socket.emit("register-user", String(currentUserId));
+    });
 
     // ===================================================
     // RECONNECT
     // ===================================================
 
-    socket.on(
-      "reconnect",
-      (
-        attempt
-      ) => {
+    socket.on("reconnect", (attempt) => {
+      console.log("ZenvaZapp call socket reconnected:", attempt);
 
-        console.log(
-          "ZenvaZapp call socket reconnected:",
-          attempt
-        );
-
-
-        socket.emit(
-          "register-user",
-          String(
-            currentUserId
-          )
-        );
-
-      }
-    );
-
+      socket.emit("register-user", String(currentUserId));
+    });
 
     // ===================================================
     // CALL OFFER
     // ===================================================
 
-    socket.on(
-      "call-offer",
-      (
-        data
-      ) => {
-
-        handleCallOfferRef.current?.(
-          data
-        );
-
-      }
-    );
-
+    socket.on("call-offer", (data) => {
+      handleCallOfferRef.current?.(data);
+    });
 
     // ===================================================
     // CALL ANSWER
     // ===================================================
 
-    socket.on(
-      "call-answer",
-      (
-        data
-      ) => {
-
-        handleCallAnswerRef.current?.(
-          data
-        );
-
-      }
-    );
-
+    socket.on("call-answer", (data) => {
+      handleCallAnswerRef.current?.(data);
+    });
 
     // ===================================================
     // ICE
     // ===================================================
 
-    socket.on(
-      "call-ice-candidate",
-      (
-        data
-      ) => {
-
-        handleCallIceCandidateRef.current?.(
-          data
-        );
-
-      }
-    );
-
+    socket.on("call-ice-candidate", (data) => {
+      handleCallIceCandidateRef.current?.(data);
+    });
 
     // ===================================================
     // REJECTED
     // ===================================================
 
-    socket.on(
-      "call-rejected",
-      (
-        data
-      ) => {
-
-        handleCallRejectedRef.current?.(
-          data
-        );
-
-      }
-    );
-
+    socket.on("call-rejected", (data) => {
+      handleCallRejectedRef.current?.(data);
+    });
 
     // ===================================================
     // ENDED
     // ===================================================
 
-    socket.on(
-      "call-ended",
-      (
-        data
-      ) => {
-
-        handleCallEndedRef.current?.(
-          data
-        );
-
-      }
-    );
-
+    socket.on("call-ended", (data) => {
+      handleCallEndedRef.current?.(data);
+    });
 
     // ===================================================
     // SOCKET ERROR
     // ===================================================
 
-    socket.on(
-      "connect_error",
-      (
-        error
-      ) => {
-
-        console.warn(
-          "ZenvaZapp global call socket error:",
-          error?.message ||
-            error
-        );
-
-      }
-    );
-
+    socket.on("connect_error", (error) => {
+      console.warn(
+        "ZenvaZapp global call socket error:",
+        error?.message || error
+      );
+    });
 
     // ===================================================
     // DISCONNECT
     // ===================================================
 
-    socket.on(
-      "disconnect",
-      (
-        reason
-      ) => {
-
-        console.warn(
-          "ZenvaZapp call socket disconnected:",
-          reason
-        );
-
-      }
-    );
-
+    socket.on("disconnect", (reason) => {
+      console.warn("ZenvaZapp call socket disconnected:", reason);
+    });
 
     // ===================================================
     // CLEANUP
     // ===================================================
 
     return () => {
+      console.log("ZenvaZapp destroying global call socket.");
 
-      console.log(
-        "ZenvaZapp destroying global call socket."
-      );
+      socket.off("call-offer");
 
+      socket.off("call-answer");
 
-      socket.off(
-        "call-offer"
-      );
+      socket.off("call-ice-candidate");
 
-      socket.off(
-        "call-answer"
-      );
+      socket.off("call-rejected");
 
-      socket.off(
-        "call-ice-candidate"
-      );
+      socket.off("call-ended");
 
-      socket.off(
-        "call-rejected"
-      );
+      socket.off("connect");
 
-      socket.off(
-        "call-ended"
-      );
+      socket.off("reconnect");
 
-      socket.off(
-        "connect"
-      );
+      socket.off("connect_error");
 
-      socket.off(
-        "reconnect"
-      );
-
-      socket.off(
-        "connect_error"
-      );
-
-      socket.off(
-        "disconnect"
-      );
-
+      socket.off("disconnect");
 
       socket.disconnect();
 
-
-      if (
-        socketRef.current ===
-        socket
-      ) {
-
-        socketRef.current =
-          null;
-
+      if (socketRef.current === socket) {
+        socketRef.current = null;
       }
-
     };
-
-  }, [
-    SOCKET_URL,
-    currentUserId,
-  ]);
-
+  }, [SOCKET_URL, currentUserId]);
 
   // =======================================================
   // PROVIDER UNMOUNT CLEANUP
   // =======================================================
-  //
-  // IMPORTANT:
-  //
-  // We DO NOT put cleanupCall directly in the dependency
-  // array here.
-  //
-  // cleanupCall changes whenever its dependencies change.
-  // That would allow React to execute the old cleanup during
-  // a normal call-state update.
-  //
-  // The latest cleanup function is stored in a ref instead.
-  // =======================================================
 
-  const cleanupCallRef =
-    useRef(null);
-
+  const cleanupCallRef = useRef(null);
 
   useEffect(() => {
-
-    cleanupCallRef.current =
-      cleanupCall;
-
-  }, [
-    cleanupCall,
-  ]);
-
+    cleanupCallRef.current = cleanupCall;
+  }, [cleanupCall]);
 
   useEffect(() => {
-
     return () => {
-
-      if (
-        cleanupCallRef.current
-      ) {
-
+      if (cleanupCallRef.current) {
         cleanupCallRef.current({
           notifyRemote: true,
         });
-
       }
-
     };
-
   }, []);
-
 
   // =======================================================
   // CONTEXT VALUE
   // =======================================================
 
-  const value =
-    useMemo(
-      () => ({
+  const value = useMemo(
+    () => ({
+      callState,
 
-        callState,
+      callType,
 
-        callType,
+      activeCall,
 
-        activeCall,
+      incomingCall,
 
-        incomingCall,
+      callSeconds,
 
-        callSeconds,
+      callError,
 
-        callError,
+      microphoneEnabled,
 
-        microphoneEnabled,
+      cameraEnabled,
 
-        cameraEnabled,
+      speakerEnabled,
 
-        speakerEnabled,
+      startCall,
 
-        startCall,
+      acceptCall,
 
-        acceptCall,
+      rejectCall,
 
-        rejectCall,
+      endCall: () =>
+        cleanupCall({
+          notifyRemote: true,
+        }),
 
-        endCall: () =>
-          cleanupCall({
-            notifyRemote: true,
-          }),
+      toggleMicrophone,
 
-        toggleMicrophone,
+      toggleCamera,
 
-        toggleCamera,
+      toggleSpeaker,
 
-        toggleSpeaker,
+      shareScreen,
 
-        shareScreen,
-
-        clearCallError:
-          () =>
-            setCallError(""),
-
-      }),
-      [
-        acceptCall,
-        activeCall,
-        callError,
-        callSeconds,
-        callState,
-        callType,
-        cameraEnabled,
-        cleanupCall,
-        incomingCall,
-        microphoneEnabled,
-        rejectCall,
-        shareScreen,
-        speakerEnabled,
-        startCall,
-        toggleCamera,
-        toggleMicrophone,
-        toggleSpeaker,
-      ]
-    );
-
+      clearCallError: () => setCallError(""),
+    }),
+    [
+      acceptCall,
+      activeCall,
+      callError,
+      callSeconds,
+      callState,
+      callType,
+      cameraEnabled,
+      cleanupCall,
+      incomingCall,
+      microphoneEnabled,
+      rejectCall,
+      shareScreen,
+      speakerEnabled,
+      startCall,
+      toggleCamera,
+      toggleMicrophone,
+      toggleSpeaker,
+    ]
+  );
 
   // =======================================================
   // OUTGOING CALL SCREEN
   // =======================================================
 
   const callScreen =
-    callState !== "idle" &&
-    !incomingCall &&
-    activeCall ? (
-
+    callState !== "idle" && !incomingCall && activeCall ? (
       <CallScreen
-
-        callState={
-          callState
-        }
-
-        callType={
-          callType ||
-          activeCall.callType ||
-          "audio"
-        }
-
-        contactName={
-          activeCall.name
-        }
-
-        contactAvatar={
-          activeCall.avatar
-        }
-
-        contactPhoto={
-          activeCall.profilePhoto
-        }
-
-        localVideoRef={
-          localVideoRef
-        }
-
-        remoteVideoRef={
-          remoteVideoRef
-        }
-
-        callSeconds={
-          callSeconds
-        }
-
-        microphoneEnabled={
-          microphoneEnabled
-        }
-
-        cameraEnabled={
-          cameraEnabled
-        }
-
-        speakerEnabled={
-          speakerEnabled
-        }
-
-        onToggleMicrophone={
-          toggleMicrophone
-        }
-
-        onToggleCamera={
-          toggleCamera
-        }
-
-        onToggleSpeaker={
-          toggleSpeaker
-        }
-
-        onShareScreen={
-          shareScreen
-        }
-
+        callState={callState}
+        callType={callType || activeCall.callType || "audio"}
+        contactName={activeCall.name}
+        contactAvatar={activeCall.avatar}
+        contactPhoto={activeCall.profilePhoto}
+        localVideoRef={localVideoRef}
+        remoteVideoRef={remoteVideoRef}
+        remoteAudioRef={remoteAudioRef}
+        callSeconds={callSeconds}
+        microphoneEnabled={microphoneEnabled}
+        cameraEnabled={cameraEnabled}
+        speakerEnabled={speakerEnabled}
+        onToggleMicrophone={toggleMicrophone}
+        onToggleCamera={toggleCamera}
+        onToggleSpeaker={toggleSpeaker}
+        onShareScreen={shareScreen}
         onEndCall={() =>
           cleanupCall({
             notifyRemote: true,
           })
         }
-
       />
-
     ) : null;
-
 
   // =========================================================
   // PROFESSIONAL GLOBAL INCOMING CALL SCREEN
   // =========================================================
-  //
-  // IMPORTANT:
-  //
-  // This UI is rendered by CallManager, not PrivateChat.
-  // It is therefore available regardless of which page
-  // the receiving user is currently viewing.
-  //
-  // The critical styles are intentionally applied inline
-  // so the incoming-call UI cannot disappear behind:
-  //
-  // - PrivateChat
-  // - Contacts
-  // - ChatList
-  // - Tools
-  // - navigation bars
-  // - page overlays
-  // =========================================================
 
-  const incomingScreen =
-    incomingCall ? (
+  const incomingScreen = incomingCall ? (
+    <div
+      className="zenvazapp-incoming-call"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Incoming call"
+      style={{
+        position: "fixed",
+        inset: 0,
+        width: "100vw",
+        height: "100vh",
+        zIndex: 2147483647,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
+        boxSizing: "border-box",
+        background: "rgba(5, 10, 20, 0.78)",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
+      }}
+    >
       <div
-        className="zenvazapp-incoming-call"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Incoming call"
+        className="zenvazapp-incoming-call-card"
         style={{
-          position: "fixed",
-          inset: 0,
-          width: "100vw",
-          height: "100vh",
-          zIndex: 2147483647,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "24px",
+          width: "min(420px, 100%)",
+          maxWidth: "420px",
           boxSizing: "border-box",
-          background:
-            "rgba(5, 10, 20, 0.78)",
-          backdropFilter:
-            "blur(14px)",
-          WebkitBackdropFilter:
-            "blur(14px)",
+          padding: "36px 28px 30px",
+          borderRadius: "28px",
+          background: "rgba(255, 255, 255, 0.98)",
+          boxShadow: "0 30px 90px rgba(0, 0, 0, 0.35)",
+          textAlign: "center",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
         <div
-          className="zenvazapp-incoming-call-card"
           style={{
-            width: "min(420px, 100%)",
-            maxWidth: "420px",
-            boxSizing: "border-box",
-            padding: "36px 28px 30px",
-            borderRadius: "28px",
-            background:
-              "rgba(255, 255, 255, 0.98)",
-            boxShadow:
-              "0 30px 90px rgba(0, 0, 0, 0.35)",
-            textAlign: "center",
-            position: "relative",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "5px",
+            background: "linear-gradient(90deg, #5b21b6, #7c3aed, #8b5cf6)",
+          }}
+        />
+
+        <div
+          className="zenvazapp-incoming-avatar"
+          style={{
+            width: "112px",
+            height: "112px",
+            margin: "0 auto 20px",
+            borderRadius: "50%",
             overflow: "hidden",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "42px",
+            fontWeight: "700",
+            background: "linear-gradient(135deg, #7c3aed, #4f46e5)",
+            color: "#ffffff",
+            boxShadow: "0 12px 35px rgba(79, 70, 229, 0.30)",
           }}
         >
-          {/* ==========================================
-              CALL INDICATOR
-              ========================================== */}
+          {incomingCall.callerAvatar &&
+          String(incomingCall.callerAvatar).startsWith("http") ? (
+            <img
+              src={incomingCall.callerAvatar}
+              alt={incomingCall.callerName || "Caller"}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+          ) : (
+            incomingCall.callerAvatar ||
+            (incomingCall.callerName || "Z").charAt(0).toUpperCase()
+          )}
+        </div>
 
-          <div
+        <p
+          style={{
+            margin: "0 0 8px",
+            fontSize: "14px",
+            fontWeight: "600",
+            letterSpacing: "0.04em",
+            textTransform: "uppercase",
+            color: "#7c3aed",
+          }}
+        >
+          Incoming {incomingCall.callType === "video" ? "video" : "voice"} call
+        </p>
+
+        <h2
+          style={{
+            margin: "0",
+            fontSize: "28px",
+            lineHeight: "1.2",
+            fontWeight: "700",
+            color: "#111827",
+          }}
+        >
+          {incomingCall.callerName || "ZenvaZapp User"}
+        </h2>
+
+        <p
+          style={{
+            margin: "10px 0 28px",
+            fontSize: "14px",
+            color: "#6b7280",
+          }}
+        >
+          {incomingCall.callType === "video" ? "Video call" : "Voice call"} is
+          waiting for you
+        </p>
+
+        <div
+          className="zenvazapp-incoming-actions"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "18px",
+          }}
+        >
+          <button
+            type="button"
+            className="zenvazapp-incoming-reject"
+            onClick={rejectCall}
+            aria-label="Decline call"
             style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: "5px",
-              background:
-                "linear-gradient(90deg, #5b21b6, #7c3aed, #8b5cf6)",
-            }}
-          />
-
-          {/* ==========================================
-              CALLER AVATAR
-              ========================================== */}
-
-          <div
-            className="zenvazapp-incoming-avatar"
-            style={{
-              width: "112px",
-              height: "112px",
-              margin: "0 auto 20px",
-              borderRadius: "50%",
-              overflow: "hidden",
+              width: "110px",
+              minHeight: "58px",
+              border: "none",
+              borderRadius: "18px",
+              background: "#fee2e2",
+              color: "#dc2626",
+              fontSize: "15px",
+              fontWeight: "700",
+              cursor: "pointer",
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "42px",
+              gap: "3px",
+            }}
+          >
+            <span style={{ fontSize: "24px", lineHeight: 1 }}>✕</span>
+            <span>Decline</span>
+          </button>
+
+          <button
+            type="button"
+            className="zenvazapp-incoming-accept"
+            onClick={acceptCall}
+            aria-label="Accept call"
+            style={{
+              width: "110px",
+              minHeight: "58px",
+              border: "none",
+              borderRadius: "18px",
+              background: "#dcfce7",
+              color: "#16a34a",
+              fontSize: "15px",
               fontWeight: "700",
-              background:
-                "linear-gradient(135deg, #7c3aed, #4f46e5)",
-              color: "#ffffff",
-              boxShadow:
-                "0 12px 35px rgba(79, 70, 229, 0.30)",
-            }}
-          >
-            {incomingCall.callerAvatar &&
-            String(
-              incomingCall.callerAvatar
-            ).startsWith("http") ? (
-              <img
-                src={
-                  incomingCall.callerAvatar
-                }
-                alt={
-                  incomingCall.callerName ||
-                  "Caller"
-                }
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  display: "block",
-                }}
-              />
-            ) : (
-              (
-                incomingCall.callerAvatar ||
-                (
-                  incomingCall.callerName ||
-                  "Z"
-                )
-                  .charAt(0)
-                  .toUpperCase()
-              )
-            )}
-          </div>
-
-          {/* ==========================================
-              CALL TYPE
-              ========================================== */}
-
-          <p
-            style={{
-              margin: "0 0 8px",
-              fontSize: "14px",
-              fontWeight: "600",
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
-              color: "#7c3aed",
-            }}
-          >
-            Incoming{" "}
-            {incomingCall.callType ===
-            "video"
-              ? "video"
-              : "voice"}{" "}
-            call
-          </p>
-
-          {/* ==========================================
-              CALLER NAME
-              ========================================== */}
-
-          <h2
-            style={{
-              margin: "0",
-              fontSize: "28px",
-              lineHeight: "1.2",
-              fontWeight: "700",
-              color: "#111827",
-            }}
-          >
-            {incomingCall.callerName ||
-              "ZenvaZapp User"}
-          </h2>
-
-          <p
-            style={{
-              margin:
-                "10px 0 28px",
-              fontSize: "14px",
-              color: "#6b7280",
-            }}
-          >
-            {incomingCall.callType ===
-            "video"
-              ? "Video call"
-              : "Voice call"}{" "}
-            is waiting for you
-          </p>
-
-          {/* ==========================================
-              ACTIONS
-              ========================================== */}
-
-          <div
-            className="zenvazapp-incoming-actions"
-            style={{
+              cursor: "pointer",
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: "18px",
+              gap: "3px",
             }}
           >
-            {/* DECLINE */}
-
-            <button
-              type="button"
-              className="zenvazapp-incoming-reject"
-              onClick={
-                rejectCall
-              }
-              aria-label="Decline call"
-              style={{
-                width: "110px",
-                minHeight: "58px",
-                border: "none",
-                borderRadius: "18px",
-                background:
-                  "#fee2e2",
-                color: "#dc2626",
-                fontSize: "15px",
-                fontWeight: "700",
-                cursor: "pointer",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "3px",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: "24px",
-                  lineHeight: 1,
-                }}
-              >
-                ✕
-              </span>
-
-              <span>
-                Decline
-              </span>
-            </button>
-
-            {/* ACCEPT */}
-
-            <button
-              type="button"
-              className="zenvazapp-incoming-accept"
-              onClick={
-                acceptCall
-              }
-              aria-label="Accept call"
-              style={{
-                width: "110px",
-                minHeight: "58px",
-                border: "none",
-                borderRadius: "18px",
-                background:
-                  "#dcfce7",
-                color: "#16a34a",
-                fontSize: "15px",
-                fontWeight: "700",
-                cursor: "pointer",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "3px",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: "24px",
-                  lineHeight: 1,
-                }}
-              >
-                ✓
-              </span>
-
-              <span>
-                Accept
-              </span>
-            </button>
-          </div>
+            <span style={{ fontSize: "24px", lineHeight: 1 }}>✓</span>
+            <span>Accept</span>
+          </button>
         </div>
       </div>
-    ) : null;
+    </div>
+  ) : null;
+
   // =======================================================
   // RENDER
   // =======================================================
 
   return (
-
-    <CallContext.Provider
-      value={
-        value
-      }
-    >
-
+    <CallContext.Provider value={value}>
       {children}
-
 
       {callScreen}
 
-
       {incomingScreen}
 
+      {callError && callState !== "idle" && (
+        <div className="zenvazapp-call-error">
+          <span>{callError}</span>
 
-      {callError &&
-        callState !== "idle" && (
-
-          <div
-            className="zenvazapp-call-error"
+          <button
+            type="button"
+            onClick={() => setCallError("")}
+            aria-label="Dismiss call error"
           >
-
-            <span>
-              {callError}
-            </span>
-
-
-            <button
-              type="button"
-              onClick={() =>
-                setCallError("")
-              }
-              aria-label="Dismiss call error"
-            >
-              ×
-            </button>
-
-          </div>
-
-        )}
-
+            ×
+          </button>
+        </div>
+      )}
     </CallContext.Provider>
-
   );
 }
-
 
 // =========================================================
 // HOOK
 // =========================================================
 
 export function useCall() {
-
-  const context =
-    useContext(
-      CallContext
-    );
-
+  const context = useContext(CallContext);
 
   if (!context) {
-
-    throw new Error(
-      "useCall must be used inside CallProvider."
-    );
-
+    throw new Error("useCall must be used inside CallProvider.");
   }
-
 
   return context;
 }
-
 
 export default CallProvider;

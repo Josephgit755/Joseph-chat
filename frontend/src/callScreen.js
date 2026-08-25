@@ -46,6 +46,7 @@ function CallScreen({
 
   localVideoRef,
   remoteVideoRef,
+  remoteAudioRef,
 
   callSeconds = 0,
 
@@ -139,6 +140,7 @@ function CallScreen({
       setShowMoreControls(
         false
       );
+
       setIsSharingScreen(
         false
       );
@@ -166,8 +168,23 @@ function CallScreen({
     >
 
       {/* =====================================
+          REMOTE AUDIO
+          ===================================== */}
+
+      {!isVideoCall && (
+        <audio
+          ref={remoteAudioRef}
+          autoPlay
+          playsInline
+          muted={!speakerEnabled}
+          className="zenvazapp-call-remote-audio"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* =====================================
           VIDEO BACKGROUND
-      ===================================== */}
+          ===================================== */}
 
       {isVideoCall && (
         <div className="zenvazapp-call-video-stage">
@@ -181,7 +198,9 @@ function CallScreen({
 
           {!cameraEnabled && (
             <div className="zenvazapp-call-video-disabled">
+
               <div className="zenvazapp-call-video-avatar">
+
                 {contactPhoto ? (
                   <img
                     src={contactPhoto}
@@ -193,11 +212,13 @@ function CallScreen({
                     .charAt(0)
                     .toUpperCase()
                 )}
+
               </div>
 
               <span>
                 Camera off
               </span>
+
             </div>
           )}
 
@@ -230,7 +251,7 @@ function CallScreen({
 
       {/* =====================================
           AUDIO BACKGROUND
-      ===================================== */}
+          ===================================== */}
 
       {!isVideoCall && (
         <div className="zenvazapp-call-audio-stage">
@@ -258,7 +279,7 @@ function CallScreen({
 
       {/* =====================================
           TOP INFORMATION
-      ===================================== */}
+          ===================================== */}
 
       <header className="zenvazapp-call-top">
 
@@ -281,6 +302,7 @@ function CallScreen({
           </div>
 
           <div>
+
             <h1>
               {contactName}
             </h1>
@@ -288,6 +310,7 @@ function CallScreen({
             <p>
               {statusText}
             </p>
+
           </div>
 
         </div>
@@ -302,7 +325,7 @@ function CallScreen({
 
       {/* =====================================
           AUDIO INFORMATION
-      ===================================== */}
+          ===================================== */}
 
       {!isVideoCall && (
         <div className="zenvazapp-call-audio-info">
@@ -324,7 +347,7 @@ function CallScreen({
 
       {/* =====================================
           MORE MENU
-      ===================================== */}
+          ===================================== */}
 
       {showMoreControls && (
         <div className="zenvazapp-call-more-menu">
@@ -370,7 +393,7 @@ function CallScreen({
 
       {/* =====================================
           CALL CONTROLS
-      ===================================== */}
+          ===================================== */}
 
       <div
         className="zenvazapp-call-controls"
