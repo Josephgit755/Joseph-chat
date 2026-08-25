@@ -48,6 +48,8 @@ function CallScreen({
   remoteVideoRef,
   remoteAudioRef,
 
+  remoteStream = null,
+
   callSeconds = 0,
 
   microphoneEnabled = true,
@@ -90,6 +92,168 @@ function CallScreen({
       : isConnected
       ? formatDuration(callSeconds)
       : "Call";
+
+  /*
+   * =====================================================
+   * ATTACH REMOTE MEDIA
+   * =====================================================
+   *
+   * The remote WebRTC track can arrive before React has
+   * finished rendering the audio/video element.
+   *
+   * Therefore we attach the stream whenever the component
+   * receives a remoteStream AND whenever the call state
+   * changes.
+   */
+
+  useEffect(() => {
+    if (!remoteStream) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const attachMedia = async () => {
+      try {
+        if (
+          remoteAudioRef?.current &&
+          !isVideoCall
+        ) {
+          remoteAudioRef.current.srcObject =
+            remoteStream;
+
+          remoteAudioRef.current.muted =
+            !speakerEnabled;
+
+          if (!cancelled) {
+            try {
+              await remoteAudioRef.current.play();
+            } catch (error) {
+              console.warn(
+                "ZenvaZapp remote audio autoplay was blocked:",
+                error
+              );
+            }
+          }
+        }
+
+        if (
+          remoteVideoRef?.current &&
+          isVideoCall
+        ) {
+          remoteVideoRef.current.srcObject =
+            remoteStream;
+
+          remoteVideoRef.current.muted =
+            !speakerEnabled;
+
+          if (!cancelled) {
+            try {
+              await remoteVideoRef.current.play();
+            } catch (error) {
+              console.warn(
+                "ZenvaZapp remote video autoplay was blocked:",
+                error
+              );
+            }
+          }
+        }
+      } catch (error) {
+        console.warn(
+          "ZenvaZapp remote media attachment failed:",
+          error
+        );
+      }
+    };
+
+    /*
+     * Give React one render cycle to ensure the media
+     * element exists before attaching the stream.
+     */
+    const frame = requestAnimationFrame(
+      attachMedia
+    );
+
+    return () => {
+      cancelled = true;
+
+      cancelAnimationFrame(frame);
+    };
+  }, [
+    remoteStream,
+    remoteAudioRef,
+    remoteVideoRef,
+    isVideoCall,
+    speakerEnabled,
+    callState,
+  ]);
+
+  /*
+   * =====================================================
+   * KEEP REMOTE AUDIO/VIDEO READY
+   * =====================================================
+   */
+
+  useEffect(() => {
+    if (
+      remoteAudioRef?.current &&
+      remoteStream &&
+      !isVideoCall
+    ) {
+      remoteAudioRef.current.srcObject =
+        remoteStream;
+
+      remoteAudioRef.current.muted =
+        !speakerEnabled;
+    }
+
+    if (
+      remoteVideoRef?.current &&
+      remoteStream &&
+      isVideoCall
+    ) {
+      remoteVideoRef.current.srcObject =
+        remoteStream;
+
+      remoteVideoRef.current.muted =
+        !speakerEnabled;
+    }
+  }, [
+    remoteStream,
+    isVideoCall,
+    speakerEnabled,
+    remoteAudioRef,
+    remoteVideoRef,
+  ]);
+
+  /*
+   * =====================================================
+   * LOCAL VIDEO
+   * =====================================================
+   */
+
+  useEffect(() => {
+    if (
+      !localVideoRef?.current
+    ) {
+      return;
+    }
+
+    try {
+      localVideoRef.current.play().catch(
+        () => {}
+      );
+    } catch (error) {
+      console.warn(
+        "ZenvaZapp local video playback failed:",
+        error
+      );
+    }
+  }, [
+    localVideoRef,
+    cameraEnabled,
+    callState,
+  ]);
 
   const handleScreenShare =
     async () => {
@@ -177,6 +341,7 @@ function CallScreen({
           autoPlay
           playsInline
           muted={!speakerEnabled}
+          controls={false}
           className="zenvazapp-call-remote-audio"
           aria-hidden="true"
         />
@@ -193,6 +358,7 @@ function CallScreen({
             ref={remoteVideoRef}
             autoPlay
             playsInline
+            muted={!speakerEnabled}
             className="zenvazapp-call-remote-video"
           />
 
