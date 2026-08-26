@@ -2324,8 +2324,8 @@ export function CallProvider({ user, children }) {
 
           await flushPendingIceCandidates();
 
-          setCallState(
-            "connecting"
+          console.log(
+            "ZenvaZapp answer applied. Waiting for WebRTC connection state."
           );
 
           requestAnimationFrame(
@@ -2358,169 +2358,81 @@ export function CallProvider({ user, children }) {
   // =======================================================
   // CALL ICE CANDIDATE
   // =======================================================
-  //
-  // IMPORTANT:
-  //
-  // ICE candidates can arrive BEFORE the receiver presses
-  // Accept. In that situation there is intentionally no
-  // RTCPeerConnection yet.
-  //
-  // NEVER discard the candidate.
-  //
-  // Queue it first, then flush it after:
-  // 1. The receiver accepts the call.
-  // 2. The peer connection is created.
-  // 3. The remote offer has been applied.
-  //
-  // This is especially important on real phones/networks.
-  // =======================================================
-  const handleCallIceCandidate =
-    useCallback(
-      async (data) => {
 
-        if (!data?.candidate) {
-          return;
-        }
+  const handleCallIceCandidate = useCallback(
+    async (data) => {
+      if (!data?.candidate) {
+        return;
+      }
 
-        const senderId =
-          data.senderUserId ||
-          data.callerId ||
-          data.receiverId;
+      const senderId =
+        data.senderUserId ||
+        data.callerId ||
+        data.receiverId;
 
-        const targetId =
-          data.targetUserId ||
-          data.receiverId ||
-          data.callerId;
+      const targetId =
+        data.targetUserId ||
+        data.receiverId ||
+        data.callerId;
 
-        // ---------------------------------------------------
-        // THIS ICE PACKET MUST BE FOR THIS USER
-        // ---------------------------------------------------
+      // Ignore candidates that clearly belong to another call.
+      if (
+        senderId &&
+        targetId &&
+        String(targetId) !== String(currentUserId) &&
+        String(senderId) !== String(currentUserId)
+      ) {
+        return;
+      }
 
-        if (
-          targetId &&
-          String(targetId) !==
-            String(currentUserId)
-        ) {
-          return;
-        }
+      /*
+       * IMPORTANT:
+       * ICE candidates can arrive before the receiver
+       * accepts the call and before RTCPeerConnection exists.
+       *
+       * NEVER discard them.
+       */
+      const peerConnection = peerConnectionRef.current;
 
-        // ---------------------------------------------------
-        // NEVER ACCEPT OUR OWN ICE CANDIDATE
-        // ---------------------------------------------------
-
-        if (
-          senderId &&
-          String(senderId) ===
-            String(currentUserId)
-        ) {
-          return;
-        }
-
+      if (!peerConnection) {
         console.log(
-          "ZenvaZapp received ICE candidate:",
-          {
-            senderId,
-            targetId,
-            hasPeerConnection:
-              Boolean(
-                peerConnectionRef.current
-              ),
-            hasRemoteDescription:
-              Boolean(
-                peerConnectionRef.current
-                  ?.remoteDescription
-              ),
-          }
+          "ZenvaZapp queued ICE candidate because peer connection is not ready."
         );
 
-        const peerConnection =
-          peerConnectionRef.current;
+        pendingIceCandidatesRef.current.push(data.candidate);
 
-        // ---------------------------------------------------
-        // PEER DOES NOT EXIST YET
-        // ---------------------------------------------------
-        //
-        // This is normal while the incoming-call screen is
-        // waiting for the user to press Accept.
-        //
-        // QUEUE THE CANDIDATE.
-        // ---------------------------------------------------
+        return;
+      }
 
-        if (!peerConnection) {
+      const candidate = new RTCIceCandidate(data.candidate);
 
-          console.log(
-            "ZenvaZapp queueing ICE candidate: peer connection not created yet."
-          );
-
-          pendingIceCandidatesRef.current.push(
-            data.candidate
-          );
-
-          return;
-        }
-
-        // ---------------------------------------------------
-        // PEER EXISTS BUT REMOTE OFFER HAS NOT BEEN APPLIED
-        // ---------------------------------------------------
-        //
-        // addIceCandidate() must wait until the remote
-        // description exists.
-        // ---------------------------------------------------
-
-        if (
-          !peerConnection.remoteDescription
-        ) {
-
-          console.log(
-            "ZenvaZapp queueing ICE candidate: remote description not ready."
-          );
-
-          pendingIceCandidatesRef.current.push(
-            data.candidate
-          );
-
-          return;
-        }
-
-        // ---------------------------------------------------
-        // PEER + REMOTE DESCRIPTION READY
-        // ---------------------------------------------------
-
+      if (
+        peerConnection.remoteDescription &&
+        peerConnection.remoteDescription.type
+      ) {
         try {
-
-          await peerConnection.addIceCandidate(
-            new RTCIceCandidate(
-              data.candidate
-            )
-          );
+          await peerConnection.addIceCandidate(candidate);
 
           console.log(
-            "ZenvaZapp ICE candidate added successfully."
+            "ZenvaZapp added remote ICE candidate."
           );
-
         } catch (error) {
-
           console.warn(
-            "ZenvaZapp unable to add ICE candidate:",
+            "Unable to add ICE candidate:",
             error
           );
-
-          // -------------------------------------------------
-          // SAFETY FALLBACK
-          // -------------------------------------------------
-          //
-          // If the browser temporarily rejects the candidate
-          // because signaling is still settling, keep it so
-          // flushPendingIceCandidates() can retry it.
-          // -------------------------------------------------
-
-          pendingIceCandidatesRef.current.push(
-            data.candidate
-          );
         }
-      },
-      [currentUserId]
-    );
+      } else {
+        console.log(
+          "ZenvaZapp queued ICE candidate until remote description is ready."
+        );
+
+        pendingIceCandidatesRef.current.push(data.candidate);
+      }
+    },
+    [currentUserId]
+  );
+
   // =======================================================
   // CALL REJECTED
   // =======================================================
