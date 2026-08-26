@@ -1198,7 +1198,7 @@ export function CallProvider({ user, children }) {
 
     }, []);
 
-  // =======================================================
+ // =======================================================
   // CLEANUP CALL
   // =======================================================
 
@@ -1239,24 +1239,28 @@ export function CallProvider({ user, children }) {
           socket?.connected &&
           call?.otherUserId
         ) {
-          socket.emit(
-            "call-ended",
-            {
-              conversationId:
-                call.conversationId ||
-                "",
+          socket.emit("call-ended", {
+            conversationId:
+              call.conversationId || "",
 
-              senderUserId:
-                String(
-                  currentUserId
-                ),
+            senderUserId:
+              String(currentUserId),
 
-              targetUserId:
-                String(
-                  call.otherUserId
-                ),
-            }
-          );
+            targetUserId:
+              String(call.otherUserId),
+
+            callerId:
+              String(
+                call.callerId ||
+                currentUserId
+              ),
+
+            receiverId:
+              String(
+                call.receiverId ||
+                call.otherUserId
+              ),
+          });
         }
 
         // ===============================================
@@ -2354,19 +2358,27 @@ export function CallProvider({ user, children }) {
   // =======================================================
   // CALL ICE CANDIDATE
   // =======================================================
-
+  //
+  // IMPORTANT:
+  //
+  // ICE candidates can arrive BEFORE the receiver presses
+  // Accept. In that situation there is intentionally no
+  // RTCPeerConnection yet.
+  //
+  // NEVER discard the candidate.
+  //
+  // Queue it first, then flush it after:
+  // 1. The receiver accepts the call.
+  // 2. The peer connection is created.
+  // 3. The remote offer has been applied.
+  //
+  // This is especially important on real phones/networks.
+  // =======================================================
   const handleCallIceCandidate =
     useCallback(
       async (data) => {
 
         if (!data?.candidate) {
-          return;
-        }
-
-        const peerConnection =
-          peerConnectionRef.current;
-
-        if (!peerConnection) {
           return;
         }
 
@@ -2380,52 +2392,135 @@ export function CallProvider({ user, children }) {
           data.receiverId ||
           data.callerId;
 
+        // ---------------------------------------------------
+        // THIS ICE PACKET MUST BE FOR THIS USER
+        // ---------------------------------------------------
+
         if (
-          senderId &&
           targetId &&
           String(targetId) !==
-            String(currentUserId) &&
-          String(senderId) !==
             String(currentUserId)
         ) {
           return;
         }
 
-        const candidate =
-          new RTCIceCandidate(
+        // ---------------------------------------------------
+        // NEVER ACCEPT OUR OWN ICE CANDIDATE
+        // ---------------------------------------------------
+
+        if (
+          senderId &&
+          String(senderId) ===
+            String(currentUserId)
+        ) {
+          return;
+        }
+
+        console.log(
+          "ZenvaZapp received ICE candidate:",
+          {
+            senderId,
+            targetId,
+            hasPeerConnection:
+              Boolean(
+                peerConnectionRef.current
+              ),
+            hasRemoteDescription:
+              Boolean(
+                peerConnectionRef.current
+                  ?.remoteDescription
+              ),
+          }
+        );
+
+        const peerConnection =
+          peerConnectionRef.current;
+
+        // ---------------------------------------------------
+        // PEER DOES NOT EXIST YET
+        // ---------------------------------------------------
+        //
+        // This is normal while the incoming-call screen is
+        // waiting for the user to press Accept.
+        //
+        // QUEUE THE CANDIDATE.
+        // ---------------------------------------------------
+
+        if (!peerConnection) {
+
+          console.log(
+            "ZenvaZapp queueing ICE candidate: peer connection not created yet."
+          );
+
+          pendingIceCandidatesRef.current.push(
             data.candidate
           );
 
+          return;
+        }
+
+        // ---------------------------------------------------
+        // PEER EXISTS BUT REMOTE OFFER HAS NOT BEEN APPLIED
+        // ---------------------------------------------------
+        //
+        // addIceCandidate() must wait until the remote
+        // description exists.
+        // ---------------------------------------------------
+
         if (
-          peerConnection.remoteDescription
+          !peerConnection.remoteDescription
         ) {
 
-          try {
+          console.log(
+            "ZenvaZapp queueing ICE candidate: remote description not ready."
+          );
 
-            await peerConnection.addIceCandidate(
-              candidate
-            );
+          pendingIceCandidatesRef.current.push(
+            data.candidate
+          );
 
-          } catch (error) {
+          return;
+        }
 
-            console.warn(
-              "Unable to add ICE candidate:",
-              error
-            );
+        // ---------------------------------------------------
+        // PEER + REMOTE DESCRIPTION READY
+        // ---------------------------------------------------
 
-          }
+        try {
 
-        } else {
+          await peerConnection.addIceCandidate(
+            new RTCIceCandidate(
+              data.candidate
+            )
+          );
+
+          console.log(
+            "ZenvaZapp ICE candidate added successfully."
+          );
+
+        } catch (error) {
+
+          console.warn(
+            "ZenvaZapp unable to add ICE candidate:",
+            error
+          );
+
+          // -------------------------------------------------
+          // SAFETY FALLBACK
+          // -------------------------------------------------
+          //
+          // If the browser temporarily rejects the candidate
+          // because signaling is still settling, keep it so
+          // flushPendingIceCandidates() can retry it.
+          // -------------------------------------------------
 
           pendingIceCandidatesRef.current.push(
             data.candidate
           );
         }
-
       },
       [currentUserId]
     );
-
   // =======================================================
   // CALL REJECTED
   // =======================================================
@@ -2469,52 +2564,195 @@ export function CallProvider({ user, children }) {
   // =======================================================
   // CALL ENDED
   // =======================================================
+  // IMPORTANT:
+  //
+  // The global CallManager must only terminate the call when
+  // the incoming event belongs to the exact active call.
+  //
+  // We verify:
+  // 1. The event is from the other participant.
+  // 2. The event targets the current user.
+  // 3. The conversation matches the active call when available.
+  // 4. The active call is actually in progress.
+  //
+  // The remote side cleans up locally with
+  // notifyRemote: false so we do NOT create an endless
+  // call-ended loop.
+  // =======================================================
+  const handleCallEnded = useCallback(
+    (data) => {
+      if (!data) {
+        return;
+      }
 
-  const handleCallEnded =
-    useCallback(
-      (data) => {
+      const activeCallNow =
+        activeCallRef.current;
 
-        if (!data) {
-          return;
-        }
+      const activeState =
+        callStateRef.current;
 
-        const senderId =
-          data.senderUserId ||
-          data.callerId;
+      const senderId =
+        data.senderUserId ||
+        data.callerId;
 
-        const targetId =
-          data.targetUserId ||
-          data.receiverId;
+      const targetId =
+        data.targetUserId ||
+        data.receiverId;
 
-        const relevant =
-          String(senderId) ===
-            String(
-              currentUserId
-            ) ||
-          String(targetId) ===
-            String(
-              currentUserId
-            );
+      const eventConversationId =
+        data.conversationId || "";
 
-        if (!relevant) {
-          return;
-        }
+      const activeConversationId =
+        activeCallNow?.conversationId || "";
 
-        console.log(
-          "ZenvaZapp remote user ended the call."
+      const activeOtherUserId =
+        activeCallNow?.otherUserId || "";
+
+      // ---------------------------------------------------
+      // BASIC VALIDATION
+      // ---------------------------------------------------
+
+      if (
+        !senderId ||
+        !targetId
+      ) {
+        console.warn(
+          "ZenvaZapp ignored call-ended event: missing participant IDs.",
+          data
         );
 
-        cleanupCall({
-          notifyRemote:
-            false,
-        });
+        return;
+      }
 
-      },
-      [
-        cleanupCall,
-        currentUserId,
-      ]
-    );
+      // ---------------------------------------------------
+      // EVENT MUST TARGET THIS USER
+      // ---------------------------------------------------
+
+      if (
+        String(targetId) !==
+        String(currentUserId)
+      ) {
+        return;
+      }
+
+      // ---------------------------------------------------
+      // EVENT MUST COME FROM THE OTHER USER
+      // ---------------------------------------------------
+
+      if (
+        String(senderId) ===
+        String(currentUserId)
+      ) {
+        return;
+      }
+
+      // ---------------------------------------------------
+      // THERE MUST BE AN ACTIVE CALL
+      // ---------------------------------------------------
+
+      const hasActiveCall =
+        activeState !== "idle" &&
+        Boolean(
+          activeCallNow ||
+          incomingCall
+        );
+
+      if (!hasActiveCall) {
+        console.log(
+          "ZenvaZapp ignored call-ended event: no active call."
+        );
+
+        return;
+      }
+
+      // ---------------------------------------------------
+      // VERIFY THE REMOTE PARTICIPANT
+      // ---------------------------------------------------
+
+      if (
+        activeOtherUserId &&
+        String(activeOtherUserId) !==
+          String(senderId)
+      ) {
+        console.warn(
+          "ZenvaZapp ignored call-ended event: wrong remote participant.",
+          {
+            activeOtherUserId,
+            senderId,
+          }
+        );
+
+        return;
+      }
+
+      // ---------------------------------------------------
+      // VERIFY CONVERSATION WHEN BOTH SIDES HAVE IT
+      // ---------------------------------------------------
+
+      if (
+        activeConversationId &&
+        eventConversationId &&
+        String(activeConversationId) !==
+          String(eventConversationId)
+      ) {
+        console.warn(
+          "ZenvaZapp ignored call-ended event: conversation mismatch.",
+          {
+            activeConversationId,
+            eventConversationId,
+          }
+        );
+
+        return;
+      }
+
+      console.log(
+        "=========================================="
+      );
+
+      console.log(
+        "ZenvaZapp REMOTE CALL ENDED"
+      );
+
+      console.log(
+        "Remote user:",
+        senderId
+      );
+
+      console.log(
+        "Current user:",
+        currentUserId
+      );
+
+      console.log(
+        "Conversation:",
+        eventConversationId ||
+          activeConversationId ||
+          "unknown"
+      );
+
+      console.log(
+        "=========================================="
+      );
+
+      // ---------------------------------------------------
+      // IMPORTANT:
+      //
+      // Do NOT notify the remote user again.
+      //
+      // The remote user already ended the call.
+      // ---------------------------------------------------
+
+      cleanupCall({
+        notifyRemote: false,
+      });
+    },
+    [
+      cleanupCall,
+      currentUserId,
+      incomingCall,
+    ]
+  );
 
   // =======================================================
   // INCOMING CALL
