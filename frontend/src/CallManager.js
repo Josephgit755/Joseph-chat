@@ -467,60 +467,156 @@ export function CallProvider({ user, children }) {
   const attachRemoteStream =
     useCallback(() => {
 
-      const stream =
-        remoteStreamRef.current;
+     const stream =
+       remoteStreamRef.current;
 
       if (!stream) {
+       console.warn(
+         "ZenvaZapp cannot attach remote media: no remote stream."
+        );
+
         return;
       }
 
-      // =========================================
-      // VIDEO CALL
-      // =========================================
+      const audioTracks =
+       stream.getAudioTracks();
+
+      const videoTracks =
+       stream.getVideoTracks();
+
+      console.log(
+       "=========================================="
+      );
+
+      console.log(
+       "ZenvaZapp ATTACHING REMOTE MEDIA"
+      );
+
+      console.log(
+       "Remote audio tracks:",
+       audioTracks.length
+      );
+
+      console.log(
+       "Remote video tracks:",
+       videoTracks.length
+      );
+
+      console.log(
+       "=========================================="
+      );
+
+      // =================================================
+      // REMOTE VIDEO
+      // =================================================
 
       if (
-        remoteVideoRef.current
+       remoteVideoRef.current &&
+        videoTracks.length > 0
       ) {
-        remoteVideoRef.current.srcObject =
+
+        const video =
+         remoteVideoRef.current;
+
+        if (
+         video.srcObject !==
+         stream
+        ) {
+          video.srcObject =
           stream;
+        }
 
-        remoteVideoRef.current.muted =
-          !speakerEnabled;
+        video.autoplay = true;
+        video.playsInline = true;
 
-        remoteVideoRef.current
-          .play()
-          .catch((error) => {
-            console.warn(
-              "Unable to play remote video:",
-              error
-            );
-          });
+        video.muted = false;
+
+        video.volume = 1;
+
+        const playVideo =
+         () => {
+           video
+             .play()
+             .then(() => {
+               console.log(
+                 "ZenvaZapp remote VIDEO playback started."
+                );
+              })
+              .catch((error) => {
+               console.warn(
+                 "ZenvaZapp remote video playback waiting for browser permission:",
+                 error
+                );
+              });
+          };
+
+        if (
+         video.readyState >= 2
+        ) {
+         playVideo();
+        } else {
+         video.onloadedmetadata =
+          playVideo;
+        }
       }
 
-      // =========================================
-      // VOICE CALL
-      // =========================================
+      // =================================================
+      // REMOTE AUDIO
+      // =================================================
 
       if (
-        remoteAudioRef.current
+       remoteAudioRef.current &&
+       audioTracks.length > 0
       ) {
-        remoteAudioRef.current.srcObject =
+
+       const audio =
+        remoteAudioRef.current;
+
+       if (
+         audio.srcObject !==
+         stream
+        ) {
+         audio.srcObject =
           stream;
+        }
 
-        remoteAudioRef.current.muted =
-          !speakerEnabled;
+        audio.autoplay = true;
 
-        remoteAudioRef.current
-          .play()
-          .catch((error) => {
-            console.warn(
-              "Unable to play remote audio:",
-              error
-            );
-          });
+        audio.muted =
+         !speakerEnabled;
+
+        audio.volume = 1;
+
+        const playAudio =
+         () => {
+           audio
+            .play()
+             .then(() => {
+               console.log(
+                 "ZenvaZapp remote AUDIO playback started."
+                );
+              })
+              .catch((error) => {
+               console.warn(
+                 "ZenvaZapp remote audio playback waiting for browser permission:",
+                 error
+                );
+              });
+          };
+
+        if (
+         audio.readyState >= 2
+        ) {
+          playAudio();
+        } else {
+          audio.onloadedmetadata =
+           playAudio;
+        }
       }
 
-    }, [speakerEnabled]);
+    }, [
+      speakerEnabled,
+    ]);
 
   // =======================================================
   // REATTACH REMOTE MEDIA WHEN COMPONENT RENDERS
@@ -762,80 +858,140 @@ export function CallProvider({ user, children }) {
             );
           };
 
-        // ===============================================
-        // REMOTE TRACK
-        // ===============================================
+       // ===============================================
+       // REMOTE TRACK
+       // ===============================================
 
-        peerConnection.ontrack =
-          (event) => {
+        peerConnection.ontrack = (event) => {
+         const track = event.track;
 
-            console.log(
-              "ZenvaZapp remote WebRTC track received:",
-              event.track?.kind
+         if (!track) {
+           console.warn(
+             "ZenvaZapp WebRTC received an empty remote track."
             );
 
-            if (
-              !remoteStreamRef.current
-            ) {
-              remoteStreamRef.current =
-                new MediaStream();
-            }
+            return;
+          }
 
-            const existingTrack =
-              remoteStreamRef.current
-                .getTracks()
-                .find(
-                  (track) =>
-                    track.id ===
-                    event.track.id
-                );
+          console.log(
+            "=========================================="
+          );
 
-            if (
-              !existingTrack
-            ) {
-              remoteStreamRef.current.addTrack(
-                event.track
+          console.log(
+           "ZenvaZapp REMOTE TRACK RECEIVED"
+          );
+
+          console.log(
+            "Track kind:",
+           track.kind
+          );
+
+          console.log(
+            "Track ID:",
+           track.id
+          );
+
+          console.log(
+            "Track enabled:",
+           track.enabled
+          );
+
+          console.log(
+            "Track readyState:",
+           track.readyState
+          );
+
+          console.log(
+            "=========================================="
+          );
+
+          if (!remoteStreamRef.current) {
+           remoteStreamRef.current =
+            new MediaStream();
+          }
+
+          const remoteStream =
+           remoteStreamRef.current;
+
+          const existingTrack =
+           remoteStream
+             .getTracks()
+             .find(
+               (existing) =>
+                 existing.id === track.id
               );
-            }
 
-            /*
-             * Tell React that a new remote stream
-             * is available.
-             */
-            setRemoteStreamVersion(
-              (previous) =>
-                previous + 1
+          if (!existingTrack) {
+           remoteStream.addTrack(track);
+
+           console.log(
+              `ZenvaZapp added remote ${track.kind} track.`
+            );
+          }
+
+          track.enabled = true;
+
+          track.onmute = () => {
+            console.warn(
+             `ZenvaZapp remote ${track.kind} track became muted.`
+            );
+          };
+
+          track.onunmute = () => {
+            console.log(
+             `ZenvaZapp remote ${track.kind} track became active again.`
             );
 
-            /*
-             * Also attempt immediate attachment.
-             */
             requestAnimationFrame(() => {
               attachRemoteStream();
             });
+          };
 
-            if (
-              event.track.kind ===
-              "audio"
-            ) {
-              console.log(
-                "ZenvaZapp remote AUDIO track connected."
-              );
-            }
-
-            if (
-              event.track.kind ===
-              "video"
-            ) {
-              console.log(
-                "ZenvaZapp remote VIDEO track connected."
-              );
-            }
-
-            setSpeakerEnabled(
-              true
+          track.onended = () => {
+           console.warn(
+             `ZenvaZapp remote ${track.kind} track ended.`
             );
           };
+
+          setRemoteStreamVersion(
+           (previous) =>
+              previous + 1
+          );
+
+          requestAnimationFrame(() => {
+            attachRemoteStream();
+          });
+
+          const audioTracks =
+           remoteStream.getAudioTracks();
+
+          const videoTracks =
+            remoteStream.getVideoTracks();
+
+          console.log(
+            "ZenvaZapp remote audio tracks:",
+               audioTracks.length
+          );
+
+          console.log(
+            "ZenvaZapp remote video tracks:",
+           videoTracks.length
+          );
+
+          if (audioTracks.length > 0) {
+            console.log(
+              "ZenvaZapp remote AUDIO is available."
+            );
+          }
+
+          if (videoTracks.length > 0) {
+            console.log(
+             "ZenvaZapp remote VIDEO is available."
+            );
+          }
+
+          setSpeakerEnabled(true);
+        };
 
         // ===============================================
         // CONNECTION STATE
@@ -855,18 +1011,38 @@ export function CallProvider({ user, children }) {
             if (
               state === "connected"
             ) {
+
+              console.log(
+                "ZenvaZapp WebRTC connection fully connected."
+              );
+
               setCallState(
                 "connected"
               );
 
               startCallTimer();
 
-              requestAnimationFrame(
-                () => {
-                  attachRemoteStream();
-                  attachLocalStream();
-                }
-              );
+              requestAnimationFrame(() => {
+
+                attachLocalStream();
+
+                attachRemoteStream();
+
+              });
+
+              setTimeout(() => {
+
+                attachLocalStream();
+
+                attachRemoteStream();
+
+              }, 300);
+
+              setTimeout(() => {
+
+                attachRemoteStream();
+
+              }, 1000);
             }
 
             if (
@@ -1922,10 +2098,6 @@ export function CallProvider({ user, children }) {
       const nextState =
         !speakerEnabled;
 
-      // =========================================
-      // VOICE CALL
-      // =========================================
-
       if (
         remoteAudioRef.current
       ) {
@@ -1945,10 +2117,6 @@ export function CallProvider({ user, children }) {
 
         }
       }
-
-      // =========================================
-      // VIDEO CALL
-      // =========================================
 
       if (
         remoteVideoRef.current
@@ -2454,9 +2622,6 @@ export function CallProvider({ user, children }) {
 
         setCallError("");
 
-        /*
-         * Start the ringtone immediately.
-         */
         void startRingtone();
 
       },
