@@ -391,17 +391,13 @@ function App() {
         // -----------------------------------------------
 
         case "chats":
-
-        // Intentional fall-through
-
-        case "chatlist":
-
+        case "chatlist": {
           setCurrentScreen(
-            "chatlist"
+           "chatlist"
           );
 
-          break;
-
+         break;
+        }
 
         // -----------------------------------------------
         // CONTACTS
