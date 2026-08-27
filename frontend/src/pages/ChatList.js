@@ -284,6 +284,34 @@ function ChatList({
   };
 
   // ==========================================
+  // CURRENT USER INITIAL
+  // ==========================================
+
+  const getCurrentUserInitial = () => {
+    return (
+      getUserName()
+        .charAt(0)
+        .toUpperCase() || "+"
+    );
+  };
+
+  // ==========================================
+  // GET CHAT INITIAL
+  // ==========================================
+
+  const getChatInitial = (chat) => {
+    return (
+      chat?.name
+        ?.charAt(0)
+        ?.toUpperCase() ||
+      chat?.username
+        ?.charAt(0)
+        ?.toUpperCase() ||
+      "U"
+    );
+  };
+
+  // ==========================================
   // LOAD ONE CONVERSATION
   // ==========================================
 
@@ -580,6 +608,10 @@ function ChatList({
                   account?.username ||
                   "User";
 
+                // ==================================
+                // PROFILE PHOTO FROM USER ACCOUNT
+                // ==================================
+
                 const profilePhoto =
                   account?.profilePhoto ||
                   account?.avatar ||
@@ -613,6 +645,9 @@ function ChatList({
                     account?.phone ||
                     "",
 
+                  // Keep the profile photo with
+                  // the conversation data so the
+                  // chat avatar can display it.
                   profilePhoto,
 
                   profileCompleted:
@@ -903,19 +938,7 @@ function ChatList({
             🔍
           </button>
 
-          <button
-            type="button"
-            className="header-icon-button"
-            aria-label="Profile"
-            onClick={() =>
-              onNavigate?.(
-                "profile"
-              )
-            }
-          >
-            👤
-          </button>
-
+         
         </div>
 
       </header>
@@ -988,6 +1011,12 @@ function ChatList({
 
         <div className="status-list">
 
+          {/* ====================================
+              YOUR STATUS
+              Profile photo intentionally NOT
+              displayed here.
+          ==================================== */}
+
           <button
             type="button"
             className="status-item add-status"
@@ -1000,25 +1029,7 @@ function ChatList({
 
             <div className="status-avatar">
 
-              {user?.profilePhoto ? (
-                <img
-                  src={
-                    user.profilePhoto
-                  }
-                  alt="Your profile"
-                />
-              ) : (
-                user?.displayName
-                  ?.charAt(0)
-                  ?.toUpperCase() ||
-                user?.fullName
-                  ?.charAt(0)
-                  ?.toUpperCase() ||
-                user?.username
-                  ?.charAt(0)
-                  ?.toUpperCase() ||
-                "+"
-              )}
+              {getCurrentUserInitial()}
 
             </div>
 
@@ -1027,6 +1038,12 @@ function ChatList({
             </span>
 
           </button>
+
+          {/* ====================================
+              CONTACT STATUS
+              Profile photos are NOT displayed
+              in the status circles.
+          ==================================== */}
 
           {chats
             .slice(0, 8)
@@ -1044,16 +1061,7 @@ function ChatList({
 
                 <div className="status-avatar status-active">
 
-                  {chat.profilePhoto ? (
-                    <img
-                      src={
-                        chat.profilePhoto
-                      }
-                      alt={chat.name}
-                    />
-                  ) : (
-                    chat.avatar
-                  )}
+                  {getChatInitial(chat)}
 
                 </div>
 
@@ -1342,6 +1350,13 @@ function ChatList({
                   }
                 >
 
+                  {/* ==================================
+                      CHAT AVATAR
+
+                      THIS IS WHERE THE PROFILE PHOTO
+                      NOW APPEARS.
+                  ================================== */}
+
                   <div className="chat-avatar">
 
                     {chat.profilePhoto ? (
@@ -1352,7 +1367,7 @@ function ChatList({
                         alt={chat.name}
                       />
                     ) : (
-                      chat.avatar
+                      getChatInitial(chat)
                     )}
 
                   </div>
