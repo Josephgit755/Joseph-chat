@@ -1,6 +1,6 @@
 /* =========================================
    ZENVAZAPP ZENVA AI
-   PURPLE THEME
+   Dynamic Theme & Dark Mode Enabled
 ========================================= */
 
 .zenva-ai-page {
@@ -9,23 +9,16 @@
 
   box-sizing: border-box;
 
-  background:
-    radial-gradient(
-      circle at top right,
-      rgba(232, 107, 199, 0.2),
-      transparent 32%
-    ),
-    radial-gradient(
-      circle at bottom left,
-      rgba(143, 60, 120, 0.18),
-      transparent 34%
-    ),
-    #5e2046;
+  background: var(--bg-primary);
 
-  color: #ffffff;
+  color: var(--text-primary);
+
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* HEADER */
+/* =========================================
+   HEADER
+========================================= */
 
 .zenva-ai-header {
   min-height: 70px;
@@ -40,12 +33,9 @@
 
   box-sizing: border-box;
 
-  border-bottom: 1px solid
-    rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 
-  background:
-    rgba(50, 21, 42, 0.35);
-
+  background: var(--bg-secondary);
 }
 
 .zenva-ai-back {
@@ -54,24 +44,27 @@
 
   flex-shrink: 0;
 
-  border: 1px solid
-    rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
 
   border-radius: 13px;
 
-  background:
-    rgba(255, 255, 255, 0.06);
+  background: var(--bg-primary);
 
-  color: #ffffff;
+  color: var(--accent-color);
 
   font-size: 21px;
 
   cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
 }
 
 .zenva-ai-back:hover {
-  background:
-    rgba(236, 116, 207, 0.1);
+  background: var(--bg-secondary);
+
+  border-color: var(--accent-color);
 }
 
 .zenva-ai-brand {
@@ -95,20 +88,18 @@
 
   border-radius: 13px;
 
-  background:
-    linear-gradient(
-      135deg,
-      #e86bc7,
-      #8f3c78
-    );
+  background: var(--accent-color);
+
+  color: var(--accent-text);
 
   box-shadow:
-    0 7px 20px
-    rgba(217, 91, 183, 0.2);
+    0 7px 20px rgba(0, 0, 0, 0.12);
 }
 
 .zenva-ai-brand h1 {
   margin: 0;
+
+  color: var(--text-primary);
 
   font-size: 17px;
 }
@@ -118,8 +109,7 @@
 
   margin-top: 2px;
 
-  color:
-    rgba(255, 255, 255, 0.52);
+  color: var(--text-secondary);
 
   font-size: 10px;
 }
@@ -129,14 +119,22 @@
 
   background: transparent;
 
-  color: #f19bd9;
+  color: var(--accent-color);
 
   font-size: 11px;
 
   cursor: pointer;
+
+  transition: opacity 0.18s ease;
 }
 
-/* CONTENT */
+.zenva-ai-clear:hover {
+  opacity: 0.8;
+}
+
+/* =========================================
+   CONTENT
+========================================= */
 
 .zenva-ai-content {
   width: min(
@@ -154,7 +152,9 @@
   box-sizing: border-box;
 }
 
-/* WELCOME */
+/* =========================================
+   WELCOME
+========================================= */
 
 .zenva-ai-welcome {
   padding: 25px 20px;
@@ -175,22 +175,20 @@
 
   border-radius: 21px;
 
-  background:
-    linear-gradient(
-      135deg,
-      #e86bc7,
-      #8f3c78
-    );
+  background: var(--accent-color);
+
+  color: var(--accent-text);
 
   font-size: 30px;
 
   box-shadow:
-    0 12px 30px
-    rgba(217, 91, 183, 0.2);
+    0 12px 30px rgba(0, 0, 0, 0.12);
 }
 
 .zenva-ai-welcome h2 {
   margin: 0;
+
+  color: var(--text-primary);
 
   font-size: 22px;
 }
@@ -200,15 +198,16 @@
 
   max-width: 430px;
 
-  color:
-    rgba(255, 255, 255, 0.57);
+  color: var(--text-secondary);
 
   font-size: 12px;
 
   line-height: 1.5;
 }
 
-/* ACTIONS */
+/* =========================================
+   ACTIONS
+========================================= */
 
 .zenva-ai-actions {
   display: grid;
@@ -232,15 +231,13 @@
 
   padding: 15px;
 
-  border: 1px solid
-    rgba(255, 255, 255, 0.09);
+  border: 1px solid var(--border-color);
 
   border-radius: 17px;
 
-  background:
-    rgba(255, 255, 255, 0.06);
+  background: var(--bg-secondary);
 
-  color: #ffffff;
+  color: var(--text-primary);
 
   text-align: left;
 
@@ -255,19 +252,15 @@
 .zenva-ai-action:hover {
   transform: translateY(-2px);
 
-  border-color:
-    rgba(236, 116, 207, 0.3);
+  border-color: var(--accent-color);
 
-  background:
-    rgba(236, 116, 207, 0.08);
+  background: var(--bg-primary);
 }
 
 .zenva-ai-action.active {
-  border-color:
-    rgba(236, 116, 207, 0.45);
+  border-color: var(--accent-color);
 
-  background:
-    rgba(236, 116, 207, 0.1);
+  background: var(--bg-primary);
 }
 
 .zenva-ai-action-icon {
@@ -283,8 +276,9 @@
 
   border-radius: 13px;
 
-  background:
-    rgba(232, 107, 199, 0.12);
+  background: var(--bg-primary);
+
+  color: var(--accent-color);
 
   font-size: 19px;
 }
@@ -292,14 +286,15 @@
 .zenva-ai-action strong {
   display: block;
 
+  color: var(--text-primary);
+
   font-size: 12px;
 }
 
 .zenva-ai-action p {
   margin: 4px 18px 0 0;
 
-  color:
-    rgba(255, 255, 255, 0.52);
+  color: var(--text-secondary);
 
   font-size: 9px;
 
@@ -312,10 +307,12 @@
   top: 15px;
   right: 14px;
 
-  color: #e86bc7;
+  color: var(--accent-color);
 }
 
-/* CONVERSATION */
+/* =========================================
+   CONVERSATION
+========================================= */
 
 .zenva-ai-conversation {
   display: flex;
@@ -342,12 +339,9 @@
 
   border-bottom-right-radius: 5px;
 
-  background:
-    linear-gradient(
-      135deg,
-      #d95bb7,
-      #9c417f
-    );
+  background: var(--accent-color);
+
+  color: var(--accent-text);
 }
 
 .zenva-ai-message.assistant {
@@ -355,18 +349,17 @@
 
   border-bottom-left-radius: 5px;
 
-  background:
-    rgba(255, 255, 255, 0.07);
+  background: var(--bg-secondary);
 
-  border: 1px solid
-    rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-color);
+
+  color: var(--text-primary);
 }
 
 .zenva-ai-message-label {
   margin-bottom: 5px;
 
-  color:
-    rgba(255, 255, 255, 0.55);
+  color: var(--text-secondary);
 
   font-size: 9px;
 
@@ -386,26 +379,25 @@
 
   margin-top: 8px;
 
-  color:
-    rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
 
   font-size: 8px;
 }
 
-/* INPUT */
+/* =========================================
+   INPUT
+========================================= */
 
 .zenva-ai-input-section {
   margin-top: 15px;
 
   padding: 16px;
 
-  border: 1px solid
-    rgba(236, 116, 207, 0.15);
+  border: 1px solid var(--border-color);
 
   border-radius: 19px;
 
-  background:
-    rgba(255, 255, 255, 0.06);
+  background: var(--bg-secondary);
 }
 
 .zenva-ai-selected-action {
@@ -419,8 +411,7 @@
 }
 
 .zenva-ai-selected-action span {
-  color:
-    rgba(255, 255, 255, 0.45);
+  color: var(--text-secondary);
 
   font-size: 9px;
 }
@@ -430,10 +421,9 @@
 
   border-radius: 999px;
 
-  background:
-    rgba(232, 107, 199, 0.12);
+  background: var(--bg-primary);
 
-  color: #f19bd9;
+  color: var(--accent-color);
 
   font-size: 9px;
 }
@@ -453,37 +443,38 @@
 
   resize: vertical;
 
-  border: 1px solid
-    rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
 
   border-radius: 14px;
 
   outline: none;
 
-  background:
-    rgba(20, 7, 18, 0.3);
+  background: var(--bg-primary);
 
-  color: #ffffff;
+  color: var(--text-primary);
 
   font-family: inherit;
 
   font-size: 12px;
 
   line-height: 1.5;
+
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .zenva-ai-form textarea::placeholder {
-  color:
-    rgba(255, 255, 255, 0.35);
+  color: var(--text-secondary);
+
+  opacity: 0.7;
 }
 
 .zenva-ai-form textarea:focus {
-  border-color:
-    rgba(232, 107, 199, 0.55);
+  border-color: var(--accent-color);
 
   box-shadow:
-    0 0 0 3px
-    rgba(232, 107, 199, 0.08);
+    0 0 0 3px rgba(0, 0, 0, 0.05);
 }
 
 .zenva-ai-form button {
@@ -499,18 +490,19 @@
 
   border-radius: 11px;
 
-  background:
-    linear-gradient(
-      135deg,
-      #e86bc7,
-      #b94a99
-    );
+  background: var(--accent-color);
 
-  color: #ffffff;
+  color: var(--accent-text);
 
   font-size: 18px;
 
   cursor: pointer;
+
+  transition: background 0.18s ease;
+}
+
+.zenva-ai-form button:hover {
+  background: var(--accent-hover);
 }
 
 .zenva-ai-form button:disabled {
@@ -522,15 +514,16 @@
 .zenva-ai-disclaimer {
   margin: 8px 2px 0;
 
-  color:
-    rgba(255, 255, 255, 0.36);
+  color: var(--text-secondary);
 
   font-size: 8px;
 
   line-height: 1.4;
 }
 
-/* QUICK LINKS */
+/* =========================================
+   QUICK LINKS
+========================================= */
 
 .zenva-ai-quick-links {
   display: grid;
@@ -546,30 +539,35 @@
 .zenva-ai-quick-links button {
   min-height: 40px;
 
-  border: 1px solid
-    rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-color);
 
   border-radius: 11px;
 
-  background:
-    rgba(255, 255, 255, 0.04);
+  background: var(--bg-secondary);
 
-  color:
-    rgba(255, 255, 255, 0.62);
+  color: var(--text-secondary);
 
   font-size: 10px;
 
   cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
 }
 
 .zenva-ai-quick-links button:hover {
-  background:
-    rgba(236, 116, 207, 0.08);
+  background: var(--bg-primary);
 
-  color: #f19bd9;
+  border-color: var(--accent-color);
+
+  color: var(--accent-color);
 }
 
-/* MOBILE */
+/* =========================================
+   MOBILE
+========================================= */
 
 @media (max-width: 600px) {
   .zenva-ai-content {

@@ -1,6 +1,6 @@
 /* =========================================
    ZENVA BREATH
-   PURPLE / MAGENTA THEME
+   Dynamic Theme Enabled
 ========================================= */
 
 .zenva-breath-page {
@@ -11,20 +11,11 @@
 
   padding-bottom: 40px;
 
-  background:
-    radial-gradient(
-      circle at 50% 25%,
-      rgba(217, 91, 183, 0.18),
-      transparent 35%
-    ),
-    radial-gradient(
-      circle at bottom right,
-      rgba(143, 60, 120, 0.16),
-      transparent 40%
-    ),
-    #5e2046;
+  background: var(--bg-primary);
 
-  color: #ffffff;
+  color: var(--text-primary);
+
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 
@@ -41,8 +32,7 @@
 
   padding: 18px 20px;
 
-  border-bottom: 1px solid
-    rgba(255, 255, 255, 0.10);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .zenva-back-button {
@@ -54,15 +44,13 @@
   align-items: center;
   justify-content: center;
 
-  border: 1px solid
-    rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--border-color);
 
   border-radius: 12px;
 
-  background:
-    rgba(255, 255, 255, 0.08);
+  background: var(--bg-secondary);
 
-  color: #ffffff;
+  color: var(--text-primary);
 
   font-size: 20px;
 
@@ -75,11 +63,9 @@
 }
 
 .zenva-back-button:hover {
-  background:
-    rgba(236, 116, 207, 0.12);
+  background: var(--bg-primary);
 
-  border-color:
-    rgba(236, 116, 207, 0.30);
+  border-color: var(--accent-color);
 }
 
 .zenva-back-button:active {
@@ -89,14 +75,15 @@
 .zenva-breath-header h1 {
   margin: 0;
 
+  color: var(--text-primary);
+
   font-size: 19px;
 }
 
 .zenva-breath-header p {
   margin: 4px 0 0;
 
-  color:
-    rgba(255, 255, 255, 0.68);
+  color: var(--text-secondary);
 
   font-size: 11px;
 }
@@ -129,26 +116,20 @@
 
   border-radius: 18px;
 
-  background:
-    linear-gradient(
-      135deg,
-      #d95bb7,
-      #8f3c78
-    );
+  background: var(--accent-color);
 
-  color: #ffffff;
+  color: var(--accent-text);
 
   font-size: 28px;
 
   box-shadow:
-    0 10px 28px
-    rgba(217, 91, 183, 0.18);
+    0 10px 28px rgba(0, 0, 0, 0.12);
 }
 
 .zenva-breath-intro h2 {
   margin: 0;
 
-  color: #ffffff;
+  color: var(--text-primary);
 
   font-size: 22px;
 }
@@ -158,8 +139,7 @@
 
   margin: 9px auto 0;
 
-  color:
-    rgba(255, 255, 255, 0.68);
+  color: var(--text-secondary);
 
   font-size: 12px;
 
@@ -194,16 +174,9 @@
 
   border-radius: 50%;
 
-  background:
-    radial-gradient(
-      circle,
-      rgba(236, 116, 207, 0.30),
-      rgba(217, 91, 183, 0.12) 60%,
-      transparent 70%
-    );
+  background: var(--bg-secondary);
 
-  border: 1px solid
-    rgba(236, 116, 207, 0.30);
+  border: 1px solid var(--accent-color);
 
   transition:
     transform 4s ease,
@@ -219,24 +192,21 @@
   transform: scale(1.16);
 
   box-shadow:
-    0 0 60px
-    rgba(236, 116, 207, 0.24);
+    0 0 60px var(--accent-color);
 }
 
 .breathing-circle.breathing-hold {
   transform: scale(1.16);
 
   box-shadow:
-    0 0 45px
-    rgba(217, 91, 183, 0.20);
+    0 0 45px var(--accent-color);
 }
 
 .breathing-circle.breathing-out {
   transform: scale(0.88);
 
   box-shadow:
-    0 0 25px
-    rgba(217, 91, 183, 0.12);
+    0 0 25px var(--border-color);
 }
 
 
@@ -257,19 +227,16 @@
 
   border-radius: 50%;
 
-  background:
-    rgba(255, 255, 255, 0.075);
+  background: var(--bg-primary);
 
-  border: 1px solid
-    rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--border-color);
 
   box-shadow:
-    inset 0 0 30px
-    rgba(60, 10, 45, 0.18);
+    inset 0 0 30px rgba(0, 0, 0, 0.1);
 }
 
 .breathing-phase {
-  color: #f19bd9;
+  color: var(--accent-color);
 
   font-size: 14px;
 
@@ -279,7 +246,7 @@
 .breathing-circle-inner strong {
   margin-top: 4px;
 
-  color: #ffffff;
+  color: var(--text-primary);
 
   font-size: 52px;
 
@@ -289,8 +256,7 @@
 .breathing-circle-inner small {
   margin-top: 5px;
 
-  color:
-    rgba(255, 255, 255, 0.55);
+  color: var(--text-secondary);
 
   font-size: 10px;
 }
@@ -298,7 +264,7 @@
 .breathing-area h3 {
   margin: 0;
 
-  color: #ffffff;
+  color: var(--text-primary);
 
   font-size: 15px;
 
@@ -308,8 +274,7 @@
 .breathing-cycle {
   margin: 7px 0 0;
 
-  color:
-    rgba(255, 255, 255, 0.55);
+  color: var(--text-secondary);
 
   font-size: 10px;
 
@@ -342,35 +307,29 @@
 
   border-radius: 15px;
 
-  background:
-    linear-gradient(
-      135deg,
-      #e86bc7,
-      #c64ca5
-    );
+  background: var(--accent-color);
 
-  color: #ffffff;
+  color: var(--accent-text);
 
   font-weight: 800;
 
   cursor: pointer;
 
   box-shadow:
-    0 10px 25px
-    rgba(217, 91, 183, 0.18);
+    0 10px 25px rgba(0, 0, 0, 0.12);
 
   transition:
     transform 0.15s ease,
     opacity 0.15s ease,
-    box-shadow 0.15s ease;
+    box-shadow 0.15s ease,
+    background 0.15s ease;
 }
 
 .breath-primary-button:hover {
-  opacity: 0.92;
+  background: var(--accent-hover);
 
   box-shadow:
-    0 14px 30px
-    rgba(217, 91, 183, 0.25);
+    0 14px 30px rgba(0, 0, 0, 0.18);
 }
 
 .breath-primary-button:active {
@@ -388,19 +347,17 @@
 
   background: transparent;
 
-  color:
-    rgba(255, 255, 255, 0.60);
+  color: var(--text-secondary);
 
   font-size: 12px;
 
   cursor: pointer;
 
-  transition:
-    color 0.18s ease;
+  transition: color 0.18s ease;
 }
 
 .breath-reset-button:hover {
-  color: #f19bd9;
+  color: var(--accent-color);
 }
 
 
@@ -421,14 +378,13 @@
 
   margin-bottom: 7px;
 
-  color:
-    rgba(255, 255, 255, 0.58);
+  color: var(--text-secondary);
 
   font-size: 11px;
 }
 
 .breath-progress-header strong {
-  color: #f19bd9;
+  color: var(--accent-color);
 }
 
 .breath-progress-bar {
@@ -438,8 +394,7 @@
 
   border-radius: 10px;
 
-  background:
-    rgba(255, 255, 255, 0.12);
+  background: var(--border-color);
 }
 
 .breath-progress-fill {
@@ -447,17 +402,10 @@
 
   border-radius: inherit;
 
-  background:
-    linear-gradient(
-      90deg,
-      #8f3c78,
-      #d95bb7,
-      #ed78ce
-    );
+  background: var(--accent-color);
 
   box-shadow:
-    0 0 12px
-    rgba(237, 120, 206, 0.25);
+    0 0 12px var(--accent-color);
 
   transition: width 0.4s ease;
 }
@@ -482,17 +430,15 @@
 
   box-sizing: border-box;
 
-  border: 1px solid
-    rgba(255, 255, 255, 0.10);
+  border: 1px solid var(--border-color);
 
   border-radius: 14px;
 
-  background:
-    rgba(217, 91, 183, 0.07);
+  background: var(--bg-secondary);
 }
 
 .breath-message span {
-  color: #f19bd9;
+  color: var(--accent-color);
 
   font-size: 16px;
 }
@@ -500,8 +446,7 @@
 .breath-message p {
   margin: 0;
 
-  color:
-    rgba(255, 255, 255, 0.62);
+  color: var(--text-secondary);
 
   font-size: 11px;
 
@@ -509,35 +454,6 @@
 }
 
 
-/* =========================================
-   MOBILE
-========================================= */
-
-@media (max-width: 480px) {
-
-  .zenva-breath-intro {
-    padding-top: 24px;
-  }
-
-  .breathing-circle {
-    width: 205px;
-    height: 205px;
-  }
-
-  .breathing-circle-inner {
-    width: 150px;
-    height: 150px;
-  }
-
-  .breathing-circle-inner strong {
-    font-size: 46px;
-  }
-
-  .breath-controls {
-    padding-left: 18px;
-    padding-right: 18px;
-  }
-}
 /* =========================================
    CONGRATULATIONS OVERLAY
 ========================================= */
@@ -558,17 +474,13 @@
 
   box-sizing: border-box;
 
-  background:
-    rgba(35, 8, 29, 0.78);
+  background: rgba(0, 0, 0, 0.6);
 
-  backdrop-filter:
-    blur(10px);
+  backdrop-filter: blur(10px);
 
-  -webkit-backdrop-filter:
-    blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 
-  animation:
-    breath-overlay-in 0.35s ease;
+  animation: breath-overlay-in 0.35s ease;
 }
 
 
@@ -589,32 +501,17 @@
 
   text-align: center;
 
-  border: 1px solid
-    rgba(236, 116, 207, 0.35);
+  border: 1px solid var(--border-color);
 
   border-radius: 28px;
 
-  background:
-    radial-gradient(
-      circle at top,
-      rgba(236, 116, 207, 0.22),
-      transparent 45%
-    ),
-    linear-gradient(
-      145deg,
-      #702653,
-      #4b1938
-    );
+  background: var(--bg-primary);
 
   box-shadow:
-    0 25px 70px
-    rgba(25, 5, 20, 0.45),
-    0 0 50px
-    rgba(217, 91, 183, 0.14);
+    0 25px 70px rgba(0, 0, 0, 0.3);
 
   animation:
-    breath-card-in 0.45s
-    cubic-bezier(0.16, 1, 0.3, 1);
+    breath-card-in 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 
@@ -637,8 +534,9 @@
 
   border-radius: 50%;
 
-  background:
-    rgba(236, 116, 207, 0.22);
+  background: var(--accent-color);
+
+  opacity: 0.25;
 
   filter: blur(35px);
 
@@ -658,9 +556,7 @@
 
   font-size: 24px;
 
-  animation:
-    breath-sparkle 1.8s ease-in-out
-    infinite;
+  animation: breath-sparkle 1.8s ease-in-out infinite;
 }
 
 
@@ -681,30 +577,24 @@
 
   border-radius: 24px;
 
-  background:
-    linear-gradient(
-      135deg,
-      #e86bc7,
-      #a33e88
-    );
+  background: var(--accent-color);
 
-  border: 1px solid
-    rgba(255, 255, 255, 0.18);
+  color: var(--accent-text);
+
+  border: 1px solid var(--border-color);
 
   font-size: 35px;
 
   box-shadow:
-    0 12px 32px
-    rgba(217, 91, 183, 0.28);
+    0 12px 32px rgba(0, 0, 0, 0.18);
 
   animation:
-    breath-icon-pop 0.55s
-    cubic-bezier(0.16, 1, 0.3, 1);
+    breath-icon-pop 0.55s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 
 /* =========================================
-   TITLE
+   TITLE & MESSAGES
 ========================================= */
 
 .breath-congratulations-card h2 {
@@ -712,7 +602,7 @@
 
   margin: 0;
 
-  color: #ffffff;
+  color: var(--text-primary);
 
   font-size: 25px;
 
@@ -721,33 +611,22 @@
   letter-spacing: -0.3px;
 }
 
-
-/* =========================================
-   MAIN MESSAGE
-========================================= */
-
 .breath-congratulations-main {
   margin: 10px 0 0;
 
-  color: #f6b5e3;
+  color: var(--accent-color);
 
   font-size: 13px;
 
   font-weight: 700;
 }
 
-
-/* =========================================
-   SECONDARY MESSAGE
-========================================= */
-
 .breath-congratulations-sub {
   max-width: 330px;
 
   margin: 10px auto 0;
 
-  color:
-    rgba(255, 255, 255, 0.66);
+  color: var(--text-secondary);
 
   font-size: 11px;
 
@@ -772,13 +651,11 @@
 
   text-align: left;
 
-  border: 1px solid
-    rgba(236, 116, 207, 0.18);
+  border: 1px solid var(--border-color);
 
   border-radius: 15px;
 
-  background:
-    rgba(255, 255, 255, 0.055);
+  background: var(--bg-secondary);
 }
 
 .breath-achievement > span {
@@ -794,10 +671,9 @@
 
   border-radius: 11px;
 
-  background:
-    rgba(217, 91, 183, 0.18);
+  background: var(--bg-primary);
 
-  color: #f19bd9;
+  color: var(--accent-color);
 
   font-size: 16px;
 
@@ -807,7 +683,7 @@
 .breath-achievement strong {
   display: block;
 
-  color: #ffffff;
+  color: var(--text-primary);
 
   font-size: 12px;
 }
@@ -817,15 +693,14 @@
 
   margin-top: 3px;
 
-  color:
-    rgba(255, 255, 255, 0.52);
+  color: var(--text-secondary);
 
   font-size: 10px;
 }
 
 
 /* =========================================
-   CONTINUE BUTTON
+   CARD BUTTONS
 ========================================= */
 
 .breath-continue-button {
@@ -837,14 +712,9 @@
 
   border-radius: 14px;
 
-  background:
-    linear-gradient(
-      135deg,
-      #e86bc7,
-      #c64ca5
-    );
+  background: var(--accent-color);
 
-  color: #ffffff;
+  color: var(--accent-text);
 
   font-size: 13px;
 
@@ -853,31 +723,25 @@
   cursor: pointer;
 
   box-shadow:
-    0 10px 25px
-    rgba(217, 91, 183, 0.22);
+    0 10px 25px rgba(0, 0, 0, 0.15);
 
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease,
-    opacity 0.15s ease;
+    opacity 0.15s ease,
+    background 0.15s ease;
 }
 
 .breath-continue-button:hover {
-  opacity: 0.93;
+  background: var(--accent-hover);
 
   box-shadow:
-    0 14px 32px
-    rgba(217, 91, 183, 0.30);
+    0 14px 32px rgba(0, 0, 0, 0.22);
 }
 
 .breath-continue-button:active {
   transform: scale(0.98);
 }
-
-
-/* =========================================
-   FINISH BUTTON
-========================================= */
 
 .breath-finish-button {
   margin-top: 12px;
@@ -886,19 +750,17 @@
 
   background: transparent;
 
-  color:
-    rgba(255, 255, 255, 0.55);
+  color: var(--text-secondary);
 
   font-size: 11px;
 
   cursor: pointer;
 
-  transition:
-    color 0.18s ease;
+  transition: color 0.18s ease;
 }
 
 .breath-finish-button:hover {
-  color: #f19bd9;
+  color: var(--accent-color);
 }
 
 
@@ -977,6 +839,29 @@
 ========================================= */
 
 @media (max-width: 480px) {
+
+  .zenva-breath-intro {
+    padding-top: 24px;
+  }
+
+  .breathing-circle {
+    width: 205px;
+    height: 205px;
+  }
+
+  .breathing-circle-inner {
+    width: 150px;
+    height: 150px;
+  }
+
+  .breathing-circle-inner strong {
+    font-size: 46px;
+  }
+
+  .breath-controls {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
 
   .breath-congratulations-overlay {
     padding: 18px;

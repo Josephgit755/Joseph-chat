@@ -1,0 +1,609 @@
+/* =========================================================
+   ZENVazAPP SETTINGS (RESPONSIVE + IMAGE 2 HEADER FIXES)
+========================================================= */
+
+.zenvazapp-settings-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  box-sizing: border-box;
+
+  background: var(--zenvazapp-background, #f8f9fa);
+  color: var(--zenvazapp-text, #111827);
+  padding-bottom: 90px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+
+/* =========================================================
+   HEADER SECTION (LIGHT MODE / BLACK TEXT FROM IMAGE 2)
+========================================================= */
+
+.zenvazapp-settings-header {
+  position: relative;
+  width: 100%;
+  padding: 16px 20px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  background: var(--zenvazapp-surface, #ffffff);
+  border-bottom: 1px solid var(--zenvazapp-border, #e5e7eb);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+}
+
+.zenvazapp-settings-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Rounded-Square Professional Back Button */
+.zenvazapp-settings-back {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--zenvazapp-border, #e5e7eb);
+  border-radius: 10px;
+  background: var(--zenvazapp-surface-secondary, #f3f4f6);
+  color: var(--zenvazapp-text, #111827);
+  font-size: 16px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: all 0.2s ease;
+}
+
+.zenvazapp-settings-back:hover {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+}
+
+.zenvazapp-settings-back:active {
+  transform: scale(0.96);
+  background: #d1d5db;
+}
+
+.zenvazapp-settings-header-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.zenvazapp-settings-header h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827; /* Solid black header text */
+  line-height: 1.2;
+}
+
+.zenvazapp-settings-header p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.zenvazapp-settings-header-brand {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--zenvazapp-primary, #ea580c);
+}
+
+
+/* =========================================================
+   CONTAINER WRAPPER
+========================================================= */
+
+.zenvazapp-settings-profile,
+.zenvazapp-settings-theme-panel,
+.zenvazapp-settings-content {
+  width: min(850px, calc(100% - 24px));
+  margin: 16px auto;
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   USER PROFILE SECTION
+========================================================= */
+
+.zenvazapp-settings-profile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  background: var(--zenvazapp-surface, #ffffff);
+  border: 1px solid var(--zenvazapp-border, #e5e7eb);
+  border-radius: 18px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
+}
+
+.zenvazapp-settings-profile-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.zenvazapp-settings-avatar {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  border-radius: 50%;
+  overflow: hidden;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--zenvazapp-primary, #ea580c);
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 700;
+  box-shadow: 0 4px 12px var(--zenvazapp-primary-light, rgba(234, 88, 12, 0.25));
+}
+
+.zenvazapp-settings-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.zenvazapp-settings-profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.zenvazapp-settings-profile-info h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--zenvazapp-text, #111827);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zenvazapp-settings-profile-info p {
+  margin: 0;
+  color: var(--zenvazapp-primary, #ea580c);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.zenvazapp-settings-profile-info span {
+  display: block;
+  color: var(--zenvazapp-text-secondary, #6b7280);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zenvazapp-settings-profile-button {
+  border: 1px solid var(--zenvazapp-primary, #ea580c);
+  border-radius: 12px;
+  padding: 10px 18px;
+  background: transparent;
+  color: var(--zenvazapp-primary, #ea580c);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.zenvazapp-settings-profile-button:hover {
+  background: var(--zenvazapp-primary, #ea580c);
+  color: #ffffff;
+  box-shadow: 0 4px 12px var(--zenvazapp-primary-light, rgba(234, 88, 12, 0.25));
+}
+
+
+/* =========================================================
+   APPEARANCE & THEME PANEL SETUP
+========================================================= */
+
+.zenvazapp-settings-theme-panel {
+  padding: 20px;
+  background: var(--zenvazapp-surface, #ffffff);
+  border: 1px solid var(--zenvazapp-border, #e5e7eb);
+  border-radius: 18px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
+}
+
+.zenvazapp-settings-panel-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--zenvazapp-text, #111827);
+}
+
+.zenvazapp-settings-panel-header p {
+  margin: 4px 0 16px;
+  color: var(--zenvazapp-text-secondary, #6b7280);
+  font-size: 13px;
+}
+
+.zenvazapp-settings-control {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--zenvazapp-border, #e5e7eb);
+}
+
+.zenvazapp-settings-control-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.zenvazapp-settings-control-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--zenvazapp-primary-light, rgba(234, 88, 12, 0.12));
+  font-size: 18px;
+}
+
+.zenvazapp-settings-control-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.zenvazapp-settings-control-content strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--zenvazapp-text, #111827);
+}
+
+.zenvazapp-settings-control-content small {
+  color: var(--zenvazapp-text-secondary, #6b7280);
+  font-size: 12px;
+}
+
+/* Toggle Switch */
+.zenvazapp-toggle {
+  width: 50px;
+  height: 28px;
+  padding: 2px;
+  border: none;
+  border-radius: 30px;
+  background: #d1d5db;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.25s ease;
+}
+
+.zenvazapp-toggle span {
+  display: block;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.zenvazapp-toggle.enabled {
+  background: var(--zenvazapp-primary, #ea580c);
+}
+
+.zenvazapp-toggle.enabled span {
+  transform: translateX(22px);
+}
+
+
+/* =========================================================
+   THEME OPTIONS GRID
+========================================================= */
+
+.zenvazapp-theme-selection {
+  padding-top: 16px;
+}
+
+.zenvazapp-theme-title strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--zenvazapp-text, #111827);
+}
+
+.zenvazapp-theme-title small {
+  font-size: 12px;
+  margin-left: 6px;
+  color: var(--zenvazapp-text-secondary, #6b7280);
+}
+
+.zenvazapp-theme-options {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.zenvazapp-theme-option {
+  min-height: 110px;
+  padding: 12px 10px;
+  position: relative;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  background: var(--zenvazapp-surface-secondary, #f9fafb);
+  cursor: pointer;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  transition: all 0.2s ease;
+}
+
+.zenvazapp-theme-option.selected {
+  border-color: var(--zenvazapp-primary, #ea580c);
+  background: var(--zenvazapp-primary-light, rgba(234, 88, 12, 0.12));
+}
+
+.zenvazapp-theme-preview {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.theme-preview-red { background: #dc2626; }
+.theme-preview-green { background: #16a34a; }
+.theme-preview-blue { background: #2563eb; }
+.theme-preview-zenvazapp { background: linear-gradient(135deg, #d47eaa 0%, #b84d86 45%, #7c2d68 100%); }
+.theme-preview-orange { background: #ea580c; }
+
+.zenvazapp-theme-option-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.zenvazapp-theme-option-text strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--zenvazapp-text, #111827);
+}
+
+.zenvazapp-theme-option-text small {
+  font-size: 10px;
+  color: var(--zenvazapp-text-secondary, #6b7280);
+}
+
+.zenvazapp-theme-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--zenvazapp-primary, #ea580c);
+  color: #ffffff;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* =========================================================
+   SETTINGS LIST
+========================================================= */
+
+.zenvazapp-settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.zenvazapp-settings-item {
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 16px;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border: 1px solid var(--zenvazapp-border, #e5e7eb);
+  border-radius: 16px;
+  background: var(--zenvazapp-surface, #ffffff);
+  cursor: pointer;
+
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.zenvazapp-settings-item-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+.zenvazapp-settings-icon {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--zenvazapp-primary-light, rgba(234, 88, 12, 0.12));
+  font-size: 20px;
+}
+
+.zenvazapp-settings-item-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+}
+
+.zenvazapp-settings-item-content strong {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--zenvazapp-text, #111827);
+  line-height: 1.25;
+}
+
+.zenvazapp-settings-item-content small {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--zenvazapp-text-secondary, #6b7280);
+  margin-top: 2px;
+  line-height: 1.35;
+}
+
+.zenvazapp-settings-arrow {
+  flex: 0 0 auto;
+  color: var(--zenvazapp-primary, #ea580c);
+  font-size: 18px;
+  margin-left: 12px;
+}
+
+
+/* =========================================================
+   DYNAMIC ACCENT THEME PRESETS
+========================================================= */
+
+.theme-red {
+  --zenvazapp-primary: #dc2626;
+  --zenvazapp-primary-light: rgba(220, 38, 38, 0.12);
+}
+
+.theme-green {
+  --zenvazapp-primary: #16a34a;
+  --zenvazapp-primary-light: rgba(22, 163, 74, 0.12);
+}
+
+.theme-blue {
+  --zenvazapp-primary: #2563eb;
+  --zenvazapp-primary-light: rgba(37, 99, 235, 0.12);
+}
+
+.theme-zenvazapp {
+  --zenvazapp-primary: #b84d86;
+  --zenvazapp-primary-light: rgba(184, 77, 134, 0.12);
+}
+
+.theme-orange {
+  --zenvazapp-primary: #ea580c;
+  --zenvazapp-primary-light: rgba(234, 88, 12, 0.12);
+}
+
+
+/* =========================================================
+   BOTTOM NAVIGATION
+========================================================= */
+
+.zenvazapp-settings-bottom-nav {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 1000;
+  height: 64px;
+  padding: 4px 8px;
+  box-sizing: border-box;
+
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+
+  background: var(--zenvazapp-surface, #ffffff);
+  border-top: 1px solid var(--zenvazapp-border, #e5e7eb);
+  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.zenvazapp-settings-bottom-nav button {
+  border: none;
+  background: transparent;
+  color: var(--zenvazapp-text-secondary, #6b7280);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.zenvazapp-settings-bottom-nav button.active {
+  color: var(--zenvazapp-primary, #ea580c);
+}
+
+
+/* =========================================================
+   MOBILE RESPONSIVENESS
+========================================================= */
+
+@media (max-width: 650px) {
+
+  .zenvazapp-settings-profile,
+  .zenvazapp-settings-theme-panel,
+  .zenvazapp-settings-content {
+    width: calc(100% - 16px);
+    margin: 10px auto;
+  }
+
+  .zenvazapp-settings-profile {
+    flex-wrap: wrap;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .zenvazapp-settings-profile-button {
+    width: 100%;
+    text-align: center;
+  }
+
+  .zenvazapp-theme-options {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 6px;
+    gap: 10px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .zenvazapp-theme-option {
+    flex: 0 0 105px;
+    min-height: 100px;
+    scroll-snap-align: start;
+  }
+
+  .zenvazapp-settings-item {
+    padding: 12px;
+  }
+
+  .zenvazapp-settings-item-content strong {
+    font-size: 15px;
+  }
+
+  .zenvazapp-settings-item-content small {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+}

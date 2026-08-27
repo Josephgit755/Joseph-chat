@@ -1,8 +1,6 @@
-
 /* =========================================
    ZENVAZAPP PROFILE SETUP
-   PURPLE / MAGENTA THEME
-   Primary: #5E2046
+   Dynamic Theme & Accent Enabled
 ========================================= */
 
 .profile-page {
@@ -17,20 +15,10 @@
 
   box-sizing: border-box;
 
-  color: #fff7fb;
+  color: var(--text-primary);
 
-  background:
-    radial-gradient(
-      circle at top left,
-      rgba(184, 77, 134, 0.13),
-      transparent 35%
-    ),
-    radial-gradient(
-      circle at bottom right,
-      rgba(94, 32, 70, 0.18),
-      transparent 35%
-    ),
-    #160b13;
+  background: var(--bg-primary);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 
@@ -48,19 +36,11 @@
 
   box-sizing: border-box;
 
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.045),
-      rgba(184, 77, 134, 0.035)
-    ),
-    #2a1522;
+  background: var(--bg-secondary);
 
-  border: 1px solid
-    rgba(212, 126, 170, 0.16);
+  border: 1px solid var(--border-color);
 
-  box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.12);
 }
 
 
@@ -86,16 +66,9 @@
 
   border-radius: 20px;
 
-  background:
-    linear-gradient(
-      135deg,
-      #d47eaa,
-      #5e2046
-    );
+  background: var(--accent-color);
 
-  box-shadow:
-    0 10px 30px
-    rgba(184, 77, 134, 0.20);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 }
 
 .logo-z-upper {
@@ -104,7 +77,7 @@
 
   line-height: 1;
 
-  color: #ffffff;
+  color: var(--accent-text);
 }
 
 .logo-z-lower {
@@ -113,7 +86,8 @@
 
   line-height: 1;
 
-  color: #f0b2cf;
+  color: var(--accent-text);
+  opacity: 0.85;
 
   margin-left: -3px;
 }
@@ -126,7 +100,7 @@
 
   font-weight: 750;
 
-  color: #fff7fb;
+  color: var(--text-primary);
 }
 
 .profile-header p {
@@ -137,7 +111,7 @@
   font-size: 15px;
   line-height: 1.6;
 
-  color: #a9879b;
+  color: var(--text-secondary);
 }
 
 
@@ -152,13 +126,11 @@
 
   border-radius: 12px;
 
-  background:
-    rgba(255, 107, 95, 0.10);
+  background: rgba(255, 77, 77, 0.10);
 
-  border:
-    1px solid rgba(255, 107, 95, 0.25);
+  border: 1px solid rgba(255, 77, 77, 0.25);
 
-  color: #ff9389;
+  color: #ff4d4d;
 
   font-size: 14px;
 
@@ -177,8 +149,7 @@
 
   margin-bottom: 36px;
 
-  border-bottom: 1px solid
-    rgba(212, 126, 170, 0.13);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .profile-photo-wrapper {
@@ -191,18 +162,11 @@
 
   border-radius: 50%;
 
-  background:
-    linear-gradient(
-      135deg,
-      #d47eaa,
-      #5e2046
-    );
+  background: var(--accent-color);
 
   box-sizing: border-box;
 
-  box-shadow:
-    0 10px 28px
-    rgba(184, 77, 134, 0.17);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
 }
 
 .profile-photo {
@@ -215,7 +179,7 @@
 
   border-radius: 50%;
 
-  background: #25121e;
+  background: var(--bg-primary);
 }
 
 .photo-text h3 {
@@ -223,7 +187,7 @@
 
   font-size: 18px;
 
-  color: #fff7fb;
+  color: var(--text-primary);
 }
 
 .photo-text p {
@@ -231,7 +195,7 @@
 
   font-size: 14px;
 
-  color: #a9879b;
+  color: var(--text-secondary);
 }
 
 
@@ -250,13 +214,11 @@
 }
 
 .secondary-button {
-  border: 1px solid
-    rgba(212, 126, 170, 0.16);
+  border: 1px solid var(--border-color);
 
-  background:
-    rgba(255, 255, 255, 0.045);
+  background: var(--bg-primary);
 
-  color: #fff7fb;
+  color: var(--text-primary);
 
   padding: 10px 14px;
 
@@ -269,17 +231,18 @@
   transition:
     transform 0.18s ease,
     background 0.18s ease,
-    border-color 0.18s ease;
+    border-color 0.18s ease,
+    color 0.18s ease;
 }
 
 .secondary-button:hover {
   transform: translateY(-1px);
 
-  background:
-    rgba(184, 77, 134, 0.12);
+  background: var(--bg-secondary);
 
-  border-color:
-    rgba(212, 126, 170, 0.32);
+  border-color: var(--accent-color);
+
+  color: var(--accent-color);
 }
 
 
@@ -308,13 +271,13 @@
 
   font-weight: 650;
 
-  color: #d8bdcc;
+  color: var(--text-primary);
 }
 
 .profile-field small {
   font-size: 12px;
 
-  color: #806475;
+  color: var(--text-secondary);
 }
 
 
@@ -329,14 +292,13 @@
 
   box-sizing: border-box;
 
-  border: 1px solid
-    rgba(212, 126, 170, 0.15);
+  border: 1px solid var(--border-color);
 
   border-radius: 13px;
 
-  background: #25121e;
+  background: var(--bg-primary);
 
-  color: #fff7fb;
+  color: var(--text-primary);
 
   padding: 14px 15px;
 
@@ -370,19 +332,17 @@
 
 .profile-field input::placeholder,
 .profile-field textarea::placeholder {
-  color: #806475;
+  color: var(--text-secondary);
 }
 
 .profile-field input:focus,
 .profile-field textarea:focus,
 .profile-field select:focus {
-  border-color: #b84d86;
+  border-color: var(--accent-color);
 
-  background: #2b1422;
+  background: var(--bg-primary);
 
-  box-shadow:
-    0 0 0 3px
-    rgba(184, 77, 134, 0.10);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
 }
 
 
@@ -391,9 +351,9 @@
 ========================================= */
 
 .profile-field select option {
-  background: #2a1522;
+  background: var(--bg-secondary);
 
-  color: #fff7fb;
+  color: var(--text-primary);
 }
 
 
@@ -412,7 +372,7 @@
 .field-heading span {
   font-size: 12px;
 
-  color: #806475;
+  color: var(--text-secondary);
 }
 
 
@@ -431,14 +391,9 @@
 
   border-radius: 15px;
 
-  background:
-    linear-gradient(
-      135deg,
-      #d47eaa,
-      #8f3768
-    );
+  background: var(--accent-color);
 
-  color: #ffffff;
+  color: var(--accent-text);
 
   font-size: 15px;
 
@@ -446,22 +401,21 @@
 
   cursor: pointer;
 
-  box-shadow:
-    0 10px 25px
-    rgba(184, 77, 134, 0.16);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
 
   transition:
     transform 0.18s ease,
     box-shadow 0.18s ease,
+    background 0.18s ease,
     opacity 0.18s ease;
 }
 
 .complete-profile-button:hover:not(:disabled) {
   transform: translateY(-2px);
 
-  box-shadow:
-    0 12px 30px
-    rgba(184, 77, 134, 0.25);
+  background: var(--accent-hover);
+
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.20);
 }
 
 .complete-profile-button:active:not(:disabled) {

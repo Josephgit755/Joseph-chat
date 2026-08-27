@@ -1,4 +1,7 @@
-import { useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 
 import Splash from "./pages/Splash";
 import Login from "./pages/Login";
@@ -7,6 +10,8 @@ import ChatList from "./pages/ChatList";
 import Contacts from "./pages/Contacts";
 import PrivateChat from "./pages/PrivateChat";
 import DisappearingMessage from "./pages/DisappearingMessage";
+import Settings from "./pages/Settings";
+import Account from "./pages/Account";
 
 import Tools from "./pages/Tools";
 import ZenvaBreath from "./pages/ZenvaBreath";
@@ -22,6 +27,7 @@ import {
 } from "./CallManager";
 
 import "./styles/auth.css";
+import "./styles/globalTheme.css";
 
 
 // =========================================================
@@ -42,19 +48,114 @@ import "./styles/auth.css";
 //
 // Contacts and PrivateChat only request calls.
 // They do NOT manage WebRTC themselves.
+//
+// GLOBAL THEME ARCHITECTURE
+//
+// App
+//  ↓
+// Theme State
+//  ↓
+// document.body
+//  ↓
+// Entire ZenvaZapp application
+//
 // =========================================================
 
 
 function App() {
 
-  const [currentScreen, setCurrentScreen] =
-    useState("splash");
+  // =======================================================
+  // GLOBAL ZENVazAPP APPEARANCE
+  // =======================================================
 
-  const [user, setUser] =
-    useState(null);
+  const [theme, setTheme] = useState(() => {
+    return (
+      localStorage.getItem(
+        "zenvazapp-theme"
+      ) || "zenvazapp"
+    );
+  });
 
-  const [selectedChat, setSelectedChat] =
-    useState(null);
+  const [darkMode, setDarkMode] = useState(() => {
+    return (
+      localStorage.getItem(
+        "zenvazapp-dark-mode"
+      ) === "true"
+    );
+  });
+
+
+  // =======================================================
+  // APPLY GLOBAL THEME
+  // =======================================================
+
+  useEffect(() => {
+
+    document.body.setAttribute(
+      "data-zenvazapp-theme",
+      theme
+    );
+
+    localStorage.setItem(
+      "zenvazapp-theme",
+      theme
+    );
+
+  }, [theme]);
+
+
+  // =======================================================
+  // APPLY GLOBAL DARK MODE
+  // =======================================================
+
+  useEffect(() => {
+
+    document.body.classList.toggle(
+      "zenvazapp-dark-mode",
+      darkMode
+    );
+
+    localStorage.setItem(
+      "zenvazapp-dark-mode",
+      darkMode
+    );
+
+  }, [darkMode]);
+
+
+  // =======================================================
+  // SCREEN
+  // =======================================================
+
+  const [
+    currentScreen,
+    setCurrentScreen,
+  ] = useState("splash");
+
+
+  // =======================================================
+  // USER
+  // =======================================================
+
+  const [
+    user,
+    setUser,
+  ] = useState(null);
+
+
+  // =======================================================
+  // SELECTED CHAT
+  // =======================================================
+
+  const [
+    selectedChat,
+    setSelectedChat,
+  ] = useState(null);
+
+
+  // =======================================================
+  // API
+  // =======================================================
 
   const API_URL =
     process.env.REACT_APP_API_URL ||
@@ -75,6 +176,7 @@ function App() {
       setCurrentScreen(
         "profile"
       );
+
     };
 
 
@@ -109,11 +211,13 @@ function App() {
           "Unable to save user locally:",
           error
         );
+
       }
 
       setCurrentScreen(
         "chatlist"
       );
+
     };
 
 
@@ -140,6 +244,7 @@ function App() {
       ) {
 
         return;
+
       }
 
       try {
@@ -167,27 +272,25 @@ function App() {
             }
           );
 
+
         if (!response.ok) {
 
           console.warn(
             "Recently contacted sync returned:",
             response.status
           );
+
         }
 
       } catch (error) {
-
-        /*
-         * Recently-contacted tracking
-         * must never prevent the user
-         * from opening a conversation.
-         */
 
         console.warn(
           "Unable to update recently contacted status:",
           error
         );
+
       }
+
     };
 
 
@@ -199,18 +302,11 @@ function App() {
     (chat) => {
 
       if (!chat) {
+
         return;
+
       }
 
-      /*
-       * Remember where the chat was opened from.
-       *
-       * Contacts -> PrivateChat -> Back
-       * returns to Contacts.
-       *
-       * ChatList -> PrivateChat -> Back
-       * returns to ChatList.
-       */
 
       const navigationSource =
         currentScreen ===
@@ -218,19 +314,25 @@ function App() {
           ? "contacts"
           : "chatlist";
 
+
       const chatWithNavigation = {
+
         ...chat,
 
         navigationSource,
+
       };
+
 
       setSelectedChat(
         chatWithNavigation
       );
 
+
       setCurrentScreen(
         "private-chat"
       );
+
     };
 
 
@@ -257,6 +359,7 @@ function App() {
       setCurrentScreen(
         "disappearing-message"
       );
+
     };
 
 
@@ -270,6 +373,7 @@ function App() {
       setCurrentScreen(
         "private-chat"
       );
+
     };
 
 
@@ -287,8 +391,9 @@ function App() {
         // -----------------------------------------------
 
         case "chats":
-          // Intentional fall-through to chatlist.
-          // eslint-disable-next-line no-fallthrough
+
+        // Intentional fall-through
+
         case "chatlist":
 
           setCurrentScreen(
@@ -421,8 +526,20 @@ function App() {
 
         case "settings":
 
-          console.log(
-            "Settings page is not implemented yet."
+          setCurrentScreen(
+            "settings"
+          );
+
+          break;
+
+        // -----------------------------------------------
+        // ACCOUNT
+        // -----------------------------------------------
+
+        case "settings-account":
+
+          setCurrentScreen(
+           "account"
           );
 
           break;
@@ -490,20 +607,18 @@ function App() {
             "Navigation selected:",
             section
           );
+
       }
+
     };
 
 
   // =======================================================
-  // MAIN APPLICATION CONTENT
-  // =======================================================
-  //
-  // Calling is handled separately by CallProvider.
-  //
-  // This component only controls normal navigation.
+  // RENDER
   // =======================================================
 
   return (
+
     <CallProvider
       user={
         user
@@ -511,12 +626,29 @@ function App() {
     >
 
       <AppContent
+
         currentScreen={
           currentScreen
         }
 
         setCurrentScreen={
           setCurrentScreen
+        }
+
+        theme={
+          theme
+        }
+
+        setTheme={
+          setTheme
+        }
+
+        darkMode={
+          darkMode
+        }
+
+        setDarkMode={
+          setDarkMode
         }
 
         user={
@@ -558,24 +690,31 @@ function App() {
         handleNavigate={
           handleNavigate
         }
+
       />
 
     </CallProvider>
+
   );
+
 }
 
 
 // =========================================================
 // APPLICATION CONTENT
 // =========================================================
-//
-// This component lives INSIDE CallProvider so it can
-// access the global calling system.
-// =========================================================
 
 function AppContent({
+
   currentScreen,
   setCurrentScreen,
+
+  theme,
+  setTheme,
+
+  darkMode,
+  setDarkMode,
+
   user,
   selectedChat,
   setSelectedChat,
@@ -587,7 +726,9 @@ function AppContent({
   handleOpenDisappearingSettings,
   handleCloseDisappearingSettings,
   handleNavigate,
+
 }) {
+
 
   // =======================================================
   // GLOBAL CALL SYSTEM
@@ -606,7 +747,9 @@ function AppContent({
     (chat) => {
 
       if (!chat) {
+
         return;
+
       }
 
       console.log(
@@ -614,19 +757,12 @@ function AppContent({
         chat
       );
 
-      /*
-       * THIS IS THE IMPORTANT CONNECTION.
-       *
-       * Previously App.js only logged the request.
-       *
-       * Now the request goes directly into
-       * CallManager's WebRTC system.
-       */
 
       startCall(
         chat,
         "audio"
       );
+
     };
 
 
@@ -638,7 +774,9 @@ function AppContent({
     (chat) => {
 
       if (!chat) {
+
         return;
+
       }
 
       console.log(
@@ -646,35 +784,39 @@ function AppContent({
         chat
       );
 
-      /*
-       * Send the contact directly to CallManager.
-       *
-       * CallManager handles:
-       *
-       * - microphone
-       * - camera
-       * - RTCPeerConnection
-       * - offer
-       * - ICE candidates
-       * - answer
-       * - remote stream
-       * - CallScreen
-       */
 
       startCall(
         chat,
         "video"
       );
+
     };
-    if (currentScreen === "splash") {
-      return (
-        <Splash
-          onFinished={() => {
-           setCurrentScreen("login");
-          }}
-        />
-      );
-    }  
+
+
+  // =======================================================
+  // SPLASH
+  // =======================================================
+
+  if (
+    currentScreen ===
+    "splash"
+  ) {
+
+    return (
+
+      <Splash
+        onFinished={() => {
+
+          setCurrentScreen(
+            "login"
+          );
+
+        }}
+      />
+
+    );
+
+  }
 
 
   // =======================================================
@@ -687,12 +829,15 @@ function AppContent({
   ) {
 
     return (
+
       <Login
         onAuthenticated={
           handleAuthenticated
         }
       />
+
     );
+
   }
 
 
@@ -706,6 +851,7 @@ function AppContent({
   ) {
 
     return (
+
       <ProfileSetup
         user={
           user
@@ -715,7 +861,9 @@ function AppContent({
           handleProfileCompleted
         }
       />
+
     );
+
   }
 
 
@@ -729,6 +877,7 @@ function AppContent({
   ) {
 
     return (
+
       <ChatList
         user={
           user
@@ -742,7 +891,9 @@ function AppContent({
           handleNavigate
         }
       />
+
     );
+
   }
 
 
@@ -756,6 +907,7 @@ function AppContent({
   ) {
 
     return (
+
       <Contacts
         user={
           user
@@ -777,7 +929,9 @@ function AppContent({
           handleNavigate
         }
       />
+
     );
+
   }
 
 
@@ -791,6 +945,7 @@ function AppContent({
   ) {
 
     return (
+
       <PrivateChat
         user={
           user
@@ -800,19 +955,16 @@ function AppContent({
           selectedChat
         }
 
-
-        // ===============================================
-        // BACK
-        // ===============================================
-
         onBack={() => {
 
           const navigationSource =
             selectedChat?.navigationSource;
 
+
           setSelectedChat(
             null
           );
+
 
           if (
             navigationSource ===
@@ -828,46 +980,31 @@ function AppContent({
             setCurrentScreen(
               "chatlist"
             );
+
           }
+
         }}
-
-
-        // ===============================================
-        // VOICE CALL
-        // ===============================================
 
         onCall={
           handleVoiceCall
         }
 
-
-        // ===============================================
-        // VIDEO CALL
-        // ===============================================
-
         onVideoCall={
           handleVideoCall
         }
-
-
-        // ===============================================
-        // DISAPPEARING MESSAGES
-        // ===============================================
 
         onOpenDisappearingSettings={
           handleOpenDisappearingSettings
         }
 
-
-        // ===============================================
-        // RECENTLY CONTACTED
-        // ===============================================
-
         onContactOpened={
           handleContactOpened
         }
+
       />
+
     );
+
   }
 
 
@@ -881,7 +1018,9 @@ function AppContent({
   ) {
 
     return (
+
       <DisappearingMessage
+
         user={
           user
         }
@@ -897,8 +1036,93 @@ function AppContent({
         onClose={
           handleCloseDisappearingSettings
         }
+
       />
+
     );
+
+  }
+
+
+  // =======================================================
+  // SETTINGS
+  // =======================================================
+
+  if (
+    currentScreen ===
+    "settings"
+  ) {
+
+    return (
+
+      <Settings
+
+        user={
+          user
+        }
+
+        onBack={() =>
+          setCurrentScreen(
+            "chatlist"
+          )
+        }
+
+        onNavigate={
+          handleNavigate
+        }
+
+        theme={
+          theme
+        }
+
+        setTheme={
+          setTheme
+        }
+
+        darkMode={
+          darkMode
+        }
+
+        setDarkMode={
+          setDarkMode
+        }
+
+      />
+
+    );
+
+  }
+  // =======================================================
+  // ACCOUNT
+  // =======================================================
+
+  if (
+   currentScreen ===
+     "account"
+  ) {
+
+   return (
+
+     <Account
+
+       user={
+         user
+        }
+
+       onBack={() =>
+         setCurrentScreen(
+           "settings"
+          ) 
+        }
+
+        onNavigate={
+         handleNavigate
+        }
+
+      />
+
+    );
+
   }
 
 
@@ -912,6 +1136,7 @@ function AppContent({
   ) {
 
     return (
+
       <Tools
         user={
           user
@@ -921,7 +1146,9 @@ function AppContent({
           handleNavigate
         }
       />
+
     );
+
   }
 
 
@@ -935,6 +1162,7 @@ function AppContent({
   ) {
 
     return (
+
       <ZenvaBreath
         onBack={() =>
           setCurrentScreen(
@@ -942,7 +1170,9 @@ function AppContent({
           )
         }
       />
+
     );
+
   }
 
 
@@ -956,6 +1186,7 @@ function AppContent({
   ) {
 
     return (
+
       <Translator
         onBack={() =>
           setCurrentScreen(
@@ -963,7 +1194,9 @@ function AppContent({
           )
         }
       />
+
     );
+
   }
 
 
@@ -977,7 +1210,9 @@ function AppContent({
   ) {
 
     return (
+
       <StudentMode
+
         user={
           user
         }
@@ -991,8 +1226,11 @@ function AppContent({
         onNavigate={
           handleNavigate
         }
+
       />
+
     );
+
   }
 
 
@@ -1006,7 +1244,9 @@ function AppContent({
   ) {
 
     return (
+
       <SmartFiles
+
         user={
           user
         }
@@ -1020,8 +1260,11 @@ function AppContent({
         onNavigate={
           handleNavigate
         }
+
       />
+
     );
+
   }
 
 
@@ -1035,7 +1278,9 @@ function AppContent({
   ) {
 
     return (
+
       <MarketingStatus
+
         user={
           user
         }
@@ -1049,8 +1294,11 @@ function AppContent({
         onNavigate={
           handleNavigate
         }
+
       />
+
     );
+
   }
 
 
@@ -1064,7 +1312,9 @@ function AppContent({
   ) {
 
     return (
+
       <ZenvaAI
+
         user={
           user
         }
@@ -1078,8 +1328,11 @@ function AppContent({
         onNavigate={
           handleNavigate
         }
+
       />
+
     );
+
   }
 
 
@@ -1088,6 +1341,7 @@ function AppContent({
   // =======================================================
 
   return null;
+
 }
 
 

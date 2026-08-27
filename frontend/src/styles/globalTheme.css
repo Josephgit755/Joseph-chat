@@ -1,0 +1,78 @@
+/* =======================================================
+   1. DEFAULT LIGHT THEME VARIABLES
+   ======================================================= */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f4f5f7;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --border-color: #e5e7eb;
+
+  /* Default Theme (ZenvaZapp Purple) */
+  --accent-color: #8b5cf6;
+  --accent-hover: #7c3aed;
+  --accent-text: #ffffff;
+}
+
+/* =======================================================
+   2. COLOR THEMES
+   ======================================================= */
+
+/* Red Theme */
+[data-zenvazapp-theme="red"] {
+  --accent-color: #ef4444;
+  --accent-hover: #dc2626;
+  --accent-text: #ffffff;
+}
+
+/* Green Theme */
+[data-zenvazapp-theme="green"] {
+  --accent-color: #10b981;
+  --accent-hover: #059669;
+  --accent-text: #ffffff;
+}
+
+/* Blue Theme */
+[data-zenvazapp-theme="blue"] {
+  --accent-color: #3b82f6;
+  --accent-hover: #2563eb;
+  --accent-text: #ffffff;
+}
+
+/* Theme 4: ORIGINAL MAGENTA/PURPLE (Zenva Original) */
+.theme-magenta,
+.theme-4 {
+  --bg-primary: #5e2046;
+  --bg-secondary: #4b1938;
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.68);
+  --border-color: rgba(255, 255, 255, 0.14);
+  --accent-color: #d95bb7;
+  --accent-hover: #e86bc7;
+  --accent-text: #ffffff;
+}
+
+/* Orange Theme */
+[data-zenvazapp-theme="orange"] {
+  --accent-color: #f97316;
+  --accent-hover: #ea580c;
+  --accent-text: #ffffff;
+}
+
+/* =======================================================
+   3. DARK MODE OVERRIDES
+   ======================================================= */
+body.zenvazapp-dark-mode {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-color: #334155;
+}
+
+/* Base Body Styles */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
