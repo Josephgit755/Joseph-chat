@@ -37,13 +37,13 @@ import "./styles/globalTheme.css";
 // GLOBAL CALLING ARCHITECTURE
 //
 // App
-//  ↓
+//   ↓
 // CallProvider
-//  ↓
+//   ↓
 // CallManager
-//  ↓
+//   ↓
 // WebRTC
-//  ↓
+//   ↓
 // CallScreen / IncomingCall
 //
 // Contacts and PrivateChat only request calls.
@@ -52,12 +52,23 @@ import "./styles/globalTheme.css";
 // GLOBAL THEME ARCHITECTURE
 //
 // App
-//  ↓
+//   ↓
 // Theme State
-//  ↓
+//   ↓
 // document.body
-//  ↓
+//   ↓
 // Entire ZenvaZapp application
+//
+// PROFILE ARCHITECTURE
+//
+// Login + OTP
+//   ↓
+// Authenticated User
+//   ↓
+// Check profileCompleted
+//   ↓
+// Incomplete → ProfileSetup
+// Complete   → ChatList
 //
 // =========================================================
 
@@ -163,19 +174,189 @@ function App() {
 
 
   // =======================================================
+  // LOAD STORED USER
+  // =======================================================
+  //
+  // This allows a previously authenticated user with a
+  // completed profile to continue into ZenvaZapp.
+  //
+  // The token is also checked so we don't restore a stale
+  // local user without an authentication session.
+  //
+  // =======================================================
+
+  useEffect(() => {
+
+    const storedToken =
+      localStorage.getItem(
+        "zenvazapp_token"
+      );
+
+    const storedUser =
+      localStorage.getItem(
+        "zenvazapp_user"
+      );
+
+    if (!storedToken || !storedUser) {
+      return;
+    }
+
+    try {
+
+      const parsedUser =
+        JSON.parse(
+          storedUser
+        );
+
+      if (!parsedUser) {
+        return;
+      }
+
+      setUser(
+        parsedUser
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Unable to restore ZenvaZapp user:",
+        error
+      );
+
+    }
+
+  }, []);
+
+
+  // =======================================================
+  // AFTER SPLASH
+  // =======================================================
+  //
+  // Existing authenticated users with a completed profile
+  // can go directly to ChatList.
+  //
+  // New users or users whose profile is incomplete go to
+  // Login.
+  //
+  // =======================================================
+
+  const handleSplashFinished =
+    () => {
+
+      const storedToken =
+        localStorage.getItem(
+          "zenvazapp_token"
+        );
+
+      const storedUser =
+        localStorage.getItem(
+          "zenvazapp_user"
+        );
+
+      if (
+        storedToken &&
+        storedUser
+      ) {
+
+        try {
+
+          const parsedUser =
+            JSON.parse(
+              storedUser
+            );
+
+          if (
+            parsedUser &&
+            parsedUser.profileCompleted
+          ) {
+
+            setUser(
+              parsedUser
+            );
+
+            setCurrentScreen(
+              "chatlist"
+            );
+
+            return;
+          }
+
+        } catch (error) {
+
+          console.error(
+            "Unable to restore stored session:",
+            error
+          );
+
+        }
+
+      }
+
+      setCurrentScreen(
+        "login"
+      );
+
+    };
+
+
+  // =======================================================
   // AFTER LOGIN + OTP VERIFICATION
   // =======================================================
 
   const handleAuthenticated =
     (authenticatedUser) => {
 
+      if (!authenticatedUser) {
+        return;
+      }
+
       setUser(
         authenticatedUser
       );
 
-      setCurrentScreen(
-        "profile"
-      );
+      // Save the authenticated user locally.
+      try {
+
+        localStorage.setItem(
+          "zenvazapp_user",
+          JSON.stringify(
+            authenticatedUser
+          )
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Unable to save authenticated user locally:",
+          error
+        );
+
+      }
+
+      // ---------------------------------------------------
+      // IMPORTANT
+      // ---------------------------------------------------
+      //
+      // If the user has already completed their profile,
+      // don't force them through ProfileSetup again.
+      //
+      // ---------------------------------------------------
+
+      if (
+        authenticatedUser.profileCompleted
+      ) {
+
+        setCurrentScreen(
+          "chatlist"
+        );
+
+      } else {
+
+        setCurrentScreen(
+          "profile"
+        );
+
+      }
 
     };
 
@@ -249,6 +430,23 @@ function App() {
 
       try {
 
+        const token =
+          localStorage.getItem(
+            "zenvazapp_token"
+          );
+
+        const headers = {
+          "Content-Type":
+            "application/json",
+        };
+
+        if (token) {
+
+          headers.Authorization =
+            `Bearer ${token}`;
+
+        }
+
         const response =
           await fetch(
             `${API_URL}/api/contacts/recently-contacted`,
@@ -256,10 +454,7 @@ function App() {
               method:
                 "PATCH",
 
-              headers: {
-                "Content-Type":
-                  "application/json",
-              },
+              headers,
 
               body:
                 JSON.stringify({
@@ -302,18 +497,13 @@ function App() {
     (chat) => {
 
       if (!chat) {
-
         return;
-
       }
 
-
       const navigationSource =
-        currentScreen ===
-        "contacts"
+        currentScreen === "contacts"
           ? "contacts"
           : "chatlist";
-
 
       const chatWithNavigation = {
 
@@ -323,11 +513,9 @@ function App() {
 
       };
 
-
       setSelectedChat(
         chatWithNavigation
       );
-
 
       setCurrentScreen(
         "private-chat"
@@ -392,217 +580,237 @@ function App() {
 
         case "chats":
         case "chatlist": {
+
           setCurrentScreen(
-           "chatlist"
+            "chatlist"
           );
 
-         break;
+          break;
         }
+
 
         // -----------------------------------------------
         // CONTACTS
         // -----------------------------------------------
 
-        case "contacts":
+        case "contacts": {
 
           setCurrentScreen(
             "contacts"
           );
 
           break;
+        }
 
 
         // -----------------------------------------------
         // TOOLS
         // -----------------------------------------------
 
-        case "tools":
+        case "tools": {
 
           setCurrentScreen(
             "tools"
           );
 
           break;
+        }
 
 
         // -----------------------------------------------
         // ZENVA BREATH
         // -----------------------------------------------
 
-        case "breath":
+        case "breath": {
 
           setCurrentScreen(
             "breath"
           );
 
           break;
+        }
 
 
         // -----------------------------------------------
         // TRANSLATOR
         // -----------------------------------------------
 
-        case "translator":
+        case "translator": {
 
           setCurrentScreen(
             "translator"
           );
 
           break;
+        }
 
 
         // -----------------------------------------------
         // STUDENT MODE
         // -----------------------------------------------
 
-        case "student":
+        case "student": {
 
           setCurrentScreen(
             "student"
           );
 
           break;
+        }
 
 
         // -----------------------------------------------
         // SMART FILES
         // -----------------------------------------------
 
-        case "files":
+        case "files": {
 
           setCurrentScreen(
             "files"
           );
 
           break;
+        }
 
 
         // -----------------------------------------------
         // MARKETING STATUS
         // -----------------------------------------------
 
-        case "marketing":
+        case "marketing": {
 
           setCurrentScreen(
             "marketing"
           );
 
           break;
+        }
 
 
         // -----------------------------------------------
         // ZENVA AI
         // -----------------------------------------------
 
-        case "ai":
+        case "ai": {
 
           setCurrentScreen(
             "ai"
           );
 
           break;
+        }
 
 
         // -----------------------------------------------
         // PROFILE
         // -----------------------------------------------
 
-        case "profile":
+        case "profile": {
 
           setCurrentScreen(
             "profile"
           );
 
           break;
+        }
 
 
         // -----------------------------------------------
         // SETTINGS
         // -----------------------------------------------
 
-        case "settings":
+        case "settings": {
 
           setCurrentScreen(
             "settings"
           );
 
           break;
+        }
+
 
         // -----------------------------------------------
         // ACCOUNT
         // -----------------------------------------------
 
-        case "settings-account":
+        case "settings-account": {
 
           setCurrentScreen(
-           "account"
+            "account"
           );
 
           break;
+        }
 
 
         // -----------------------------------------------
         // NEW CHAT
         // -----------------------------------------------
 
-        case "new-chat":
+        case "new-chat": {
 
           setCurrentScreen(
             "contacts"
           );
 
           break;
+        }
 
 
         // -----------------------------------------------
         // NEW GROUP
         // -----------------------------------------------
 
-        case "new-group":
+        case "new-group": {
 
           console.log(
             "New Group page is not implemented yet."
           );
 
           break;
+        }
 
 
         // -----------------------------------------------
         // NEW CONTACT
         // -----------------------------------------------
 
-        case "new-contact":
+        case "new-contact": {
 
           setCurrentScreen(
             "contacts"
           );
 
           break;
+        }
 
 
         // -----------------------------------------------
         // COMMUNITY
         // -----------------------------------------------
 
-        case "community":
+        case "community": {
 
           console.log(
             "Community page is not implemented yet."
           );
 
           break;
+        }
 
 
         // -----------------------------------------------
         // DEFAULT
         // -----------------------------------------------
 
-        default:
+        default: {
 
           console.log(
             "Navigation selected:",
             section
           );
+
+        }
 
       }
 
@@ -616,9 +824,7 @@ function App() {
   return (
 
     <CallProvider
-      user={
-        user
-      }
+      user={user}
     >
 
       <AppContent
@@ -687,6 +893,10 @@ function App() {
           handleNavigate
         }
 
+        handleSplashFinished={
+          handleSplashFinished
+        }
+
       />
 
     </CallProvider>
@@ -722,6 +932,7 @@ function AppContent({
   handleOpenDisappearingSettings,
   handleCloseDisappearingSettings,
   handleNavigate,
+  handleSplashFinished,
 
 }) {
 
@@ -743,16 +954,13 @@ function AppContent({
     (chat) => {
 
       if (!chat) {
-
         return;
-
       }
 
       console.log(
         "ZenvaZapp voice call requested:",
         chat
       );
-
 
       startCall(
         chat,
@@ -770,16 +978,13 @@ function AppContent({
     (chat) => {
 
       if (!chat) {
-
         return;
-
       }
 
       console.log(
         "ZenvaZapp video call requested:",
         chat
       );
-
 
       startCall(
         chat,
@@ -801,13 +1006,9 @@ function AppContent({
     return (
 
       <Splash
-        onFinished={() => {
-
-          setCurrentScreen(
-            "login"
-          );
-
-        }}
+        onFinished={
+          handleSplashFinished
+        }
       />
 
     );
@@ -956,11 +1157,9 @@ function AppContent({
           const navigationSource =
             selectedChat?.navigationSource;
 
-
           setSelectedChat(
             null
           );
-
 
           if (
             navigationSource ===
@@ -1088,31 +1287,33 @@ function AppContent({
     );
 
   }
+
+
   // =======================================================
   // ACCOUNT
   // =======================================================
 
   if (
-   currentScreen ===
-     "account"
+    currentScreen ===
+    "account"
   ) {
 
-   return (
+    return (
 
-     <Account
+      <Account
 
-       user={
-         user
+        user={
+          user
         }
 
-       onBack={() =>
-         setCurrentScreen(
-           "settings"
-          ) 
+        onBack={() =>
+          setCurrentScreen(
+            "settings"
+          )
         }
 
         onNavigate={
-         handleNavigate
+          handleNavigate
         }
 
       />
@@ -1141,6 +1342,7 @@ function AppContent({
         onNavigate={
           handleNavigate
         }
+
       />
 
     );
@@ -1165,6 +1367,7 @@ function AppContent({
             "tools"
           )
         }
+
       />
 
     );
@@ -1189,6 +1392,7 @@ function AppContent({
             "tools"
           )
         }
+
       />
 
     );

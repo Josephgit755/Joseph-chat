@@ -1,18 +1,41 @@
 import { useEffect, useRef, useState } from "react";
 
-function ProfileSetup({ onProfileCompleted }) {
-  const [profilePhoto, setProfilePhoto] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [bio, setBio] = useState("");
-  const [gender, setGender] = useState("");
+function ProfileSetup({
+  user,
+  onProfileCompleted,
+}) {
+  const [profilePhoto, setProfilePhoto] =
+    useState("");
 
-  const [error, setError] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveStage, setSaveStage] = useState("");
-  const [isCompleted, setIsCompleted] = useState(false);
+  const [displayName, setDisplayName] =
+    useState("");
 
-  const photoInputRef = useRef(null);
-  const cameraInputRef = useRef(null);
+  const [bio, setBio] =
+    useState("");
+
+  const [gender, setGender] =
+    useState("");
+
+  const [error, setError] =
+    useState("");
+
+  const [isSaving, setIsSaving] =
+    useState(false);
+
+  const [saveStage, setSaveStage] =
+    useState("");
+
+  const [isCompleted, setIsCompleted] =
+    useState(false);
+
+  const photoInputRef =
+    useRef(null);
+
+  const cameraInputRef =
+    useRef(null);
+
+  const completionTimerRef =
+    useRef(null);
 
   const API_URL =
     process.env.REACT_APP_API_URL ||
@@ -24,25 +47,59 @@ function ProfileSetup({ onProfileCompleted }) {
 
   useEffect(() => {
     const storedUser =
-      localStorage.getItem("zenvazapp_user");
+      localStorage.getItem(
+        "zenvazapp_user"
+      );
 
-    if (!storedUser) {
+    let existingUser = user;
+
+    if (!existingUser && storedUser) {
+      try {
+        existingUser =
+          JSON.parse(storedUser);
+      } catch (loadError) {
+        console.error(
+          "Unable to parse stored profile:",
+          loadError
+        );
+      }
+    }
+
+    if (!existingUser) {
       return;
     }
 
-    try {
-      const user = JSON.parse(storedUser);
+    setProfilePhoto(
+      existingUser.profilePhoto || ""
+    );
 
-      setProfilePhoto(user.profilePhoto || "");
-      setDisplayName(user.displayName || "");
-      setBio(user.bio || "");
-      setGender(user.gender || "");
-    } catch (loadError) {
-      console.error(
-        "Unable to load profile:",
-        loadError
-      );
-    }
+    setDisplayName(
+      existingUser.displayName ||
+        existingUser.fullName ||
+        ""
+    );
+
+    setBio(
+      existingUser.bio || ""
+    );
+
+    setGender(
+      existingUser.gender || ""
+    );
+  }, [user]);
+
+  // ==========================================
+  // CLEANUP COMPLETION TIMER
+  // ==========================================
+
+  useEffect(() => {
+    return () => {
+      if (completionTimerRef.current) {
+        clearTimeout(
+          completionTimerRef.current
+        );
+      }
+    };
   }, []);
 
   // ==========================================
@@ -50,13 +107,15 @@ function ProfileSetup({ onProfileCompleted }) {
   // ==========================================
 
   const getInitials = () => {
-    const name = displayName.trim();
+    const name =
+      displayName.trim();
 
     if (!name) {
       return "Zz";
     }
 
-    const parts = name.split(/\s+/);
+    const parts =
+      name.split(/\s+/);
 
     if (parts.length >= 2) {
       return (
@@ -74,8 +133,11 @@ function ProfileSetup({ onProfileCompleted }) {
   // PHOTO SELECTED
   // ==========================================
 
-  const handlePhotoChange = (event) => {
-    const file = event.target.files?.[0];
+  const handlePhotoChange = (
+    event
+  ) => {
+    const file =
+      event.target.files?.[0];
 
     if (!file) {
       return;
@@ -83,7 +145,15 @@ function ProfileSetup({ onProfileCompleted }) {
 
     setError("");
 
-    if (!file.type.startsWith("image/")) {
+    // ------------------------------------------
+    // VALIDATE FILE TYPE
+    // ------------------------------------------
+
+    if (
+      !file.type.startsWith(
+        "image/"
+      )
+    ) {
       setError(
         "Please select a valid image."
       );
@@ -92,7 +162,14 @@ function ProfileSetup({ onProfileCompleted }) {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
+    // ------------------------------------------
+    // VALIDATE FILE SIZE
+    // ------------------------------------------
+
+    if (
+      file.size >
+      5 * 1024 * 1024
+    ) {
       setError(
         "Please choose an image smaller than 5 MB."
       );
@@ -101,12 +178,22 @@ function ProfileSetup({ onProfileCompleted }) {
       return;
     }
 
-    const reader = new FileReader();
+    // ------------------------------------------
+    // READ IMAGE
+    // ------------------------------------------
+
+    const reader =
+      new FileReader();
 
     reader.onload = () => {
-      setProfilePhoto(
-        reader.result
-      );
+      if (
+        typeof reader.result ===
+        "string"
+      ) {
+        setProfilePhoto(
+          reader.result
+        );
+      }
     };
 
     reader.onerror = () => {
@@ -127,11 +214,13 @@ function ProfileSetup({ onProfileCompleted }) {
     setError("");
 
     if (photoInputRef.current) {
-      photoInputRef.current.value = "";
+      photoInputRef.current.value =
+        "";
     }
 
     if (cameraInputRef.current) {
-      cameraInputRef.current.value = "";
+      cameraInputRef.current.value =
+        "";
     }
   };
 
@@ -139,14 +228,23 @@ function ProfileSetup({ onProfileCompleted }) {
   // SAVE PROFILE
   // ==========================================
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (
+    event
+  ) => {
     event.preventDefault();
 
-    if (isSaving || isCompleted) {
+    if (
+      isSaving ||
+      isCompleted
+    ) {
       return;
     }
 
     setError("");
+
+    // ------------------------------------------
+    // GET AUTH TOKEN
+    // ------------------------------------------
 
     const token =
       localStorage.getItem(
@@ -157,8 +255,13 @@ function ProfileSetup({ onProfileCompleted }) {
       setError(
         "Your login session has expired. Please log in again."
       );
+
       return;
     }
+
+    // ------------------------------------------
+    // CLEAN INPUT
+    // ------------------------------------------
 
     const cleanedDisplayName =
       displayName.trim();
@@ -166,61 +269,123 @@ function ProfileSetup({ onProfileCompleted }) {
     const cleanedBio =
       bio.trim();
 
+    // ------------------------------------------
+    // VALIDATE DISPLAY NAME
+    // ------------------------------------------
+
     if (!cleanedDisplayName) {
       setError(
         "Please enter a display name."
       );
+
       return;
     }
 
-    if (cleanedDisplayName.length > 100) {
+    if (
+      cleanedDisplayName.length >
+      100
+    ) {
       setError(
         "Display name cannot exceed 100 characters."
       );
+
       return;
     }
 
-    if (cleanedBio.length > 160) {
+    // ------------------------------------------
+    // VALIDATE BIO
+    // ------------------------------------------
+
+    if (
+      cleanedBio.length >
+      160
+    ) {
       setError(
         "Bio cannot exceed 160 characters."
       );
+
       return;
     }
 
+    // ------------------------------------------
+    // VALIDATE GENDER
+    // ------------------------------------------
+
+    const allowedGenders = [
+      "",
+      "male",
+      "female",
+      "other",
+      "prefer-not-to-say",
+    ];
+
+    if (
+      !allowedGenders.includes(
+        gender
+      )
+    ) {
+      setError(
+        "Please select a valid gender option."
+      );
+
+      return;
+    }
+
+    // ------------------------------------------
+    // START SAVING
+    // ------------------------------------------
+
     setIsSaving(true);
-    setSaveStage("Saving your profile...");
+
+    setSaveStage(
+      "Saving your profile..."
+    );
 
     try {
-      const response = await fetch(
-        `${API_URL}/api/profile`,
-        {
-          method: "PUT",
+      const response =
+        await fetch(
+          `${API_URL}/api/profile`,
+          {
+            method: "PUT",
 
-          headers: {
-            "Content-Type":
-              "application/json",
+            headers: {
+              "Content-Type":
+                "application/json",
 
-            Authorization:
-              `Bearer ${token}`,
-          },
+              Authorization:
+                `Bearer ${token}`,
+            },
 
-          body: JSON.stringify({
-            profilePhoto,
-            displayName:
-              cleanedDisplayName,
-            bio: cleanedBio,
-            gender,
-          }),
-        }
-      );
+            // IMPORTANT:
+            // profileCompleted is NOT sent.
+            // The backend now determines completion.
+            body: JSON.stringify({
+              profilePhoto,
+              displayName:
+                cleanedDisplayName,
+              bio: cleanedBio,
+              gender,
+              profileCompleted:true,
+            }),
+          }
+        );
+
+      // ------------------------------------------
+      // READ RESPONSE
+      // ------------------------------------------
 
       let data = {};
 
       try {
-        data = await response.json();
+        data =
+          await response.json();
       } catch {
         data = {};
       }
+
+      // ------------------------------------------
+      // HANDLE SERVER ERROR
+      // ------------------------------------------
 
       if (
         !response.ok ||
@@ -237,30 +402,108 @@ function ProfileSetup({ onProfileCompleted }) {
         return;
       }
 
-      // ======================================
-      // SAVE UPDATED USER LOCALLY
-      // ======================================
+      // ------------------------------------------
+      // BACKEND USER
+      // ------------------------------------------
 
-      const updatedUser =
-        data.user || {
+      const backendUser =
+        data.user;
+
+      if (!backendUser) {
+        setError(
+          "Your profile was saved, but the updated user information was not returned."
+        );
+
+        setIsSaving(false);
+        setSaveStage("");
+
+        return;
+      }
+
+      // ------------------------------------------
+      // BUILD UPDATED USER
+      // ------------------------------------------
+      //
+      // The backend response is authoritative.
+      //
+      // We also preserve the authenticated user
+      // information if an older backend response
+      // happens to omit a field.
+      //
+      // ------------------------------------------
+
+      const updatedUser = {
+        ...(user || {}),
+        ...(backendUser),
+
+        profilePhoto:
+          backendUser.profilePhoto ??
           profilePhoto,
-          displayName:
-            cleanedDisplayName,
-          bio: cleanedBio,
+
+        displayName:
+          backendUser.displayName ??
+          cleanedDisplayName,
+
+        bio:
+          backendUser.bio ??
+          cleanedBio,
+
+        gender:
+          backendUser.gender ??
           gender,
-          profileCompleted: true,
-        };
 
-      localStorage.setItem(
-        "zenvazapp_user",
-        JSON.stringify(
-          updatedUser
-        )
-      );
+        profileCompleted:
+          backendUser.profileCompleted ===
+          true,
+      };
 
-      // ======================================
-      // COMPLETION ANIMATION
-      // ======================================
+      // ------------------------------------------
+      // VERIFY PROFILE COMPLETION
+      // ------------------------------------------
+      //
+      // The new backend controller should return
+      // profileCompleted: true.
+      //
+      // We do not silently pretend the profile is
+      // complete if the backend did not confirm it.
+      //
+      // ------------------------------------------
+
+      if (
+        updatedUser.profileCompleted !==
+        true
+      ) {
+        setError(
+          "Your profile was saved, but ZenvaZapp did not confirm profile completion. Please try again."
+        );
+
+        setIsSaving(false);
+        setSaveStage("");
+
+        return;
+      }
+
+      // ------------------------------------------
+      // SAVE UPDATED USER LOCALLY
+      // ------------------------------------------
+
+      try {
+        localStorage.setItem(
+          "zenvazapp_user",
+          JSON.stringify(
+            updatedUser
+          )
+        );
+      } catch (storageError) {
+        console.error(
+          "Unable to save updated user locally:",
+          storageError
+        );
+      }
+
+      // ------------------------------------------
+      // SUCCESS
+      // ------------------------------------------
 
       setSaveStage(
         "Profile saved successfully"
@@ -268,16 +511,21 @@ function ProfileSetup({ onProfileCompleted }) {
 
       setIsCompleted(true);
 
-      // Give the user a short visual
-      // confirmation before entering
-      // the application.
-      setTimeout(() => {
-        if (onProfileCompleted) {
-          onProfileCompleted(
-            updatedUser
-          );
-        }
-      }, 650);
+      // ------------------------------------------
+      // MOVE INTO ZENVazAPP
+      // ------------------------------------------
+
+      completionTimerRef.current =
+        setTimeout(() => {
+          if (
+            typeof onProfileCompleted ===
+            "function"
+          ) {
+            onProfileCompleted(
+              updatedUser
+            );
+          }
+        }, 650);
     } catch (saveError) {
       console.error(
         "Profile save error:",
@@ -1058,7 +1306,9 @@ function ProfileSetup({ onProfileCompleted }) {
               ref={photoInputRef}
               type="file"
               accept="image/*"
-              onChange={handlePhotoChange}
+              onChange={
+                handlePhotoChange
+              }
               style={{
                 display: "none",
               }}
@@ -1069,7 +1319,9 @@ function ProfileSetup({ onProfileCompleted }) {
               type="file"
               accept="image/*"
               capture="user"
-              onChange={handlePhotoChange}
+              onChange={
+                handlePhotoChange
+              }
               style={{
                 display: "none",
               }}
@@ -1097,7 +1349,9 @@ function ProfileSetup({ onProfileCompleted }) {
 
               <button
                 type="button"
-                onClick={handleRemovePhoto}
+                onClick={
+                  handleRemovePhoto
+                }
               >
                 👤 Default
               </button>
@@ -1111,6 +1365,8 @@ function ProfileSetup({ onProfileCompleted }) {
             className="profile-setup-form"
             onSubmit={handleSubmit}
           >
+
+            {/* DISPLAY NAME */}
 
             <div className="profile-form-group">
 
@@ -1126,6 +1382,10 @@ function ProfileSetup({ onProfileCompleted }) {
                 value={displayName}
                 maxLength={100}
                 autoComplete="name"
+                disabled={
+                  isSaving ||
+                  isCompleted
+                }
                 onChange={(event) => {
                   setDisplayName(
                     event.target.value
@@ -1141,6 +1401,8 @@ function ProfileSetup({ onProfileCompleted }) {
 
             </div>
 
+            {/* BIO */}
+
             <div className="profile-form-group">
 
               <label htmlFor="bio">
@@ -1154,6 +1416,10 @@ function ProfileSetup({ onProfileCompleted }) {
                 value={bio}
                 maxLength={160}
                 rows={4}
+                disabled={
+                  isSaving ||
+                  isCompleted
+                }
                 onChange={(event) => {
                   setBio(
                     event.target.value
@@ -1169,6 +1435,8 @@ function ProfileSetup({ onProfileCompleted }) {
 
             </div>
 
+            {/* GENDER */}
+
             <div className="profile-form-group">
 
               <label htmlFor="gender">
@@ -1179,6 +1447,10 @@ function ProfileSetup({ onProfileCompleted }) {
                 id="gender"
                 className="profile-select"
                 value={gender}
+                disabled={
+                  isSaving ||
+                  isCompleted
+                }
                 onChange={(event) => {
                   setGender(
                     event.target.value
@@ -1187,6 +1459,7 @@ function ProfileSetup({ onProfileCompleted }) {
                   setError("");
                 }}
               >
+
                 <option value="">
                   Select gender
                 </option>
@@ -1206,9 +1479,12 @@ function ProfileSetup({ onProfileCompleted }) {
                 <option value="prefer-not-to-say">
                   Prefer not to say
                 </option>
+
               </select>
 
             </div>
+
+            {/* ERROR */}
 
             {error && (
               <div
@@ -1219,6 +1495,8 @@ function ProfileSetup({ onProfileCompleted }) {
               </div>
             )}
 
+            {/* SAVE */}
+
             <button
               type="submit"
               className="profile-save-button"
@@ -1227,6 +1505,7 @@ function ProfileSetup({ onProfileCompleted }) {
                 isCompleted
               }
             >
+
               <span className="profile-save-content">
 
                 {isSaving &&
@@ -1249,6 +1528,7 @@ function ProfileSetup({ onProfileCompleted }) {
                 </span>
 
               </span>
+
             </button>
 
           </form>
