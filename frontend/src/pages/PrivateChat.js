@@ -137,6 +137,19 @@ function PrivateChat({
 
 
   // =========================================================
+  // MEDIA RECORDING STATE & REFS
+  // =========================================================
+
+  const [
+    isRecording,
+    setIsRecording,
+  ] = useState(false);
+
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+
+
+  // =========================================================
   // MESSAGE MENU
   // =========================================================
 
@@ -466,6 +479,16 @@ function PrivateChat({
           text:
             displayText,
 
+          mediaUrl:
+            item.mediaUrl ||
+            item.fileUrl ||
+            null,
+
+          mediaType:
+            item.mediaType ||
+            item.messageType ||
+            "text",
+
           time:
             messageTime,
 
@@ -764,6 +787,31 @@ function PrivateChat({
   // SAVE DISAPPEARING SETTING
   // =========================================================
 
+  useEffect(() => {
+
+    if (!disappearingStorageKey) {
+      return;
+    }
+
+    try {
+
+      localStorage.setItem(
+        disappearingStorageKey,
+        disappearingDuration
+      );
+
+    } catch (error) {
+
+      console.warn(
+        "Unable to save disappearing setting:",
+        error
+      );
+    }
+
+  }, [
+    disappearingStorageKey,
+    disappearingDuration,
+  ]);
 
 
   // =========================================================
@@ -858,23 +906,6 @@ function PrivateChat({
   // =========================================================
   // SOCKET CONNECTION
   // =========================================================
-  //
-  // IMPORTANT:
-  //
-  // This socket is ONLY for messaging.
-  //
-  // There are NO:
-  //
-  // call-offer
-  // call-answer
-  // call-ice-candidate
-  // call-rejected
-  // call-ended
-  //
-  // listeners here anymore.
-  //
-  // Calling belongs to CallManager.
-  // =========================================================
 
   useEffect(() => {
 
@@ -896,10 +927,6 @@ function PrivateChat({
     socketRef.current =
       socket;
 
-
-    // =======================================================
-    // REGISTER SOCKET USER
-    // =======================================================
 
     const registerSocketUser =
       () => {
@@ -951,10 +978,6 @@ function PrivateChat({
     );
 
 
-    // =======================================================
-    // NEW MESSAGE
-    // =======================================================
-
     const handleIncomingMessage =
       (incoming) => {
 
@@ -1002,10 +1025,6 @@ function PrivateChat({
         scrollToBottom();
       };
 
-
-    // =======================================================
-    // EDITED MESSAGE
-    // =======================================================
 
     const handleEditedMessage =
       (incoming) => {
@@ -1062,10 +1081,6 @@ function PrivateChat({
         );
       };
 
-
-    // =======================================================
-    // DELETE FOR EVERYONE
-    // =======================================================
 
     const handleDeletedForEveryone =
       (incoming) => {
@@ -1132,10 +1147,6 @@ function PrivateChat({
       };
 
 
-    // =======================================================
-    // MESSAGE UNDONE
-    // =======================================================
-
     const handleMessageUndone =
       (incoming) => {
 
@@ -1198,10 +1209,6 @@ function PrivateChat({
       };
 
 
-    // =======================================================
-    // MESSAGE DELIVERED
-    // =======================================================
-
     socket.on(
       "message-delivered",
       ({
@@ -1238,10 +1245,6 @@ function PrivateChat({
     );
 
 
-    // =======================================================
-    // MESSAGE READ
-    // =======================================================
-
     socket.on(
       "message-read",
       ({
@@ -1274,10 +1277,6 @@ function PrivateChat({
     );
 
 
-    // =======================================================
-    // SOCKET MESSAGE LISTENERS
-    // =======================================================
-
     socket.on(
       "new-message",
       handleIncomingMessage
@@ -1309,16 +1308,8 @@ function PrivateChat({
     );
 
 
-    // =======================================================
-    // REGISTER
-    // =======================================================
-
     registerSocketUser();
 
-
-    // =======================================================
-    // CLEANUP
-    // =======================================================
 
     return () => {
 
@@ -1495,10 +1486,6 @@ function PrivateChat({
           );
 
 
-          // =================================================
-          // MARK INCOMING MESSAGES DELIVERED
-          // =================================================
-
           const incomingMessages =
             formattedMessages.filter(
               (item) =>
@@ -1562,10 +1549,6 @@ function PrivateChat({
             }
           }
 
-
-          // =================================================
-          // MARK INCOMING MESSAGES READ
-          // =================================================
 
           for (
             const item of
@@ -1910,6 +1893,89 @@ function PrivateChat({
 
 
   // =========================================================
+  // GENERIC MEDIA UPLOAD HELPER
+  // =========================================================
+
+  const uploadAndSendMedia = async (file, mediaType) => {
+    if (!currentUserId || !otherUserId || !conversationId) {
+      setSendError("Unable to identify this conversation.");
+      return;
+    }
+
+    try {
+      setSendError("");
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(`${API_URL}/api/messages/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const uploadData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(uploadData.error || uploadData.message || "Media upload failed.");
+      }
+
+      const mediaUrl = uploadData.url;
+      const milliseconds = getDisappearingMilliseconds(disappearingDuration);
+      const createdAt = new Date().toISOString();
+
+      const payload = {
+        conversationId,
+        senderId: currentUserId,
+        receiverId: otherUserId,
+        text: "",
+        mediaUrl,
+        mediaType,
+        messageType: mediaType,
+        createdAt,
+      };
+
+      if (disappearingDuration !== "off" && milliseconds) {
+        payload.disappearingDuration = disappearingDuration;
+        payload.expiresAt = new Date(Date.now() + milliseconds).toISOString();
+      }
+
+      const sendResponse = await fetch(`${API_URL}/api/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const sendData = await sendResponse.json();
+      if (!sendResponse.ok) {
+        throw new Error(sendData.message || "Unable to send media message.");
+      }
+
+      const savedMessage = formatMessage(sendData.message || sendData);
+      if (!savedMessage) {
+        throw new Error("The server returned an invalid message.");
+      }
+
+      setMessages((previous) => {
+        const updated = mergeMessages(previous, [savedMessage]);
+        saveMessageCache(updated);
+        return updated;
+      });
+
+      setUndoMessageId(savedMessage.id);
+      setUndoSeconds(5);
+
+      if (socketRef.current?.connected) {
+        socketRef.current.emit("send-message", savedMessage);
+      }
+
+      scrollToBottom();
+    } catch (error) {
+      console.error("Media send error:", error);
+      setSendError(error?.message || "Unable to send media message.");
+    }
+  };
+
+
+  // =========================================================
   // SEND MESSAGE
   // =========================================================
 
@@ -2163,16 +2229,8 @@ function PrivateChat({
         return;
       }
 
-      console.log(
-        "Selected attachment:",
-        file.name,
-        file.type,
-        file.size
-      );
-
-      setSendError(
-        "File attachment selected. Media upload will be connected to the ZenvaZapp media service."
-      );
+      const mediaType = file.type.startsWith("image/") ? "image" : "document";
+      await uploadAndSendMedia(file, mediaType);
 
       event.target.value =
         "";
@@ -2187,28 +2245,37 @@ function PrivateChat({
     async () => {
 
       try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          setSendError("Camera access is not supported by your browser.");
+          return;
+        }
 
         const stream =
           await navigator.mediaDevices.getUserMedia(
             {
-              video:
-                true,
-
-              audio:
-                true,
+              video: true,
+              audio: false,
             }
           );
 
-        stream
-          .getTracks()
-          .forEach(
-            (track) =>
-              track.stop()
-          );
+        const video = document.createElement("video");
+        video.srcObject = stream;
+        await video.play();
 
-        setSendError(
-          "Camera access is available. Camera messaging can be connected to the media upload service next."
-        );
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        stream.getTracks().forEach((track) => track.stop());
+
+        canvas.toBlob(async (blob) => {
+          if (blob) {
+            const imageFile = new File([blob], `photo_${Date.now()}.png`, { type: "image/png" });
+            await uploadAndSendMedia(imageFile, "image");
+          }
+        }, "image/png");
 
       } catch (
         error
@@ -2233,39 +2300,58 @@ function PrivateChat({
   const handleVoice =
     async () => {
 
-      try {
+      if (isRecording) {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+          mediaRecorderRef.current.stop();
+        }
+        setIsRecording(false);
+      } else {
+        try {
+          if (!navigator.mediaDevices?.getUserMedia) {
+            setSendError("Audio recording is not supported by your browser.");
+            return;
+          }
 
-        const stream =
-          await navigator.mediaDevices.getUserMedia(
-            {
-              audio:
-                true,
+          const stream =
+            await navigator.mediaDevices.getUserMedia(
+              {
+                audio: true,
+              }
+            );
+
+          mediaRecorderRef.current = new MediaRecorder(stream);
+          audioChunksRef.current = [];
+
+          mediaRecorderRef.current.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+              audioChunksRef.current.push(event.data);
             }
-          );
+          };
 
-        stream
-          .getTracks()
-          .forEach(
-            (track) =>
-              track.stop()
-          );
+          mediaRecorderRef.current.onstop = async () => {
+            const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+            const audioFile = new File([audioBlob], `voice_${Date.now()}.webm`, { type: "audio/webm" });
+            await uploadAndSendMedia(audioFile, "audio");
 
-        setSendError(
-          "Microphone access is available. Voice-note upload can be connected to the media service next."
-        );
+            stream.getTracks().forEach((track) => track.stop());
+          };
 
-      } catch (
-        error
-      ) {
+          mediaRecorderRef.current.start();
+          setIsRecording(true);
 
-        console.error(
-          "Microphone access error:",
+        } catch (
           error
-        );
+        ) {
 
-        setSendError(
-          "Microphone access was denied or is unavailable."
-        );
+          console.error(
+            "Microphone access error:",
+            error
+          );
+
+          setSendError(
+            "Microphone access was denied or is unavailable."
+          );
+        }
       }
     };
 
@@ -3037,6 +3123,7 @@ function PrivateChat({
         {
           duration:
             disappearingDuration,
+          setDuration: (newDuration) => setDisappearingDuration(newDuration),
         }
       );
     };
@@ -3074,219 +3161,176 @@ function PrivateChat({
 
 
   // =========================================================
-  // AVATAR HELPERS
-  // =========================================================
-
-
-  // =========================================================
   // RENDER
   // =========================================================
 
   return (
     <div className="private-chat-page">
- {/* =====================================
-    HEADER
-===================================== */}
 
-<header className="private-chat-header">
+      <header className="private-chat-header">
 
-  <div className="private-chat-header-left">
+        <div className="private-chat-header-left">
 
-    {/* BACK */}
-
-    <button
-      type="button"
-      className="private-chat-back"
-      onClick={() => {
-        onBack?.();
-      }}
-      aria-label="Back to chats"
-      title="Back"
-    >
-      <svg
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-      >
-        <path d="M15 18l-6-6 6-6" />
-      </svg>
-    </button>
+          <button
+            type="button"
+            className="private-chat-back"
+            onClick={() => {
+              onBack?.();
+            }}
+            aria-label="Back to chats"
+            title="Back"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
 
 
-    {/* CONTACT AVATAR */}
+          <div className="private-chat-header-avatar">
 
-    <div className="private-chat-header-avatar">
+            {chat?.profilePhoto ? (
 
-      {chat?.profilePhoto ? (
+              <img
+                src={chat.profilePhoto}
+                alt={chatName}
+              />
 
-        <img
-          src={chat.profilePhoto}
-          alt={chatName}
-        />
+            ) : (
 
-      ) : (
+              <span>
+                {chatAvatar}
+              </span>
 
-        <span>
-          {chatAvatar}
-        </span>
+            )}
 
-      )}
+            <span
+              className="private-chat-header-online"
+              aria-hidden="true"
+            />
 
-      <span
-        className="private-chat-header-online"
-        aria-hidden="true"
-      />
-
-    </div>
+          </div>
 
 
-    {/* CONTACT INFORMATION */}
+          <div className="private-chat-header-info">
 
-    <div className="private-chat-header-info">
+            <h1 title={chatName}>
+              {chatName}
+            </h1>
 
-      <h1 title={chatName}>
-        {chatName}
-      </h1>
+            <span>
+              <span
+                className="private-chat-status-dot"
+                aria-hidden="true"
+              />
 
-      <span>
-        <span
-          className="private-chat-status-dot"
-          aria-hidden="true"
-        />
+              Online
+            </span>
 
-        Online
-      </span>
+          </div>
 
-    </div>
-
-  </div>
+        </div>
 
 
-  {/* =================================
-      CALL BUTTONS
-  =================================
+        <div className="private-chat-header-actions">
 
-      IMPORTANT:
+          <button
+            type="button"
+            className="private-chat-header-call"
+            onClick={() =>
+              onCall?.(chat)
+            }
+            aria-label="Voice call"
+            title="Voice call"
+          >
 
-      These buttons DO NOT contain
-      WebRTC logic.
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 3.18 2 2 0 0 1 4.11 1h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.62 2.63a2 2 0 0 1-.45 2.11L8 8.73a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.85.29 1.73.5 2.63.62A2 2 0 0 1 22 15.92z" />
+            </svg>
 
-      They send the call request to:
-
-      PrivateChat
-          ↓
-      App.js
-          ↓
-      CallManager
-          ↓
-      WebRTC
-  ================================= */}
-
-  <div className="private-chat-header-actions">
-
-    {/* VOICE CALL */}
-
-    <button
-      type="button"
-      className="private-chat-header-call"
-      onClick={() =>
-        onCall?.(chat)
-      }
-      aria-label="Voice call"
-      title="Voice call"
-    >
-
-      <svg
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-      >
-        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 3.18 2 2 0 0 1 4.11 1h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.62 2.63a2 2 0 0 1-.45 2.11L8 8.73a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.85.29 1.73.5 2.63.62A2 2 0 0 1 22 15.92z" />
-      </svg>
-
-    </button>
+          </button>
 
 
-    {/* VIDEO CALL */}
+          <button
+            type="button"
+            className="private-chat-header-call"
+            onClick={() =>
+              onVideoCall?.(chat)
+            }
+            aria-label="Video call"
+            title="Video call"
+          >
 
-    <button
-      type="button"
-      className="private-chat-header-call"
-      onClick={() =>
-        onVideoCall?.(chat)
-      }
-      aria-label="Video call"
-      title="Video call"
-    >
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
 
-      <svg
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-      >
+              <rect
+                x="2"
+                y="5"
+                width="14"
+                height="14"
+                rx="2"
+              />
 
-        <rect
-          x="2"
-          y="5"
-          width="14"
-          height="14"
-          rx="2"
-        />
+              <path
+                d="M16 10l5-3v10l-5-3z"
+              />
 
-        <path
-          d="M16 10l5-3v10l-5-3z"
-        />
+            </svg>
 
-      </svg>
-
-    </button>
+          </button>
 
 
-    {/* MORE OPTIONS */}
+          <button
+            type="button"
+            className="private-chat-header-more"
+            onClick={() =>
+              setShowChatMenu(
+                (previous) =>
+                  !previous
+              )
+            }
+            aria-label="More options"
+            title="More options"
+          >
 
-    <button
-      type="button"
-      className="private-chat-header-more"
-      onClick={() =>
-        setShowChatMenu(
-          (previous) =>
-            !previous
-        )
-      }
-      aria-label="More options"
-      title="More options"
-    >
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
 
-      <svg
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-      >
+              <circle
+                cx="12"
+                cy="5"
+                r="1.5"
+              />
 
-        <circle
-          cx="12"
-          cy="5"
-          r="1.5"
-        />
+              <circle
+                cx="12"
+                cy="12"
+                r="1.5"
+              />
 
-        <circle
-          cx="12"
-          cy="12"
-          r="1.5"
-        />
+              <circle
+                cx="12"
+                cy="19"
+                r="1.5"
+              />
 
-        <circle
-          cx="12"
-          cy="19"
-          r="1.5"
-        />
+            </svg>
 
-      </svg>
+          </button>
 
-    </button>
+        </div>
 
-  </div>
-
-</header>
-      {/* =====================================
-          CHAT MENU
-      ===================================== */}
+      </header>
 
       {showChatMenu && (
 
@@ -3358,10 +3402,6 @@ function PrivateChat({
 
       )}
 
-
-      {/* =====================================
-          SEARCH BAR
-      ===================================== */}
 
       {showSearch && (
 
@@ -3435,11 +3475,6 @@ function PrivateChat({
       )}
 
 
-      
-      {/* =====================================
-          DELETE CONVERSATION
-      ===================================== */}
-
       {showDeleteMenu && (
 
         <div
@@ -3499,10 +3534,6 @@ function PrivateChat({
 
       )}
 
-
-      {/* =====================================
-          MESSAGE ACTION MENU
-      ===================================== */}
 
       {showMessageMenu &&
         selectedMessage && (
@@ -3601,10 +3632,6 @@ function PrivateChat({
         )}
 
 
-      {/* =====================================
-          EDIT MODE
-      ===================================== */}
-
       {editingMessage && (
 
         <div
@@ -3657,10 +3684,6 @@ function PrivateChat({
       )}
 
 
-      {/* =====================================
-          HIDDEN FILE INPUT
-      ===================================== */}
-
       <input
         ref={
           fileInputRef
@@ -3672,10 +3695,6 @@ function PrivateChat({
         }
       />
 
-
-      {/* =====================================
-          MESSAGE AREA
-      ===================================== */}
 
       <main
         className="private-chat-messages"
@@ -3799,9 +3818,41 @@ function PrivateChat({
                   }
                 >
 
-                  <p>
-                    {item.text}
-                  </p>
+                  {item.mediaUrl && item.mediaType === "image" && (
+                    <img
+                      src={item.mediaUrl}
+                      alt="Attached media"
+                      className="chat-media-image"
+                      style={{ maxWidth: "100%", borderRadius: "8px", marginBottom: item.text ? "6px" : "0" }}
+                    />
+                  )}
+
+                  {item.mediaUrl && item.mediaType === "audio" && (
+                    <audio
+                      controls
+                      src={item.mediaUrl}
+                      className="chat-media-audio"
+                      style={{ maxWidth: "100%", marginBottom: item.text ? "6px" : "0" }}
+                    />
+                  )}
+
+                  {item.mediaUrl && item.mediaType === "document" && (
+                    <a
+                      href={item.mediaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="chat-media-file"
+                      style={{ color: "#007bff", textDecoration: "underline", display: "block", marginBottom: item.text ? "6px" : "0" }}
+                    >
+                      📄 View Attachment
+                    </a>
+                  )}
+
+                  {item.text && (
+                    <p>
+                      {item.text}
+                    </p>
+                  )}
 
 
                   <div
@@ -3879,10 +3930,6 @@ function PrivateChat({
       </main>
 
 
-      {/* =====================================
-          EMOJI PICKER
-      ===================================== */}
-
       {showEmojiPicker && (
 
         <div
@@ -3923,13 +3970,10 @@ function PrivateChat({
           )}
 
         </div>
+        
 
       )}
 
-
-      {/* =====================================
-          COMPOSER
-      ===================================== */}
 
       <footer
         className={`private-chat-footer ${
@@ -3941,9 +3985,6 @@ function PrivateChat({
           event.stopPropagation()
         }
       >
-        {/* =====================================
-          PROFESSIONAL UNDO BAR
-        ===================================== */}
 
         {undoMessageId && (
          <div
@@ -4150,17 +4191,18 @@ function PrivateChat({
 
             <button
               type="button"
-              className="composer-icon-btn voice-button"
+              className={`composer-icon-btn voice-button ${isRecording ? "recording" : ""}`}
               onClick={
                 handleVoice
               }
               aria-label="Record voice message"
-              title="Voice message"
+              title={isRecording ? "Stop recording" : "Voice message"}
+              style={{ color: isRecording ? "#ff4d4d" : "inherit" }}
             >
               <span
                 className="voice-microphone-icon"
               >
-                🎙
+                {isRecording ? "🛑" : "🎙"}
               </span>
             </button>
 
