@@ -6,8 +6,10 @@ const User = require("../models/User");
 
 const updateProfile = async (req, res) => {
   try {
-    // authMiddleware should attach the authenticated
-    // user's information to req.user.
+    // ==========================================
+    // GET AUTHENTICATED USER
+    // ==========================================
+
     const userId =
       req.user?._id ||
       req.user?.id ||
@@ -16,7 +18,8 @@ const updateProfile = async (req, res) => {
     if (!userId) {
       return res.status(401).json({
         success: false,
-        message: "User authentication information is missing.",
+        message:
+          "User authentication information is missing.",
       });
     }
 
@@ -36,15 +39,18 @@ const updateProfile = async (req, res) => {
     const updates = {};
 
     if (fullName !== undefined) {
-      updates.fullName = String(fullName).trim();
+      updates.fullName =
+        String(fullName).trim();
     }
 
     if (displayName !== undefined) {
-      updates.displayName = String(displayName).trim();
+      updates.displayName =
+        String(displayName).trim();
     }
 
     if (bio !== undefined) {
-      updates.bio = String(bio).trim();
+      updates.bio =
+        String(bio).trim();
     }
 
     if (gender !== undefined) {
@@ -59,7 +65,8 @@ const updateProfile = async (req, res) => {
       if (!allowedGenders.includes(gender)) {
         return res.status(400).json({
           success: false,
-          message: "Invalid gender value.",
+          message:
+            "Invalid gender value.",
         });
       }
 
@@ -67,12 +74,44 @@ const updateProfile = async (req, res) => {
     }
 
     if (profilePhoto !== undefined) {
-      updates.profilePhoto = String(profilePhoto).trim();
+      updates.profilePhoto =
+        String(profilePhoto).trim();
     }
 
-    if (profileCompleted !== undefined) {
-      updates.profileCompleted =
-        Boolean(profileCompleted);
+    // ==========================================
+    // VALIDATE PROFILE COMPLETION
+    // ==========================================
+    //
+    // A profile is considered complete when
+    // a valid display name has been provided.
+    //
+    // This prevents the frontend from being the
+    // only place deciding whether the profile
+    // is complete.
+    //
+    // ==========================================
+
+    if (displayName !== undefined) {
+      if (!String(displayName).trim()) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Display name is required to complete your profile.",
+        });
+      }
+
+      updates.profileCompleted = true;
+    }
+
+    // ==========================================
+    // EXPLICIT PROFILE COMPLETION
+    // ==========================================
+
+    if (
+      profileCompleted !== undefined &&
+      Boolean(profileCompleted) === true
+    ) {
+      updates.profileCompleted = true;
     }
 
     // ==========================================
@@ -85,7 +124,8 @@ const updateProfile = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "Full name must contain at least 2 characters.",
+        message:
+          "Full name must contain at least 2 characters.",
       });
     }
 
@@ -95,7 +135,8 @@ const updateProfile = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "Full name cannot exceed 100 characters.",
+        message:
+          "Full name cannot exceed 100 characters.",
       });
     }
 
@@ -109,7 +150,8 @@ const updateProfile = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "Display name cannot exceed 100 characters.",
+        message:
+          "Display name cannot exceed 100 characters.",
       });
     }
 
@@ -123,7 +165,8 @@ const updateProfile = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "Bio cannot exceed 160 characters.",
+        message:
+          "Bio cannot exceed 160 characters.",
       });
     }
 
@@ -131,10 +174,13 @@ const updateProfile = async (req, res) => {
     // REQUIRE AT LEAST ONE FIELD
     // ==========================================
 
-    if (Object.keys(updates).length === 0) {
+    if (
+      Object.keys(updates).length === 0
+    ) {
       return res.status(400).json({
         success: false,
-        message: "No profile information was provided.",
+        message:
+          "No profile information was provided.",
       });
     }
 
@@ -157,7 +203,8 @@ const updateProfile = async (req, res) => {
     if (!updatedUser) {
       return res.status(404).json({
         success: false,
-        message: "User not found.",
+        message:
+          "User not found.",
       });
     }
 
@@ -167,7 +214,8 @@ const updateProfile = async (req, res) => {
 
     return res.json({
       success: true,
-      message: "Profile updated successfully.",
+      message:
+        "Profile updated successfully.",
       user: updatedUser,
     });
   } catch (error) {
@@ -178,11 +226,68 @@ const updateProfile = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Failed to update profile.",
+      message:
+        "Failed to update profile.",
       error: error.message,
     });
   }
 };
+
+
+// ==========================================
+// DELETE USER ACCOUNT
+// ==========================================
+
+const deleteAccount = async (req, res) => {
+  try {
+    const userId =
+      req.user?._id ||
+      req.user?.id ||
+      req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "User authentication information is missing.",
+      });
+    }
+
+    const user =
+      await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "User not found.",
+      });
+    }
+
+    await User.findByIdAndDelete(
+      userId
+    );
+
+    return res.json({
+      success: true,
+      message:
+        "Your ZenvaZapp account has been permanently deleted.",
+    });
+  } catch (error) {
+    console.error(
+      "Delete account error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to delete your account.",
+      error: error.message,
+    });
+  }
+};
+
 
 // ==========================================
 // EXPORT
@@ -190,4 +295,5 @@ const updateProfile = async (req, res) => {
 
 module.exports = {
   updateProfile,
+  deleteAccount,
 };
