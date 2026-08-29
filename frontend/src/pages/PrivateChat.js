@@ -145,8 +145,14 @@ function PrivateChat({
     setIsRecording,
   ] = useState(false);
 
+  const [
+    recordingTime,
+    setRecordingTime,
+  ] = useState(0);
+
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
 
 
   // =========================================================
@@ -356,6 +362,30 @@ function PrivateChat({
       },
       []
     );
+
+
+  // =========================================================
+  // FORMAT TIME HELPER
+  // =========================================================
+
+  const formatRecordingTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  };
+
+
+  // =========================================================
+  // OPTIMIZE MEDIA URL (CLOUDINARY MP4 FALLBACK)
+  // =========================================================
+
+  const getOptimizedMediaUrl = (url, type) => {
+    if (!url) return url;
+    if (type === "video" && url.includes("cloudinary.com") && !url.endsWith(".mp4")) {
+      return url.replace(/\/upload\//, "/upload/f_mp4,q_auto/");
+    }
+    return url;
+  };
 
 
   // =========================================================
@@ -2229,7 +2259,15 @@ function PrivateChat({
         return;
       }
 
-      const mediaType = file.type.startsWith("image/") ? "image" : "document";
+      let mediaType = "document";
+      if (file.type.startsWith("image/")) {
+        mediaType = "image";
+      } else if (file.type.startsWith("video/")) {
+        mediaType = "video";
+      } else if (file.type.startsWith("audio/")) {
+        mediaType = "audio";
+      }
+
       await uploadAndSendMedia(file, mediaType);
 
       event.target.value =
@@ -2304,6 +2342,10 @@ function PrivateChat({
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
           mediaRecorderRef.current.stop();
         }
+        if (recordingTimerRef.current) {
+          clearInterval(recordingTimerRef.current);
+          recordingTimerRef.current = null;
+        }
         setIsRecording(false);
       } else {
         try {
@@ -2338,6 +2380,11 @@ function PrivateChat({
 
           mediaRecorderRef.current.start();
           setIsRecording(true);
+          setRecordingTime(0);
+
+          recordingTimerRef.current = setInterval(() => {
+            setRecordingTime((prev) => prev + 1);
+          }, 1000);
 
         } catch (
           error
@@ -3827,6 +3874,26 @@ function PrivateChat({
                     />
                   )}
 
+                  {item.mediaUrl && item.mediaType === "video" && (
+                    <div className="chat-media-video-container" style={{ marginBottom: item.text ? "6px" : "0" }}>
+                      <video
+                        controls
+                        src={getOptimizedMediaUrl(item.mediaUrl, "video")}
+                        className="chat-media-video"
+                        style={{ maxWidth: "100%", borderRadius: "8px" }}
+                      />
+                      <a
+                        href={item.mediaUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="chat-media-video-fallback"
+                        style={{ display: "block", marginTop: "4px", fontSize: "0.85rem", color: "#007bff" }}
+                      >
+                        ▶ Open video
+                      </a>
+                    </div>
+                  )}
+
                   {item.mediaUrl && item.mediaType === "audio" && (
                     <audio
                       controls
@@ -4043,7 +4110,7 @@ function PrivateChat({
           className="private-chat-input-form"
         >
 
-          {!editingMessage && (
+          {!editingMessage && !isRecording && (
 
             <button
               type="button"
@@ -4063,7 +4130,7 @@ function PrivateChat({
           )}
 
 
-          {!editingMessage && (
+          {!editingMessage && !isRecording && (
 
             <button
               type="button"
@@ -4087,63 +4154,87 @@ function PrivateChat({
             className="message-textarea-wrapper"
           >
 
-            <textarea
-              ref={
-                editingMessage
-                  ? editTextareaRef
-                  : textareaRef
-              }
-              className="private-chat-textarea"
-              placeholder={
-                editingMessage
-                  ? "Edit message..."
-                  : "Type a message..."
-              }
-              value={
-                editingMessage
-                  ? editText
-                  : message
-              }
-              rows={1}
-              onChange={(event) => {
+            {isRecording ? (
 
-                if (
+              <div
+                className="voice-recording-indicator"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  width: "100%",
+                  padding: "8px 12px",
+                  color: "#e53e3e",
+                  fontWeight: "500",
+                }}
+              >
+                <span>🔴 Recording voice message...</span>
+                <span style={{ fontFamily: "monospace", fontSize: "1rem" }}>
+                  {formatRecordingTime(recordingTime)}
+                </span>
+              </div>
+
+            ) : (
+
+              <textarea
+                ref={
                   editingMessage
-                ) {
-
-                  setEditText(
-                    event.target.value
-                  );
-
-                  resizeEditInput();
-
-                } else {
-
-                  setMessage(
-                    event.target.value
-                  );
-
-                  resizeMessageInput();
-
+                    ? editTextareaRef
+                    : textareaRef
                 }
+                className="private-chat-textarea"
+                placeholder={
+                  editingMessage
+                    ? "Edit message..."
+                    : "Type a message..."
+                }
+                value={
+                  editingMessage
+                    ? editText
+                    : message
+                }
+                rows={1}
+                onChange={(event) => {
 
-              }}
-              onKeyDown={
-                editingMessage
-                  ? handleEditKeyDown
-                  : handleMessageKeyDown
-              }
-              aria-label={
-                editingMessage
-                  ? "Edit message"
-                  : "Message"
-              }
-            />
+                  if (
+                    editingMessage
+                  ) {
+
+                    setEditText(
+                      event.target.value
+                    );
+
+                    resizeEditInput();
+
+                  } else {
+
+                    setMessage(
+                      event.target.value
+                    );
+
+                    resizeMessageInput();
+
+                  }
+
+                }}
+                onKeyDown={
+                  editingMessage
+                    ? handleEditKeyDown
+                    : handleMessageKeyDown
+                }
+                aria-label={
+                  editingMessage
+                    ? "Edit message"
+                    : "Message"
+                }
+              />
+
+            )}
 
           </div>
 
 
-          {!editingMessage && (
+          {!editingMessage && !isRecording && (
 
             <button
               type="button"
@@ -4195,14 +4286,14 @@ function PrivateChat({
               onClick={
                 handleVoice
               }
-              aria-label="Record voice message"
+              aria-label={isRecording ? "Stop recording voice message" : "Record voice message"}
               title={isRecording ? "Stop recording" : "Voice message"}
               style={{ color: isRecording ? "#ff4d4d" : "inherit" }}
             >
               <span
                 className="voice-microphone-icon"
               >
-                {isRecording ? "🛑" : "🎙"}
+                {isRecording ? "🛑 Stop" : "🎙"}
               </span>
             </button>
 

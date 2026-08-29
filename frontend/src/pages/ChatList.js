@@ -169,7 +169,7 @@ const isMessageUnread = (
   }
 
   const receiverId =
-    message.receiverId;
+    message.receiverId || message.recipientId;
 
   if (
     !receiverId ||
@@ -211,6 +211,7 @@ const calculateUnreadCount = (
 
 function ChatList({
   user,
+  socket,
   onOpenChat,
   onNavigate,
 }) {
@@ -264,6 +265,110 @@ function ChatList({
     user?.id ||
     user?.userId ||
     user?.username;
+
+  // ==========================================
+  // REGISTER SOCKET & REAL-TIME LISTENERS
+  // ==========================================
+
+  useEffect(() => {
+    if (!socket || !currentUserId) return;
+
+    // Register logged-in user room on connection
+    socket.emit("register-user", currentUserId);
+
+    const handleNewMessage = (newMessage) => {
+      if (!newMessage) return;
+
+      const senderId = newMessage.senderId;
+      const receiverId = newMessage.receiverId || newMessage.recipientId;
+
+      // Make sure the message is relevant to the logged-in user
+      if (
+        String(senderId) !== String(currentUserId) &&
+        String(receiverId) !== String(currentUserId)
+      ) {
+        return;
+      }
+
+      const otherUserId =
+        String(senderId) === String(currentUserId) ? receiverId : senderId;
+
+      const conversationId =
+        newMessage.conversationId ||
+        createConversationId(currentUserId, otherUserId);
+
+      setChats((prevChats) => {
+        const existingIndex = prevChats.findIndex(
+          (c) => c.conversationId === conversationId || String(c.id) === String(otherUserId)
+        );
+
+        const isUnread = isMessageUnread(newMessage, currentUserId);
+
+        if (existingIndex !== -1) {
+          // UPDATE EXISTING CHAT
+          const existingChat = prevChats[existingIndex];
+
+          const updatedChat = {
+            ...existingChat,
+            message: getMessagePreview(newMessage),
+            time: formatMessageTime(newMessage.createdAt || new Date()),
+            unread: isUnread
+              ? Number(existingChat.unread || 0) + 1
+              : existingChat.unread,
+            latestMessage: newMessage,
+          };
+
+          const remainingChats = prevChats.filter(
+            (_, idx) => idx !== existingIndex
+          );
+
+          // Move updated chat to the top
+          return [updatedChat, ...remainingChats];
+        }
+
+        // CREATE NEW CHAT ENTRY (WITHOUT auto-creating a Contact record in DB)
+        const senderName =
+          newMessage.senderName ||
+          newMessage.sender?.displayName ||
+          newMessage.sender?.fullName ||
+          newMessage.sender?.username ||
+          "User";
+
+        const senderAvatar =
+          newMessage.senderAvatar ||
+          newMessage.sender?.profilePhoto ||
+          newMessage.sender?.avatar ||
+          "";
+
+        const newChatEntry = {
+          id: otherUserId,
+          contactId: null, // Strictly NOT saved to Contacts table
+          conversationId,
+          name: senderName,
+          username: newMessage.sender?.username || "",
+          fullName: senderName,
+          phone: "",
+          profilePhoto: senderAvatar,
+          message: getMessagePreview(newMessage),
+          time: formatMessageTime(newMessage.createdAt || new Date()),
+          unread: isUnread ? 1 : 0,
+          favorite: false,
+          group: false,
+          avatar: senderAvatar || senderName.charAt(0).toUpperCase(),
+          latestMessage: newMessage,
+        };
+
+        // Add to top of active chat list
+        return [newChatEntry, ...prevChats];
+      });
+    };
+
+    socket.on("new-message", handleNewMessage);
+
+    return () => {
+      socket.off("new-message", handleNewMessage);
+    };
+  }, [socket, currentUserId]);
 
   // ==========================================
   // CURRENT USER NAME
@@ -608,10 +713,6 @@ function ChatList({
                   account?.username ||
                   "User";
 
-                // ==================================
-                // PROFILE PHOTO FROM USER ACCOUNT
-                // ==================================
-
                 const profilePhoto =
                   account?.profilePhoto ||
                   account?.avatar ||
@@ -645,9 +746,6 @@ function ChatList({
                     account?.phone ||
                     "",
 
-                  // Keep the profile photo with
-                  // the conversation data so the
-                  // chat avatar can display it.
                   profilePhoto,
 
                   profileCompleted:
@@ -681,10 +779,6 @@ function ChatList({
           setChats(baseChats);
           setIsLoadingChats(false);
         }
-
-        // ======================================
-        // LOAD MESSAGES IN BACKGROUND
-        // ======================================
 
         baseChats.forEach(
           (chat) => {
@@ -938,7 +1032,6 @@ function ChatList({
             🔍
           </button>
 
-         
         </div>
 
       </header>
@@ -1011,12 +1104,6 @@ function ChatList({
 
         <div className="status-list">
 
-          {/* ====================================
-              YOUR STATUS
-              Profile photo intentionally NOT
-              displayed here.
-          ==================================== */}
-
           <button
             type="button"
             className="status-item add-status"
@@ -1038,12 +1125,6 @@ function ChatList({
             </span>
 
           </button>
-
-          {/* ====================================
-              CONTACT STATUS
-              Profile photos are NOT displayed
-              in the status circles.
-          ==================================== */}
 
           {chats
             .slice(0, 8)
@@ -1349,13 +1430,6 @@ function ChatList({
                     )
                   }
                 >
-
-                  {/* ==================================
-                      CHAT AVATAR
-
-                      THIS IS WHERE THE PROFILE PHOTO
-                      NOW APPEARS.
-                  ================================== */}
 
                   <div className="chat-avatar">
 

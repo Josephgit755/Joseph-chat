@@ -36,12 +36,6 @@ app.set("io", io);
 // ==========================================
 // CONNECTED USER SOCKET MAP
 // ==========================================
-//
-// userId -> Set of socket IDs
-//
-// A user can have more than one browser/device
-// connected at the same time.
-//
 
 const connectedUsers = new Map();
 
@@ -223,6 +217,17 @@ io.on("connection", (socket) => {
   // ========================================
   // REAL-TIME NEW MESSAGE
   // ========================================
+  // Messages are delivered directly to the
+  // recipient's user room.
+  //
+  // This means:
+  // Joseph can message Monica even when
+  // Monica has NOT added Joseph back and
+  // has NOT joined the conversation room.
+  //
+  // The conversation room is no longer required
+  // for initial message delivery.
+  // ========================================
 
   socket.on(
     "send-message",
@@ -231,28 +236,60 @@ io.on("connection", (socket) => {
         return;
       }
 
+      const receiverId =
+        message.receiverId ||
+        message.recipientId;
+
+      const senderId =
+        message.senderId;
+
       const conversationId =
         message.conversationId;
 
-      if (!conversationId) {
+      if (!senderId || !receiverId) {
         console.log(
-          "Socket message rejected: conversationId missing."
+          "Socket message rejected: senderId or receiverId missing."
         );
 
         return;
       }
 
       console.log(
-        "Real-time message received:",
+        `Real-time message: ${senderId} -> ${receiverId}`
+      );
+
+      // ========================================
+      // DELIVER DIRECTLY TO RECIPIENT
+      // ========================================
+
+      const receiverRoom =
+        getUserRoom(receiverId);
+
+      if (!receiverRoom) {
+        console.log(
+          "Socket message rejected: receiver room could not be created."
+        );
+
+        return;
+      }
+
+      io.to(receiverRoom).emit(
+        "new-message",
         message
       );
 
-      socket
-        .to(String(conversationId))
-        .emit(
-          "new-message",
-          message
-        );
+      // ========================================
+      // OPTIONAL CONVERSATION ROOM DELIVERY
+      // ========================================
+
+      if (conversationId) {
+        socket
+          .to(String(conversationId))
+          .emit(
+            "new-message",
+            message
+          );
+      }
     }
   );
 
@@ -627,18 +664,6 @@ io.on("connection", (socket) => {
   // ==========================================
   // CALL — ICE CANDIDATE
   // ==========================================
-  //
-  // Supports BOTH naming formats:
-  //
-  // senderId / receiverId
-  //
-  // and
-  //
-  // senderUserId / targetUserId
-  //
-  // This keeps the signaling compatible with
-  // the current PrivateChat implementation.
-  //
 
   socket.on(
     "call-ice-candidate",
@@ -756,17 +781,6 @@ io.on("connection", (socket) => {
   // ==========================================
   // CALL — ENDED
   // ==========================================
-  //
-  // Supports the current PrivateChat payload:
-  //
-  // callerId
-  // receiverId
-  //
-  // and the alternate:
-  //
-  // senderUserId
-  // targetUserId
-  //
 
   socket.on(
     "call-ended",
