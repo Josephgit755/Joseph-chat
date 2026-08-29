@@ -87,14 +87,13 @@ router.get("/test", (req, res) => {
 
 router.post("/upload", upload.single("file"), async (req, res) => {
   try {
-    const { userId } = req.body;
-
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "User ID is required.",
-      });
-    }
+    // IMPORTANT:
+    // Do NOT require userId here.
+    // The media upload is only responsible for uploading
+    // the file to Cloudinary and returning its URL.
+    //
+    // senderId / receiverId are validated later when
+    // the actual message is created through POST "/".
 
     if (!req.file) {
       return res.status(400).json({
@@ -103,18 +102,28 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       });
     }
 
+    // Upload the file buffer to Cloudinary
     const result = await uploadBufferToCloudinary(
       req.file.buffer,
       req.file.originalname
     );
 
+    // Return both names for frontend compatibility.
     return res.status(201).json({
       success: true,
+
+      // Main media URL
       mediaUrl: result.secure_url,
+
+      // Compatibility with frontend code that may use "url"
+      url: result.secure_url,
+
       publicId: result.public_id,
       resourceType: result.resource_type,
       format: result.format,
       bytes: result.bytes,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
     });
   } catch (error) {
     console.error("ZenvaZapp media upload error:", error);
@@ -126,7 +135,6 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     });
   }
 });
-
 // ==========================================
 // GET MESSAGES FOR CONVERSATION
 // ==========================================
