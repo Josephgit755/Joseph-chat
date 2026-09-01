@@ -1,23 +1,14 @@
 const express = require("express");
-
 const cors = require("cors");
-
 const dotenv = require("dotenv");
 
 const authRoutes = require("./routes/authRoutes");
-
 const profileRoutes = require("./routes/profileRoutes");
-
 const messageRoutes = require("./routes/messageRoutes");
-
 const userRoutes = require("./routes/userRoutes");
-
 const contactRoutes = require("./routes/contactRoutes");
-
 const translatorRoutes = require("./routes/translatorRoutes");
-
 const studentRoomRoutes = require("./routes/studentRoomRoutes");
-
 const studentNoteRoutes = require("./routes/studentNoteRoutes");
 
 dotenv.config();
@@ -25,16 +16,16 @@ dotenv.config();
 const app = express();
 
 // ==========================================
-// MIDDLEWARE
+// MIDDLEWARE & PARSERS
 // ==========================================
 
-app.use(cors());
+app.use(cors({
+  origin: "*",
+  credentials: true,
+}));
 
-app.use(
-  express.json({
-    limit: "10mb",
-  })
-);
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // ==========================================
 // HEALTH CHECK
@@ -43,127 +34,22 @@ app.use(
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message:
-      "ZenvaZapp API is running",
+    message: "ZenvaZapp API is running",
   });
 });
 
 // ==========================================
-// AUTHENTICATION ROUTES
+// ROUTE MOUNTING
 // ==========================================
 
-app.use(
-  "/api/auth",
-  authRoutes
-);
-
-// ==========================================
-// PROFILE ROUTES
-// ==========================================
-
-app.use(
-  "/api/profile",
-  profileRoutes
-);
-
-// ==========================================
-// MESSAGE ROUTES
-// ==========================================
-
-app.use(
-  "/api/messages",
-  messageRoutes
-);
-
-// ==========================================
-// USER ROUTES
-// ==========================================
-
-app.use(
-  "/api/users",
-  userRoutes
-);
-
-// ==========================================
-// CONTACT ROUTES
-// ==========================================
-
-app.use(
-  "/api/contacts",
-  contactRoutes
-);
-
-// ==========================================
-// TRANSLATOR ROUTES
-// ==========================================
-
-app.use(
-  "/api/translator",
-  translatorRoutes
-);
-
-// ==========================================
-// STUDENT ROOM ROUTES
-// ==========================================
-//
-// Student Mode room management.
-//
-// Available endpoints:
-//
-// POST
-// /api/student-rooms
-//
-// GET
-// /api/student-rooms/user/:userId
-//
-// GET
-// /api/student-rooms/:roomId
-//
-// PATCH
-// /api/student-rooms/:roomId/members
-//
-// GET
-// /api/student-rooms/:roomId/invite
-//
-// POST
-// /api/student-rooms/join
-//
-// PATCH
-// /api/student-rooms/:roomId/leave
-//
-// ==========================================
-
-app.use(
-  "/api/student-rooms",
-  studentRoomRoutes
-);
-
-// ==========================================
-// STUDENT NOTES ROUTES
-// ==========================================
-//
-// Student Mode notes.
-//
-// Available endpoints:
-//
-// GET
-// /api/student-notes/user/:userId
-//
-// POST
-// /api/student-notes
-//
-// PATCH
-// /api/student-notes/:noteId
-//
-// DELETE
-// /api/student-notes/:noteId
-//
-// ==========================================
-
-app.use(
-  "/api/student-notes",
-  studentNoteRoutes
-);
+app.use("/api/auth", authRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/messages", messageRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/contacts", contactRoutes);
+app.use("/api/translator", translatorRoutes);
+app.use("/api/student-rooms", studentRoomRoutes);
+app.use("/api/student-notes", studentNoteRoutes);
 
 // ==========================================
 // 404 HANDLER
@@ -172,15 +58,9 @@ app.use(
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message:
-      "Route not found",
-    path:
-      req.originalUrl,
+    message: "Route not found",
+    path: req.originalUrl,
   });
 });
-
-// ==========================================
-// EXPORT APP
-// ==========================================
 
 module.exports = app;

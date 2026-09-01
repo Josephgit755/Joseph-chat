@@ -15,56 +15,36 @@ const {
 const router = express.Router();
 
 // ==========================================
-// CONTACT LISTS & SPECIAL ENDPOINTS
+// 1. INVITATIONS (Must be defined above /:contactId)
 // ==========================================
-
-// GET /api/contacts?userId=...
-router.get("/", getContacts);
-
-// GET /api/contacts/recently-contacted?userId=...
-router.get("/recently-contacted", getRecentlyContacted);
-router.get("/recent", getRecentlyContacted);
-
-// GET /api/contacts/favorites?userId=...
-router.get("/favorites", getFavoriteContacts);
-
-// ==========================================
-// INVITATIONS
-// ==========================================
-
-// Supports both POST /api/contacts/invite and /api/contacts/invitations
 router.post("/invite", createInvitation);
 router.post("/invitations", createInvitation);
 
 // ==========================================
-// RECENTLY CONTACTED UPDATE
+// 2. STATIC LISTS & FILTERS
 // ==========================================
-
-// Supports PATCH /api/contacts/recently-contacted (body payload)
-// and PATCH /api/contacts/:contactId/recent
-router.patch("/recently-contacted", markRecentlyContacted);
-router.patch("/:contactId/recent", markRecentlyContacted);
+router.get("/recently-contacted", getRecentlyContacted);
+router.get("/recent", getRecentlyContacted);
+router.get("/favorites", getFavoriteContacts);
 
 // ==========================================
-// FAVORITE TOGGLE
+// 3. BASE CONTACT OPERATIONS
 // ==========================================
-
-// Supports PATCH /api/contacts/favorite (body payload)
-// and PATCH /api/contacts/:contactId/favorite
-router.patch("/favorite", toggleFavorite);
-router.patch("/:contactId/favorite", toggleFavorite);
-
-// ==========================================
-// CRUD OPERATIONS BY CONTACT ID
-// ==========================================
-
-// POST /api/contacts
+router.get("/", getContacts);
 router.post("/", addContact);
 
-// GET /api/contacts/:contactId?userId=...
-router.get("/:contactId", getContactProfile);
+// ==========================================
+// 4. ACTION UPDATES
+// ==========================================
+router.patch("/recently-contacted", markRecentlyContacted);
+router.patch("/favorite", toggleFavorite);
 
-// DELETE /api/contacts/:contactId
+// ==========================================
+// 5. PARAMETERIZED ROUTES (Must be last)
+// ==========================================
+router.patch("/:contactId/recent", markRecentlyContacted);
+router.patch("/:contactId/favorite", toggleFavorite);
+router.get("/:contactId", getContactProfile);
 router.delete("/:contactId", removeContact);
 
 module.exports = router;
