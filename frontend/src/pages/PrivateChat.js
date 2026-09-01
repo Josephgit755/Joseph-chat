@@ -36,6 +36,7 @@ import "./private-chat.css";
 function PrivateChat({
   chat,
   user,
+  contacts = [],
   onBack,
   onCall,
   onVideoCall,
@@ -156,7 +157,7 @@ function PrivateChat({
 
 
   // =========================================================
-  // MESSAGE MENU
+  // MESSAGE MENU & FORWARDING
   // =========================================================
 
   const [
@@ -177,6 +178,11 @@ function PrivateChat({
   const [
     showDeleteMenu,
     setShowDeleteMenu,
+  ] = useState(false);
+
+  const [
+    showForwardModal,
+    setShowForwardModal,
   ] = useState(false);
 
 
@@ -283,6 +289,10 @@ function PrivateChat({
       ? `zenvazapp-messages-${currentUserId}-${conversationId}`
       : null;
 
+  // 1. ADD STATE FOR TYPING
+  const [isRecipientTyping, setIsRecipientTyping] = useState(false);
+  const typingTimeoutRef = useRef(null)
+
 
   // =========================================================
   // DISAPPEARING OPTIONS
@@ -319,6 +329,16 @@ function PrivateChat({
   ];
 
   void disappearingOptions;
+  // Add this helper before the return statement:
+  const forwardableContacts = (contacts || []).filter((contactItem) => {
+   const contactId =
+     contactItem._id ||
+     contactItem.id ||
+     contactItem.userId ||
+     contactItem.username;
+    return contactId && String(contactId) !== String(currentUserId);
+  });
+
 
 
   // =========================================================
@@ -373,6 +393,7 @@ function PrivateChat({
     const secs = seconds % 60;
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
+  
 
 
   // =========================================================
@@ -442,7 +463,7 @@ function PrivateChat({
             item.deleted
           );
 
-        if (
+        const isDeleted =
           deletedForEveryone ||
           deleted ||
           (
@@ -452,8 +473,9 @@ function PrivateChat({
           (
             deletedForReceiver &&
             !senderIsCurrentUser
-          )
-        ) {
+          );
+
+        if (isDeleted) {
           displayText =
             "This message was deleted.";
         }
@@ -509,15 +531,17 @@ function PrivateChat({
           text:
             displayText,
 
-          mediaUrl:
-            item.mediaUrl ||
-            item.fileUrl ||
-            null,
+          mediaUrl: isDeleted
+            ? null
+            : item.mediaUrl ||
+              item.fileUrl ||
+              null,
 
-          mediaType:
-            item.mediaType ||
-            item.messageType ||
-            "text",
+          mediaType: isDeleted
+            ? "text"
+            : item.mediaType ||
+              item.messageType ||
+              "text",
 
           time:
             messageTime,
@@ -677,8 +701,71 @@ function PrivateChat({
       },
       [messageCacheKey]
     );
+    
 
+  // 2. SOCKET LISTENERS FOR TYPING & READ RECEIPTS
+  useEffect(() => {
+   const socketInstance = socketRef.current;
+     if (!socketInstance) return;
 
+   const handleUserTyping = ({ conversationId: incomingConvId }) => {
+     if (incomingConvId === conversationId) {
+       setIsRecipientTyping(true);
+     }
+    };
+
+   const handleUserStoppedTyping = ({ conversationId: incomingConvId }) => {
+     if (incomingConvId === conversationId) {
+       setIsRecipientTyping(false);
+      }
+    };
+
+   const handleMessagesReadUpdate = ({ conversationId: incomingConvId, messageIds }) => {
+     if (incomingConvId === conversationId) {
+       setMessages((prev) =>
+         prev.map((msg) =>
+           messageIds.includes(msg._id) ? { ...msg, status: "read" } : msg
+          )
+        );
+      }
+    };
+
+    socketInstance.on("user-typing", handleUserTyping);
+    socketInstance.on("user-stopped-typing", handleUserStoppedTyping);
+    socketInstance.on("messages-read-update", handleMessagesReadUpdate);
+
+    return () => {
+     socketInstance.off("user-typing", handleUserTyping);
+     socketInstance.off("user-stopped-typing", handleUserStoppedTyping);
+     socketInstance.off("messages-read-update", handleMessagesReadUpdate);
+    };
+  }, [conversationId]);
+  // 3. EMIT TYPING EVENTS ON INPUT CHANGE
+  const handleInputChange = (e) => {
+   const value = e.target.value;
+   setMessage(value);
+
+   const socketInstance = socketRef.current;
+   const recipientId = otherUserId;
+
+   if (socketInstance && recipientId) {
+     socketInstance.emit("typing-start", {
+       recipientId,
+       conversationId,
+      });
+
+     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+
+     typingTimeoutRef.current = setTimeout(() => {
+       socketInstance.emit("typing-stop", {
+         recipientId,
+         conversationId,
+        });
+      }, 2000);
+    }
+  };
+
+  
   // =========================================================
   // LOAD MESSAGE CACHE
   // =========================================================
@@ -1161,6 +1248,12 @@ function PrivateChat({
                         deleted:
                           true,
 
+                        mediaUrl:
+                          null,
+
+                        mediaType:
+                          "text",
+
                         text:
                           "This message was deleted.",
                       }
@@ -1470,7 +1563,7 @@ function PrivateChat({
             await fetch(
               `${API_URL}/api/messages/${encodeURIComponent(
                 conversationId
-              )}`
+              )}?userId=${encodeURIComponent(currentUserId)}`
             );
 
           const data =
@@ -2184,6 +2277,76 @@ function PrivateChat({
 
 
   // =========================================================
+  // FORWARD MESSAGE
+  // =========================================================
+
+  const handleForwardToContact = async (targetContact) => {
+    if (!selectedMessage || !targetContact) return;
+
+    const targetUserId =
+      targetContact._id ||
+      targetContact.id ||
+      targetContact.userId ||
+      targetContact.username;
+
+    if (!targetUserId || !currentUserId) {
+      setSendError("Unable to identify forward recipient.");
+      return;
+    }
+
+    const targetConvId = [currentUserId, targetUserId].sort().join("_");
+    const createdAt = new Date().toISOString();
+
+    const payload = {
+      conversationId: targetConvId,
+      senderId: currentUserId,
+      receiverId: targetUserId,
+      text: selectedMessage.text || "",
+      mediaUrl: selectedMessage.mediaUrl || null,
+      mediaType: selectedMessage.mediaType || "text",
+      messageType: selectedMessage.mediaType || "text",
+      createdAt,
+    };
+
+    try {
+      const response = await fetch(`${API_URL}/api/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to forward message.");
+      }
+
+      // If forwarded into the current conversation, update messages UI
+      if (String(targetConvId) === String(conversationId)) {
+        const savedMessage = formatMessage(data.message || data);
+        if (savedMessage) {
+          setMessages((previous) => {
+            const updated = mergeMessages(previous, [savedMessage]);
+            saveMessageCache(updated);
+            return updated;
+          });
+          scrollToBottom();
+        }
+      }
+
+      if (socketRef.current?.connected) {
+        socketRef.current.emit("send-message", data.message || data);
+      }
+
+      setShowForwardModal(false);
+      closeMessageMenu();
+    } catch (error) {
+      console.error("Forward message error:", error);
+      setSendError(error?.message || "Failed to forward message.");
+    }
+  };
+
+
+  // =========================================================
   // MESSAGE KEYBOARD
   // =========================================================
 
@@ -2546,147 +2709,61 @@ function PrivateChat({
   // =========================================================
   // SAVE EDIT
   // =========================================================
+  const handleSaveEdit = async () => {
+   if (!editingMessage) return;
 
-  const handleSaveEdit =
-    async () => {
+  const trimmed = editText.trim();
+   if (!trimmed) return;
 
-      if (!editingMessage) {
-        return;
+  const messageId = editingMessage.id;
+
+  try {
+    const response = await fetch(
+      `${API_URL}/api/messages/${encodeURIComponent(messageId)}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: currentUserId,
+          text: trimmed,
+          content: trimmed, // Send both key variants for backend compatibility
+        }),
       }
+    );
 
-      const trimmed =
-        editText.trim();
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || "Unable to edit message.");
+    }
 
-      if (!trimmed) {
-        return;
-      }
+    // Standardize returned object
+    const rawUpdated = data.message || data;
+    const updatedMessage = formatMessage({
+      ...rawUpdated,
+      text: trimmed,
+      isEdited: true,
+      edited: true,
+    });
 
-      const messageId =
-        editingMessage.id;
+    setMessages((previous) => {
+      const updated = previous.map((item) =>
+        String(item.id) === String(messageId) ? updatedMessage : item
+      );
 
-      try {
+      saveMessageCache(updated);
+      return updated;
+    });
 
-        const response =
-          await fetch(
-            `${API_URL}/api/messages/${encodeURIComponent(
-              messageId
-            )}`,
-            {
-              method:
-                "PATCH",
+    if (socketRef.current?.connected) {
+      socketRef.current.emit("message-edited", updatedMessage);
+    }
 
-              headers: {
-                "Content-Type":
-                  "application/json",
-              },
-
-              body:
-                JSON.stringify({
-                  userId:
-                    currentUserId,
-
-                  text:
-                    trimmed,
-                }),
-            }
-          );
-
-        const data =
-          await response.json();
-
-        if (!response.ok) {
-
-          throw new Error(
-            data.message ||
-              "Unable to edit message."
-          );
-        }
-
-        const updatedMessage =
-          formatMessage(
-            data.message ||
-              data
-          );
-
-        setMessages(
-          (previous) => {
-
-            const updated =
-              previous.map(
-                (item) =>
-                  String(
-                    item.id
-                  ) ===
-                  String(
-                    messageId
-                  )
-                    ? {
-                        ...item,
-
-                        ...(updatedMessage ||
-                          {}),
-
-                        text:
-                          trimmed,
-
-                        edited:
-                          true,
-                      }
-                    : item
-              );
-
-            saveMessageCache(
-              updated
-            );
-
-            return updated;
-          }
-        );
-
-        if (
-          socketRef.current?.connected
-        ) {
-
-          socketRef.current.emit(
-            "message-edited",
-            {
-              ...(updatedMessage ||
-                editingMessage),
-
-              id:
-                messageId,
-
-              _id:
-                messageId,
-
-              conversationId,
-
-              text:
-                trimmed,
-
-              edited:
-                true,
-            }
-          );
-        }
-
-        handleCancelEdit();
-
-      } catch (
-        error
-      ) {
-
-        console.error(
-          "Edit message error:",
-          error
-        );
-
-        setSendError(
-          error?.message ||
-            "Unable to edit message."
-        );
-      }
-    };
+    handleCancelEdit();
+  } catch (error) {
+    console.error("Edit message error:", error);
+    setSendError(error?.message || "Unable to edit message.");
+  }
+};
 
 
   // =========================================================
@@ -2738,30 +2815,13 @@ function PrivateChat({
           );
         }
 
-        setMessages(
-          (previous) =>
-            previous.filter(
-              (item) =>
-                String(
-                  item.id
-                ) !==
-                String(
-                  messageId
-                )
-            )
-        );
-
-        saveMessageCache(
-          messages.filter(
-            (item) =>
-              String(
-                item.id
-              ) !==
-              String(
-                messageId
-              )
-          )
-        );
+        setMessages((previous) => {
+          const filtered = previous.filter(
+            (item) => String(item.id) !== String(messageId)
+          );
+          saveMessageCache(filtered);
+          return filtered;
+        });
 
         closeMessageMenu();
 
@@ -2859,6 +2919,12 @@ function PrivateChat({
                         deletedForEveryone:
                           true,
 
+                        mediaUrl:
+                          null,
+
+                        mediaType:
+                          "text",
+
                         text:
                           "This message was deleted.",
                       }
@@ -2895,6 +2961,12 @@ function PrivateChat({
 
               deletedForEveryone:
                 true,
+
+              mediaUrl:
+                null,
+
+              mediaType:
+                "text",
 
               text:
                 "This message was deleted.",
@@ -3066,96 +3138,40 @@ function PrivateChat({
   // =========================================================
   // DELETE CONVERSATION
   // =========================================================
+  const handleConfirmDeleteConversation = async () => {
+    if (!currentUserId || !conversationId) return;
 
-  const handleConfirmDeleteConversation =
-    async () => {
+    try {
+      const response = await fetch(
+        `${API_URL}/api/messages/conversation/${encodeURIComponent(conversationId)}`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: currentUserId }),
+        }
+      );
 
-      if (
-        !currentUserId ||
-        !conversationId
-      ) {
-        return;
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to delete conversation.");
       }
 
-      try {
-
-        const response =
-          await fetch(
-            `${API_URL}/api/conversations/${encodeURIComponent(
-              conversationId
-            )}`,
-            {
-              method:
-                "DELETE",
-
-              headers: {
-                "Content-Type":
-                  "application/json",
-              },
-
-              body:
-                JSON.stringify({
-                  userId:
-                    currentUserId,
-                }),
-            }
-          );
-
-        const data =
-          await response.json();
-
-        if (!response.ok) {
-
-          throw new Error(
-            data.message ||
-              "Unable to delete conversation."
-          );
+      if (messageCacheKey) {
+        try {
+          localStorage.removeItem(messageCacheKey);
+        } catch (error) {
+          console.warn("Unable to remove conversation cache:", error);
         }
-
-        if (
-          messageCacheKey
-        ) {
-
-          try {
-
-            localStorage.removeItem(
-              messageCacheKey
-            );
-
-          } catch (
-            error
-          ) {
-
-            console.warn(
-              "Unable to remove conversation cache:",
-              error
-            );
-          }
-        }
-
-        setMessages([]);
-
-        setShowDeleteMenu(
-          false
-        );
-
-        onBack?.();
-
-      } catch (
-        error
-      ) {
-
-        console.error(
-          "Delete conversation error:",
-          error
-        );
-
-        setSendError(
-          error?.message ||
-            "Unable to delete conversation."
-        );
       }
-    };
+
+      setMessages([]);
+      setShowDeleteMenu(false);
+      onBack?.();
+    } catch (error) {
+      console.error("Delete conversation error:", error);
+      setSendError(error?.message || "Unable to delete conversation.");
+    }
+  };
 
 
   // =========================================================
@@ -3472,6 +3488,7 @@ function PrivateChat({
               type="text"
               value={
                 searchQuery
+
               }
               onChange={(event) =>
                 setSearchQuery(
@@ -3580,6 +3597,11 @@ function PrivateChat({
         </div>
 
       )}
+      {isRecipientTyping && (
+       <div className="px-4 py-1 text-xs text-gray-400 italic animate-pulse">
+         Typing...
+       </div>
+      )}
 
 
       {showMessageMenu &&
@@ -3602,6 +3624,22 @@ function PrivateChat({
               <h3>
                 Message
               </h3>
+
+
+              {!selectedMessage.deleted &&
+                !selectedMessage.deletedForEveryone && (
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMessageMenu(false);
+                      setShowForwardModal(true);
+                    }}
+                  >
+                    ↗️ Forward
+                  </button>
+
+                )}
 
 
               {!selectedMessage.deleted &&
@@ -3677,6 +3715,60 @@ function PrivateChat({
           </div>
 
         )}
+
+
+      {showForwardModal && (
+
+        <div
+          className="message-action-overlay"
+          onClick={() => setShowForwardModal(false)}
+        >
+
+          <div
+            className="message-action-menu"
+            onClick={(event) => event.stopPropagation()}
+            style={{ maxHeight: "80vh", overflowY: "auto" }}
+          >
+
+            <h3>Forward Message To</h3>
+
+            {contacts.length === 0 ? (
+              <p>No contacts available for forwarding.</p>
+            ) : (
+              contacts.map((contactItem) => {
+                const name =
+                  contactItem.name ||
+                  contactItem.fullName ||
+                  contactItem.displayName ||
+                  contactItem.username ||
+                  "ZenvaZapp User";
+
+                return (
+                  <button
+                    key={contactItem._id || contactItem.id || contactItem.username}
+                    type="button"
+                    onClick={() => handleForwardToContact(contactItem)}
+                    style={{ textAlign: "left", padding: "10px 14px" }}
+                  >
+                    {name}
+                  </button>
+                );
+              })
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShowForwardModal(false)}
+              style={{ marginTop: "10px" }}
+            >
+              Cancel
+            </button>
+
+          </div>
+
+        </div>
+
+      )}
 
 
       {editingMessage && (
@@ -3954,7 +4046,7 @@ function PrivateChat({
 
                         {item.status ===
                         "read"
-                          ? "✓✓"
+                          ? "✔✔"
                           : item.status ===
                             "delivered"
                           ? "✓✓"
@@ -4054,27 +4146,27 @@ function PrivateChat({
       >
 
         {undoMessageId && (
-         <div
-           className="private-chat-undo-bar"
-           role="status"
-           aria-live="polite"
+          <div
+            className="private-chat-undo-bar"
+            role="status"
+            aria-live="polite"
           >
 
-           <div className="private-chat-undo-info">
+            <div className="private-chat-undo-info">
 
-             <span className="private-chat-undo-icon">
-               ✓
-             </span>
+              <span className="private-chat-undo-icon">
+                ✓
+              </span>
 
-             <div className="private-chat-undo-text">
+              <div className="private-chat-undo-text">
 
-               <strong>
-                 Message sent
-               </strong>
+                <strong>
+                  Message sent
+                </strong>
 
-               <span>
-                 You can undo this message
-               </span>
+                <span>
+                  You can undo this message
+                </span>
 
               </div>
 
@@ -4085,12 +4177,12 @@ function PrivateChat({
             </div>
 
             <button
-             type="button"
-             className="private-chat-undo-button"
-             onClick={handleUndoMessage}
+              type="button"
+              className="private-chat-undo-button"
+              onClick={handleUndoMessage}
             >
-             Undo
-           </button>
+              Undo
+            </button>
 
           </div>
         )}
@@ -4195,27 +4287,13 @@ function PrivateChat({
                 }
                 rows={1}
                 onChange={(event) => {
-
-                  if (
-                    editingMessage
-                  ) {
-
-                    setEditText(
-                      event.target.value
-                    );
-
-                    resizeEditInput();
-
-                  } else {
-
-                    setMessage(
-                      event.target.value
-                    );
-
+                 if (editingMessage) {
+                   setEditText(event.target.value);
+                   resizeEditInput();
+                 } else {
+                    handleInputChange(event);
                     resizeMessageInput();
-
                   }
-
                 }}
                 onKeyDown={
                   editingMessage
@@ -4302,6 +4380,52 @@ function PrivateChat({
         </form>
 
       </footer>
+      {showForwardModal && (
+       <div
+         className="message-action-overlay"
+         onClick={() => setShowForwardModal(false)}
+        >
+         <div
+           className="message-action-menu"
+           onClick={(event) => event.stopPropagation()}
+           style={{ maxHeight: "80vh", overflowY: "auto" }}
+          >
+           <h3>Forward Message To</h3>
+
+           {forwardableContacts.length === 0 ? (
+             <p>No contacts available for forwarding.</p>
+            ) : (
+              forwardableContacts.map((contactItem) => {
+               const name =
+                 contactItem.name ||
+                 contactItem.fullName ||
+                 contactItem.displayName ||
+                 contactItem.username ||
+                 "ZenvaZapp User";
+
+                return (
+                 <button
+                   key={contactItem._id || contactItem.id || contactItem.username}
+                   type="button"
+                   onClick={() => handleForwardToContact(contactItem)}
+                   style={{ textAlign: "left", padding: "10px 14px" }}
+                  >
+                   {name}
+                 </button>
+                );
+              })
+            )}
+
+            <button
+             type="button"
+             onClick={() => setShowForwardModal(false)}
+             style={{ marginTop: "10px" }}
+            >
+             Cancel
+            </button>
+         </div>
+       </div>
+      )}
 
     </div>
   );
