@@ -2,9 +2,10 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 
+// Match exact casing and file names in your routes directory:
 const authRoutes = require("./routes/authRoutes");
 const profileRoutes = require("./routes/profileRoutes");
-const messageRoutes = require("../routes/messageRoutes");
+const messageRoutes = require("./routes/messageRoutes"); // <--- Ensure this matches the exact filename in /routes
 const userRoutes = require("./routes/userRoutes");
 const contactRoutes = require("./routes/contactRoutes");
 const translatorRoutes = require("./routes/translatorRoutes");
