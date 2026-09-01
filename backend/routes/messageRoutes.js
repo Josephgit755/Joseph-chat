@@ -22,20 +22,30 @@ router.delete("/conversation/:conversationId", async (req, res) => {
   }
 });
 // Express controller snippet
-const { text, content } = req.body;
-const updatedText = text || content;
+// EDIT a message
+router.patch("/:id", async (req, res) => {
+  try {
+    const { text, content } = req.body;
+    const updatedText = text || content;
 
-const updatedMessage = await Message.findByIdAndUpdate(
-  req.params.id,
-  { 
-    text: updatedText, 
-    isEdited: true 
-  },
-  { new: true } // Return updated document, not old document
-);
+    const updatedMessage = await Message.findByIdAndUpdate(
+      req.params.id,
+      { 
+        text: updatedText, 
+        isEdited: true 
+      },
+      { new: true }
+    );
 
-res.json({ message: updatedMessage });
+    if (!updatedMessage) {
+      return res.status(404).json({ message: "Message not found." });
+    }
 
+    res.json({ message: updatedMessage });
+  } catch (err) {
+    res.status(500).json({ message: "Server error editing message.", error: err.message });
+  }
+});
 // ==========================================
 // MULTER & CLOUDINARY CONFIGURATION
 // ==========================================
