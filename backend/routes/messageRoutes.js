@@ -4,6 +4,7 @@ const multer = require("multer");
 const cloudinary = require("../config/cloudinary");
 const Message = require("../models/Message");
 
+
 const router = express.Router();
 
 
@@ -857,7 +858,7 @@ router.patch("/conversation/:conversationId/delete", async (req, res) => {
 });
 // --- OPTIMIZED READ RECEIPTS ENDPOINT ---
 // PATCH /api/messages/read-batch
-router.patch("/read-batch", verifyToken, async (req, res) => {
+router.patch("/read-batch", async (req, res) => {
   try {
     const { conversationId, messageIds } = req.body;
     const userId = req.user.id;
