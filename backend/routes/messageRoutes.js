@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const multer = require("multer");
 const cloudinary = require("../config/cloudinary");
 const Message = require("../models/Message");
+const User = require('../models/User'); // Adjust path to your User model
 
 const router = express.Router();
 
@@ -74,6 +75,24 @@ const isParticipant = (message, userId) => {
 const getDeterministicConversationId = (idA, idB) => {
   return [String(idA), String(idB)].sort().join("_");
 };
+//===============================
+router.post('/api/messages', async (req, res) => {
+  try {
+    const { senderId, receiverId, text } = req.body;
+
+    // Check if receiver exists in MongoDB
+    const recipientExists = await User.findById(receiverId);
+    if (!recipientExists) {
+      return res.status(404).json({ 
+        message: "Target user is not registered on ZenvaZapp." 
+      });
+    }
+
+    // Proceed to create and save message...
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error." });
+  }
+});
 
 // ==========================================
 // TEST MESSAGE ROUTE
