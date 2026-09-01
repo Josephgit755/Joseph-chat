@@ -357,11 +357,6 @@ function Contacts({
   ] = useState("");
 
   const [
-    phoneNumber,
-    setPhoneNumber,
-  ] = useState("");
-
-  const [
     isAddingContact,
     setIsAddingContact,
   ] = useState(false);
@@ -400,6 +395,35 @@ function Contacts({
     showAddContact,
     setShowAddContact,
   ] = useState(false);
+
+  // New Form Fields State for Detailed Contact Interface
+  const [newContact, setNewContact] = useState({
+    firstName: "",
+    lastName: "",
+    username: "",
+    countryCode: "+237",
+    phone: "",
+    syncToPhone: true,
+  });
+
+  const handleContactInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setNewContact((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const resetContactForm = () => {
+    setNewContact({
+      firstName: "",
+      lastName: "",
+      username: "",
+      countryCode: "+237",
+      phone: "",
+      syncToPhone: true,
+    });
+  };
 
   // ==========================================
   // LOAD CONTACTS
@@ -710,19 +734,20 @@ function Contacts({
     };
 
   // ==========================================
-  // ADD CONTACT BY PHONE
+  // ADD CONTACT BY PHONE & DETAILS
   // ==========================================
 
   const handleAddContact =
     async (event) => {
       event.preventDefault();
 
+      const combinedPhone = `${newContact.countryCode}${newContact.phone}`;
       const normalizedPhone =
         normalizePhone(
-          phoneNumber
+          combinedPhone
         );
 
-      if (!normalizedPhone) {
+      if (!newContact.phone.trim()) {
         setContactError(
           "Enter a phone number."
         );
@@ -744,6 +769,8 @@ function Contacts({
         setContactError("");
         setContactMessage("");
 
+        const fullName = `${newContact.firstName.trim()} ${newContact.lastName.trim()}`.trim();
+
         const response =
           await fetch(
             `${API_URL}/api/contacts`,
@@ -758,6 +785,11 @@ function Contacts({
                   currentUserId,
                 phone:
                   normalizedPhone,
+                fullName,
+                firstName: newContact.firstName,
+                lastName: newContact.lastName,
+                username: newContact.username,
+                syncToPhone: newContact.syncToPhone,
               }),
             }
           );
@@ -808,9 +840,7 @@ function Contacts({
               "Contact added successfully."
           );
 
-          setPhoneNumber(
-            ""
-          );
+          resetContactForm();
 
           setShowAddContact(
             false
@@ -841,7 +871,7 @@ function Contacts({
             "Contact added successfully."
         );
 
-        setPhoneNumber("");
+        resetContactForm();
 
         setShowAddContact(
           false
@@ -1294,33 +1324,32 @@ function Contacts({
       {/* ADD CONTACT */}
 
       {showAddContact && (
-        <section className="add-contact-panel">
+        <section className="add-contact-panel whatsapp-style-panel">
 
           <div className="add-contact-heading">
 
-            <div>
-              <h2>
-                Add a contact
-              </h2>
-
-              <p>
-                Enter the person's phone number.
-              </p>
+            <div className="add-contact-title-group">
+              <button
+                type="button"
+                className="add-contact-back-btn"
+                onClick={() => {
+                  setShowAddContact(false);
+                  resetContactForm();
+                  setContactError("");
+                }}
+                aria-label="Back"
+              >
+                ←
+              </button>
+              <h2>New contact</h2>
             </div>
 
             <button
               type="button"
-              onClick={() => {
-                setShowAddContact(
-                  false
-                );
-
-                setPhoneNumber("");
-                setContactError("");
-              }}
-              aria-label="Close"
+              className="qr-icon-btn"
+              aria-label="QR Code"
             >
-              ×
+              🔲
             </button>
 
           </div>
@@ -1329,40 +1358,115 @@ function Contacts({
             onSubmit={
               handleAddContact
             }
+            className="whatsapp-contact-form"
           >
 
-            <label>
-              Phone number
-            </label>
+            {/* First Name Field */}
+            <div className="form-input-row">
+              <span className="form-icon">👤</span>
+              <div className="form-input-wrapper">
+                <input
+                  type="text"
+                  name="firstName"
+                  placeholder="First name"
+                  value={newContact.firstName}
+                  onChange={handleContactInputChange}
+                  required
+                />
+              </div>
+            </div>
 
-            <input
-              type="tel"
-              value={
-                phoneNumber
-              }
-              onChange={(event) =>
-                setPhoneNumber(
-                  event.target.value
-                )
-              }
-              placeholder="+237 6XX XXX XXX"
-              autoFocus
-            />
+            {/* Last Name Field */}
+            <div className="form-input-row">
+              <span className="form-icon"></span>
+              <div className="form-input-wrapper">
+                <input
+                  type="text"
+                  name="lastName"
+                  placeholder="Last name"
+                  value={newContact.lastName}
+                  onChange={handleContactInputChange}
+                />
+              </div>
+            </div>
 
-            <p className="add-contact-help">
-              Only the number you intentionally enter is checked. ZenvaZapp does not display a global user directory.
-            </p>
+            {/* Username Field */}
+            <div className="form-input-row">
+              <span className="form-icon">@</span>
+              <div className="form-input-wrapper">
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="Username"
+                  value={newContact.username}
+                  onChange={handleContactInputChange}
+                />
+              </div>
+            </div>
 
-            <button
-              type="submit"
-              disabled={
-                isAddingContact
-              }
-            >
-              {isAddingContact
-                ? "Checking..."
-                : "Add contact"}
-            </button>
+            {/* Country & Phone Fields */}
+            <div className="form-input-row">
+              <span className="form-icon">📞</span>
+              <div className="phone-fields-group">
+                <div className="form-input-wrapper country-code-wrapper">
+                  <span className="field-label">Country</span>
+                  <select
+                    name="countryCode"
+                    value={newContact.countryCode}
+                    onChange={handleContactInputChange}
+                  >
+                    <option value="+237">CM +237</option>
+                    <option value="+1">US +1</option>
+                    <option value="+44">UK +44</option>
+                    <option value="+234">NG +234</option>
+                  </select>
+                </div>
+                <div className="form-input-wrapper phone-number-wrapper">
+                  <input
+                    type="tel"
+                    name="phone"
+                    placeholder="Phone"
+                    value={newContact.phone}
+                    onChange={handleContactInputChange}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Sync Option Switch */}
+            <div className="form-input-row sync-option-row">
+              <span className="form-icon">🔄</span>
+              <div className="sync-option-container">
+                <div className="sync-option-text">
+                  <strong>Sync contact to phone</strong>
+                  <p>Only contacts with a phone number can be synced</p>
+                </div>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    name="syncToPhone"
+                    checked={newContact.syncToPhone}
+                    onChange={handleContactInputChange}
+                  />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <div className="form-submit-wrapper">
+              <button
+                type="submit"
+                className="save-contact-btn"
+                disabled={
+                  isAddingContact || !newContact.firstName.trim()
+                }
+              >
+                {isAddingContact
+                  ? "Saving..."
+                  : "Save"}
+              </button>
+            </div>
 
           </form>
 
