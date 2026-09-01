@@ -6,6 +6,36 @@ const Message = require("../models/Message");
 
 const router = express.Router();
 
+
+// DELETE an entire conversation (soft delete for user)
+router.delete("/conversation/:conversationId", async (req, res) => {
+  const { userId } = req.body;
+  try {
+    await Message.updateMany(
+      { conversationId: req.params.conversationId },
+      { $addToSet: { deletedFor: userId } }
+    );
+
+    res.json({ message: "Conversation deleted successfully." });
+  } catch (err) {
+    res.status(500).json({ message: "Server error deleting conversation." });
+  }
+});
+// Express controller snippet
+const { text, content } = req.body;
+const updatedText = text || content;
+
+const updatedMessage = await Message.findByIdAndUpdate(
+  req.params.id,
+  { 
+    text: updatedText, 
+    isEdited: true 
+  },
+  { new: true } // Return updated document, not old document
+);
+
+res.json({ message: updatedMessage });
+
 // ==========================================
 // MULTER & CLOUDINARY CONFIGURATION
 // ==========================================
@@ -598,8 +628,14 @@ router.patch("/:messageId/delete-for-everyone", async (req, res) => {
     message.deletedForSender = true;
     message.deletedForReceiver = true;
     message.expiresAt = null;
-    message.text = DELETED_MESSAGE_TEXT;
 
+    // Remove the original media permanently from the
+    // message representation while keeping the database
+    // message itself for the "deleted" placeholder.
+    message.mediaUrl = "";
+    message.messageType = "text";
+
+    message.text = DELETED_MESSAGE_TEXT;
     await message.save();
 
     return res.json({
@@ -809,6 +845,39 @@ router.patch("/conversation/:conversationId/delete", async (req, res) => {
     });
   }
 });
+// --- OPTIMIZED READ RECEIPTS ENDPOINT ---
+// PATCH /api/messages/read-batch
+router.patch("/read-batch", verifyToken, async (req, res) => {
+  try {
+    const { conversationId, messageIds } = req.body;
+    const userId = req.user.id;
+
+    if (!messageIds || !messageIds.length) {
+      return res.status(400).json({ error: "No message IDs provided" });
+    }
+
+    // Update status to 'read' for messages sent to this user
+    await Message.updateMany(
+      { _id: { $in: messageIds }, recipientId: userId, status: { $ne: "read" } },
+      { $set: { status: "read", readAt: new Date() } }
+    );
+
+    res.status(200).json({ success: true, messageIds });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to mark messages as read" });
+  }
+});
+
+// --- UNILATERAL MESSAGING CHECK (Helper inside POST /) ---
+// Add this check inside your existing POST / route before creating the message:
+/*
+  const recipient = await User.findById(recipientId);
+  if (recipient && recipient.blockedUsers?.includes(req.user.id)) {
+    // Unilateral delivery: save the message for the sender, but DO NOT emit via socket to recipient
+    const newMessage = await Message.create({ ...req.body, delivered: false });
+    return res.status(201).json({ message: newMessage, delivered: false });
+  }
+*/
 
 // ==========================================
 // MARK INCOMING MESSAGES DELIVERED

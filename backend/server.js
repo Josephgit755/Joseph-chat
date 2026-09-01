@@ -145,6 +145,42 @@ io.on("connection", (socket) => {
   console.log(
     `ZenvaZapp Socket.IO user connected: ${socket.id}`
   );
+  // Add these socket listeners inside your io.on("connection", (socket) => { ... }) block:
+
+  // --- TYPING INDICATORS ---
+  socket.on("typing-start", ({ recipientId, conversationId }) => {
+   if (recipientId) {
+     io.to(getUserRoom(recipientId)).emit("user-typing", {
+       userId: socket.userId,
+       conversationId,
+      });
+    }
+  });
+
+  socket.on("typing-stop", ({ recipientId, conversationId }) => {
+   if (recipientId) {
+     io.to(getUserRoom(recipientId)).emit("user-stopped-typing", {
+       userId: socket.userId,
+       conversationId,
+      });
+    }
+  });
+
+  // --- OPTIMIZED READ RECEIPTS ---
+  socket.on("mark-messages-read", async ({ conversationId, messageIds, senderId }) => {
+   try {
+     // Notify the original sender in real-time that these messages were read
+     if (senderId) {
+       io.to(getUserRoom(senderId)).emit("messages-read-update", {
+         conversationId,
+         messageIds,
+         readAt: new Date(),
+        });
+      }
+    } catch (err) {
+      console.error("Error broadcasting read receipt:", err);
+    }
+  });
 
   // ========================================
   // REGISTER USER
