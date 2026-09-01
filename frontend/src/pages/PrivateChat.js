@@ -11,7 +11,7 @@ import "./private-chat.css";
 
 
 // =========================================================
-// ZENVazAPP PRIVATE CHAT
+// ZENVAZAPP PRIVATE CHAT
 // =========================================================
 //
 // IMPORTANT CALLING ARCHITECTURE
@@ -74,14 +74,14 @@ function PrivateChat({
 
 
   // =========================================================
-  // CONVERSATION ID
+  // CONVERSATION ID (DETERMINISTIC FALLBACK)
   // =========================================================
 
   const conversationId =
     chat?.conversationId ||
     [
-      currentUserId,
-      otherUserId,
+      String(currentUserId),
+      String(otherUserId),
     ]
       .filter(Boolean)
       .sort()
@@ -289,9 +289,9 @@ function PrivateChat({
       ? `zenvazapp-messages-${currentUserId}-${conversationId}`
       : null;
 
-  // 1. ADD STATE FOR TYPING
+  // TYPING STATE & REFS
   const [isRecipientTyping, setIsRecipientTyping] = useState(false);
-  const typingTimeoutRef = useRef(null)
+  const typingTimeoutRef = useRef(null);
 
 
   // =========================================================
@@ -329,16 +329,16 @@ function PrivateChat({
   ];
 
   void disappearingOptions;
-  // Add this helper before the return statement:
+
+  // FORWARDABLE CONTACTS HELPER
   const forwardableContacts = (contacts || []).filter((contactItem) => {
-   const contactId =
-     contactItem._id ||
-     contactItem.id ||
-     contactItem.userId ||
-     contactItem.username;
+    const contactId =
+      contactItem._id ||
+      contactItem.id ||
+      contactItem.userId ||
+      contactItem.username;
     return contactId && String(contactId) !== String(currentUserId);
   });
-
 
 
   // =========================================================
@@ -393,7 +393,6 @@ function PrivateChat({
     const secs = seconds % 60;
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
-  
 
 
   // =========================================================
@@ -701,71 +700,37 @@ function PrivateChat({
       },
       [messageCacheKey]
     );
-    
 
-  // 2. SOCKET LISTENERS FOR TYPING & READ RECEIPTS
-  useEffect(() => {
-   const socketInstance = socketRef.current;
-     if (!socketInstance) return;
 
-   const handleUserTyping = ({ conversationId: incomingConvId }) => {
-     if (incomingConvId === conversationId) {
-       setIsRecipientTyping(true);
-     }
-    };
+  // =========================================================
+  // HANDLE INPUT CHANGE WITH TYPING EMIT
+  // =========================================================
 
-   const handleUserStoppedTyping = ({ conversationId: incomingConvId }) => {
-     if (incomingConvId === conversationId) {
-       setIsRecipientTyping(false);
-      }
-    };
-
-   const handleMessagesReadUpdate = ({ conversationId: incomingConvId, messageIds }) => {
-     if (incomingConvId === conversationId) {
-       setMessages((prev) =>
-         prev.map((msg) =>
-           messageIds.includes(msg._id) ? { ...msg, status: "read" } : msg
-          )
-        );
-      }
-    };
-
-    socketInstance.on("user-typing", handleUserTyping);
-    socketInstance.on("user-stopped-typing", handleUserStoppedTyping);
-    socketInstance.on("messages-read-update", handleMessagesReadUpdate);
-
-    return () => {
-     socketInstance.off("user-typing", handleUserTyping);
-     socketInstance.off("user-stopped-typing", handleUserStoppedTyping);
-     socketInstance.off("messages-read-update", handleMessagesReadUpdate);
-    };
-  }, [conversationId]);
-  // 3. EMIT TYPING EVENTS ON INPUT CHANGE
   const handleInputChange = (e) => {
-   const value = e.target.value;
-   setMessage(value);
+    const value = e.target.value;
+    setMessage(value);
 
-   const socketInstance = socketRef.current;
-   const recipientId = otherUserId;
+    const socketInstance = socketRef.current;
+    const recipientId = otherUserId;
 
-   if (socketInstance && recipientId) {
-     socketInstance.emit("typing-start", {
-       recipientId,
-       conversationId,
+    if (socketInstance && recipientId) {
+      socketInstance.emit("typing-start", {
+        recipientId,
+        conversationId,
       });
 
-     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 
-     typingTimeoutRef.current = setTimeout(() => {
-       socketInstance.emit("typing-stop", {
-         recipientId,
-         conversationId,
+      typingTimeoutRef.current = setTimeout(() => {
+        socketInstance.emit("typing-stop", {
+          recipientId,
+          conversationId,
         });
       }, 2000);
     }
   };
 
-  
+
   // =========================================================
   // LOAD MESSAGE CACHE
   // =========================================================
@@ -1021,7 +986,7 @@ function PrivateChat({
 
 
   // =========================================================
-  // SOCKET CONNECTION
+  // SOCKET CONNECTION & REALTIME LISTENERS
   // =========================================================
 
   useEffect(() => {
@@ -1332,6 +1297,29 @@ function PrivateChat({
       };
 
 
+    const handleUserTyping = ({ conversationId: incomingConvId }) => {
+      if (incomingConvId === conversationId) {
+        setIsRecipientTyping(true);
+      }
+    };
+
+    const handleUserStoppedTyping = ({ conversationId: incomingConvId }) => {
+      if (incomingConvId === conversationId) {
+        setIsRecipientTyping(false);
+      }
+    };
+
+    const handleMessagesReadUpdate = ({ conversationId: incomingConvId, messageIds }) => {
+      if (incomingConvId === conversationId) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            messageIds.includes(msg._id) ? { ...msg, status: "read" } : msg
+          )
+        );
+      }
+    };
+
+
     socket.on(
       "message-delivered",
       ({
@@ -1430,6 +1418,21 @@ function PrivateChat({
       handleMessageUndone
     );
 
+    socket.on(
+      "user-typing",
+      handleUserTyping
+    );
+
+    socket.on(
+      "user-stopped-typing",
+      handleUserStoppedTyping
+    );
+
+    socket.on(
+      "messages-read-update",
+      handleMessagesReadUpdate
+    );
+
 
     registerSocketUser();
 
@@ -1491,6 +1494,21 @@ function PrivateChat({
 
       socket.off(
         "message-read"
+      );
+
+      socket.off(
+        "user-typing",
+        handleUserTyping
+      );
+
+      socket.off(
+        "user-stopped-typing",
+        handleUserStoppedTyping
+      );
+
+      socket.off(
+        "messages-read-update",
+        handleMessagesReadUpdate
       );
 
       socket.disconnect();
@@ -2241,6 +2259,13 @@ function PrivateChat({
           resizeMessageInput();
         });
 
+        // Clear typing indicator immediately upon send
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        socketRef.current?.emit("typing-stop", {
+          recipientId: otherUserId,
+          conversationId,
+        });
+
         setUndoMessageId(
           savedMessage.id
         );
@@ -2294,7 +2319,7 @@ function PrivateChat({
       return;
     }
 
-    const targetConvId = [currentUserId, targetUserId].sort().join("_");
+    const targetConvId = [String(currentUserId), String(targetUserId)].sort().join("_");
     const createdAt = new Date().toISOString();
 
     const payload = {
@@ -2320,7 +2345,6 @@ function PrivateChat({
         throw new Error(data.message || "Failed to forward message.");
       }
 
-      // If forwarded into the current conversation, update messages UI
       if (String(targetConvId) === String(conversationId)) {
         const savedMessage = formatMessage(data.message || data);
         if (savedMessage) {
@@ -2709,61 +2733,61 @@ function PrivateChat({
   // =========================================================
   // SAVE EDIT
   // =========================================================
+
   const handleSaveEdit = async () => {
-   if (!editingMessage) return;
+    if (!editingMessage) return;
 
-  const trimmed = editText.trim();
-   if (!trimmed) return;
+    const trimmed = editText.trim();
+    if (!trimmed) return;
 
-  const messageId = editingMessage.id;
+    const messageId = editingMessage.id;
 
-  try {
-    const response = await fetch(
-      `${API_URL}/api/messages/${encodeURIComponent(messageId)}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: currentUserId,
-          text: trimmed,
-          content: trimmed, // Send both key variants for backend compatibility
-        }),
-      }
-    );
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || "Unable to edit message.");
-    }
-
-    // Standardize returned object
-    const rawUpdated = data.message || data;
-    const updatedMessage = formatMessage({
-      ...rawUpdated,
-      text: trimmed,
-      isEdited: true,
-      edited: true,
-    });
-
-    setMessages((previous) => {
-      const updated = previous.map((item) =>
-        String(item.id) === String(messageId) ? updatedMessage : item
+    try {
+      const response = await fetch(
+        `${API_URL}/api/messages/${encodeURIComponent(messageId)}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: currentUserId,
+            text: trimmed,
+            content: trimmed,
+          }),
+        }
       );
 
-      saveMessageCache(updated);
-      return updated;
-    });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to edit message.");
+      }
 
-    if (socketRef.current?.connected) {
-      socketRef.current.emit("message-edited", updatedMessage);
+      const rawUpdated = data.message || data;
+      const updatedMessage = formatMessage({
+        ...rawUpdated,
+        text: trimmed,
+        isEdited: true,
+        edited: true,
+      });
+
+      setMessages((previous) => {
+        const updated = previous.map((item) =>
+          String(item.id) === String(messageId) ? updatedMessage : item
+        );
+
+        saveMessageCache(updated);
+        return updated;
+      });
+
+      if (socketRef.current?.connected) {
+        socketRef.current.emit("message-edited", updatedMessage);
+      }
+
+      handleCancelEdit();
+    } catch (error) {
+      console.error("Edit message error:", error);
+      setSendError(error?.message || "Unable to edit message.");
     }
-
-    handleCancelEdit();
-  } catch (error) {
-    console.error("Edit message error:", error);
-    setSendError(error?.message || "Unable to edit message.");
-  }
-};
+  };
 
 
   // =========================================================
@@ -3138,6 +3162,7 @@ function PrivateChat({
   // =========================================================
   // DELETE CONVERSATION
   // =========================================================
+
   const handleConfirmDeleteConversation = async () => {
     if (!currentUserId || !conversationId) return;
 
@@ -3289,7 +3314,7 @@ function PrivateChat({
                 aria-hidden="true"
               />
 
-              Online
+              {isRecipientTyping ? "typing..." : "Online"}
             </span>
 
           </div>
@@ -3488,7 +3513,6 @@ function PrivateChat({
               type="text"
               value={
                 searchQuery
-
               }
               onChange={(event) =>
                 setSearchQuery(
@@ -3596,11 +3620,6 @@ function PrivateChat({
 
         </div>
 
-      )}
-      {isRecipientTyping && (
-       <div className="px-4 py-1 text-xs text-gray-400 italic animate-pulse">
-         Typing...
-       </div>
       )}
 
 
@@ -3732,10 +3751,10 @@ function PrivateChat({
 
             <h3>Forward Message To</h3>
 
-            {contacts.length === 0 ? (
+            {forwardableContacts.length === 0 ? (
               <p>No contacts available for forwarding.</p>
             ) : (
-              contacts.map((contactItem) => {
+              forwardableContacts.map((contactItem) => {
                 const name =
                   contactItem.name ||
                   contactItem.fullName ||
@@ -4129,7 +4148,6 @@ function PrivateChat({
           )}
 
         </div>
-        
 
       )}
 
@@ -4287,10 +4305,10 @@ function PrivateChat({
                 }
                 rows={1}
                 onChange={(event) => {
-                 if (editingMessage) {
-                   setEditText(event.target.value);
-                   resizeEditInput();
-                 } else {
+                  if (editingMessage) {
+                    setEditText(event.target.value);
+                    resizeEditInput();
+                  } else {
                     handleInputChange(event);
                     resizeMessageInput();
                   }
@@ -4380,52 +4398,6 @@ function PrivateChat({
         </form>
 
       </footer>
-      {showForwardModal && (
-       <div
-         className="message-action-overlay"
-         onClick={() => setShowForwardModal(false)}
-        >
-         <div
-           className="message-action-menu"
-           onClick={(event) => event.stopPropagation()}
-           style={{ maxHeight: "80vh", overflowY: "auto" }}
-          >
-           <h3>Forward Message To</h3>
-
-           {forwardableContacts.length === 0 ? (
-             <p>No contacts available for forwarding.</p>
-            ) : (
-              forwardableContacts.map((contactItem) => {
-               const name =
-                 contactItem.name ||
-                 contactItem.fullName ||
-                 contactItem.displayName ||
-                 contactItem.username ||
-                 "ZenvaZapp User";
-
-                return (
-                 <button
-                   key={contactItem._id || contactItem.id || contactItem.username}
-                   type="button"
-                   onClick={() => handleForwardToContact(contactItem)}
-                   style={{ textAlign: "left", padding: "10px 14px" }}
-                  >
-                   {name}
-                 </button>
-                );
-              })
-            )}
-
-            <button
-             type="button"
-             onClick={() => setShowForwardModal(false)}
-             style={{ marginTop: "10px" }}
-            >
-             Cancel
-            </button>
-         </div>
-       </div>
-      )}
 
     </div>
   );

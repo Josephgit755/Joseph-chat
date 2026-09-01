@@ -145,36 +145,46 @@ io.on("connection", (socket) => {
   console.log(
     `ZenvaZapp Socket.IO user connected: ${socket.id}`
   );
-  // Add these socket listeners inside your io.on("connection", (socket) => { ... }) block:
 
   // --- TYPING INDICATORS ---
   socket.on("typing-start", ({ recipientId, conversationId }) => {
-   if (recipientId) {
-     io.to(getUserRoom(recipientId)).emit("user-typing", {
-       userId: socket.userId,
-       conversationId,
+    if (recipientId) {
+      io.to(getUserRoom(recipientId)).emit("user-typing", {
+        userId: socket.userId,
+        conversationId,
+      });
+    }
+    if (conversationId) {
+      socket.to(String(conversationId)).emit("user-typing", {
+        userId: socket.userId,
+        conversationId,
       });
     }
   });
 
   socket.on("typing-stop", ({ recipientId, conversationId }) => {
-   if (recipientId) {
-     io.to(getUserRoom(recipientId)).emit("user-stopped-typing", {
-       userId: socket.userId,
-       conversationId,
+    if (recipientId) {
+      io.to(getUserRoom(recipientId)).emit("user-stopped-typing", {
+        userId: socket.userId,
+        conversationId,
+      });
+    }
+    if (conversationId) {
+      socket.to(String(conversationId)).emit("user-stopped-typing", {
+        userId: socket.userId,
+        conversationId,
       });
     }
   });
 
   // --- OPTIMIZED READ RECEIPTS ---
   socket.on("mark-messages-read", async ({ conversationId, messageIds, senderId }) => {
-   try {
-     // Notify the original sender in real-time that these messages were read
-     if (senderId) {
-       io.to(getUserRoom(senderId)).emit("messages-read-update", {
-         conversationId,
-         messageIds,
-         readAt: new Date(),
+    try {
+      if (senderId) {
+        io.to(getUserRoom(senderId)).emit("messages-read-update", {
+          conversationId,
+          messageIds,
+          readAt: new Date(),
         });
       }
     } catch (err) {
@@ -253,17 +263,6 @@ io.on("connection", (socket) => {
   // ========================================
   // REAL-TIME NEW MESSAGE
   // ========================================
-  // Messages are delivered directly to the
-  // recipient's user room.
-  //
-  // This means:
-  // Joseph can message Monica even when
-  // Monica has NOT added Joseph back and
-  // has NOT joined the conversation room.
-  //
-  // The conversation room is no longer required
-  // for initial message delivery.
-  // ========================================
 
   socket.on(
     "send-message",
@@ -294,10 +293,6 @@ io.on("connection", (socket) => {
         `Real-time message: ${senderId} -> ${receiverId}`
       );
 
-      // ========================================
-      // DELIVER DIRECTLY TO RECIPIENT
-      // ========================================
-
       const receiverRoom =
         getUserRoom(receiverId);
 
@@ -313,10 +308,6 @@ io.on("connection", (socket) => {
         "new-message",
         message
       );
-
-      // ========================================
-      // OPTIONAL CONVERSATION ROOM DELIVERY
-      // ========================================
 
       if (conversationId) {
         socket

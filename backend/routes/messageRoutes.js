@@ -4,49 +4,8 @@ const multer = require("multer");
 const cloudinary = require("../config/cloudinary");
 const Message = require("../models/Message");
 
-
 const router = express.Router();
 
-
-// DELETE an entire conversation (soft delete for user)
-router.delete("/conversation/:conversationId", async (req, res) => {
-  const { userId } = req.body;
-  try {
-    await Message.updateMany(
-      { conversationId: req.params.conversationId },
-      { $addToSet: { deletedFor: userId } }
-    );
-
-    res.json({ message: "Conversation deleted successfully." });
-  } catch (err) {
-    res.status(500).json({ message: "Server error deleting conversation." });
-  }
-});
-// Express controller snippet
-// EDIT a message
-router.patch("/:id", async (req, res) => {
-  try {
-    const { text, content } = req.body;
-    const updatedText = text || content;
-
-    const updatedMessage = await Message.findByIdAndUpdate(
-      req.params.id,
-      { 
-        text: updatedText, 
-        isEdited: true 
-      },
-      { new: true }
-    );
-
-    if (!updatedMessage) {
-      return res.status(404).json({ message: "Message not found." });
-    }
-
-    res.json({ message: updatedMessage });
-  } catch (err) {
-    res.status(500).json({ message: "Server error editing message.", error: err.message });
-  }
-});
 // ==========================================
 // MULTER & CLOUDINARY CONFIGURATION
 // ==========================================
@@ -111,6 +70,11 @@ const isParticipant = (message, userId) => {
   );
 };
 
+// Generates a deterministic room/conversation ID if one is not provided
+const getDeterministicConversationId = (idA, idB) => {
+  return [String(idA), String(idB)].sort().join("_");
+};
+
 // ==========================================
 // TEST MESSAGE ROUTE
 // ==========================================
@@ -128,14 +92,6 @@ router.get("/test", (req, res) => {
 
 router.post("/upload", upload.single("file"), async (req, res) => {
   try {
-    // IMPORTANT:
-    // Do NOT require userId here.
-    // The media upload is only responsible for uploading
-    // the file to Cloudinary and returning its URL.
-    //
-    // senderId / receiverId are validated later when
-    // the actual message is created through POST "/".
-
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -143,22 +99,15 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       });
     }
 
-    // Upload the file buffer to Cloudinary
     const result = await uploadBufferToCloudinary(
       req.file.buffer,
       req.file.originalname
     );
 
-    // Return both names for frontend compatibility.
     return res.status(201).json({
       success: true,
-
-      // Main media URL
       mediaUrl: result.secure_url,
-
-      // Compatibility with frontend code that may use "url"
       url: result.secure_url,
-
       publicId: result.public_id,
       resourceType: result.resource_type,
       format: result.format,
@@ -176,6 +125,7 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     });
   }
 });
+
 // ==========================================
 // GET MESSAGES FOR CONVERSATION
 // ==========================================
@@ -191,10 +141,6 @@ router.get("/:conversationId", async (req, res) => {
         message: "Conversation ID is required.",
       });
     }
-
-    // ======================================
-    // EXPIRE DISAPPEARING MESSAGES
-    // ======================================
 
     const now = new Date();
 
@@ -216,19 +162,11 @@ router.get("/:conversationId", async (req, res) => {
       }
     );
 
-    // ======================================
-    // BUILD QUERY
-    // ======================================
-
     const messageQuery = {
       conversationId,
       deletedForEveryone: false,
       undone: false,
     };
-
-    // ======================================
-    // USER-SPECIFIC VISIBILITY
-    // ======================================
 
     if (userId) {
       messageQuery.$or = [
@@ -242,7 +180,6 @@ router.get("/:conversationId", async (req, res) => {
         },
       ];
     } else {
-      // Backward-compatible fallback.
       messageQuery.$or = [
         {
           deletedForSender: false,
@@ -252,10 +189,6 @@ router.get("/:conversationId", async (req, res) => {
         },
       ];
     }
-
-    // ======================================
-    // LOAD MESSAGES
-    // ======================================
 
     const messages = await Message.find(messageQuery)
       .sort({
@@ -283,7 +216,7 @@ router.get("/:conversationId", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
-    const {
+    let {
       conversationId,
       senderId,
       receiverId,
@@ -293,14 +226,10 @@ router.post("/", async (req, res) => {
       disappearingDuration,
     } = req.body;
 
-    // ======================================
-    // REQUIRED FIELDS
-    // ======================================
-
-    if (!conversationId || !senderId || !receiverId) {
+    if (!senderId || !receiverId) {
       return res.status(400).json({
         success: false,
-        message: "Conversation, sender and receiver are required.",
+        message: "Sender and receiver are required.",
       });
     }
 
@@ -311,9 +240,9 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // ======================================
-    // MESSAGE TYPE & MEDIA VALIDATION
-    // ======================================
+    if (!conversationId) {
+      conversationId = getDeterministicConversationId(senderId, receiverId);
+    }
 
     const normalizedMessageType = messageType || "text";
 
@@ -355,10 +284,6 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // ======================================
-    // NORMALIZE DISAPPEARING DURATION
-    // ======================================
-
     let duration = 0;
 
     if (
@@ -377,19 +302,11 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // ======================================
-    // CREATE EXPIRATION DATE
-    // ======================================
-
     let expiresAt = null;
 
     if (duration > 0) {
       expiresAt = new Date(Date.now() + duration);
     }
-
-    // ======================================
-    // CREATE MESSAGE
-    // ======================================
 
     const message = await Message.create({
       conversationId: conversationId.trim(),
@@ -424,13 +341,37 @@ router.post("/", async (req, res) => {
 });
 
 // ==========================================
+// BATCH READ RECEIPT
+// ==========================================
+
+router.patch("/read-batch", async (req, res) => {
+  try {
+    const { conversationId, messageIds, userId } = req.body;
+
+    if (!messageIds || !messageIds.length) {
+      return res.status(400).json({ error: "No message IDs provided" });
+    }
+
+    await Message.updateMany(
+      { _id: { $in: messageIds }, receiverId: userId, status: { $ne: "read" } },
+      { $set: { status: "read", readAt: new Date() } }
+    );
+
+    res.status(200).json({ success: true, messageIds, conversationId });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to mark messages as read" });
+  }
+});
+
+// ==========================================
 // EDIT MESSAGE
 // ==========================================
 
 router.patch("/:messageId/edit", async (req, res) => {
   try {
     const { messageId } = req.params;
-    const { userId, text } = req.body;
+    const { userId, text, content } = req.body;
+    const updatedText = text || content;
 
     if (!userId || !isValidObjectId(userId)) {
       return res.status(400).json({
@@ -446,7 +387,7 @@ router.patch("/:messageId/edit", async (req, res) => {
       });
     }
 
-    if (!text || !String(text).trim()) {
+    if (!updatedText || !String(updatedText).trim()) {
       return res.status(400).json({
         success: false,
         message: "Edited message cannot be empty.",
@@ -462,20 +403,12 @@ router.patch("/:messageId/edit", async (req, res) => {
       });
     }
 
-    // ======================================
-    // ONLY SENDER CAN EDIT
-    // ======================================
-
     if (String(message.senderId) !== String(userId)) {
       return res.status(403).json({
         success: false,
         message: "Only the sender can edit this message.",
       });
     }
-
-    // ======================================
-    // CANNOT EDIT DELETED/UNDONE MESSAGE
-    // ======================================
 
     if (
       message.deletedForEveryone ||
@@ -488,7 +421,7 @@ router.patch("/:messageId/edit", async (req, res) => {
       });
     }
 
-    message.text = String(text).trim();
+    message.text = String(updatedText).trim();
     message.edited = true;
 
     await message.save();
@@ -540,20 +473,12 @@ router.patch("/:messageId/delete-for-me", async (req, res) => {
       });
     }
 
-    // ======================================
-    // VERIFY PARTICIPANT
-    // ======================================
-
     if (!isParticipant(message, userId)) {
       return res.status(403).json({
         success: false,
         message: "You cannot delete this message.",
       });
     }
-
-    // ======================================
-    // DELETE FOR CURRENT USER
-    // ======================================
 
     if (String(message.senderId) === String(userId)) {
       message.deletedForSender = true;
@@ -609,20 +534,12 @@ router.patch("/:messageId/delete-for-everyone", async (req, res) => {
       });
     }
 
-    // ======================================
-    // ONLY SENDER
-    // ======================================
-
     if (String(message.senderId) !== String(userId)) {
       return res.status(403).json({
         success: false,
         message: "Only the sender can delete this message for everyone.",
       });
     }
-
-    // ======================================
-    // ALREADY DELETED
-    // ======================================
 
     if (message.deletedForEveryone) {
       return res.status(400).json({
@@ -631,18 +548,11 @@ router.patch("/:messageId/delete-for-everyone", async (req, res) => {
       });
     }
 
-    // ======================================
-    // DELETE FOR EVERYONE
-    // ======================================
-
     message.deletedForEveryone = true;
     message.deletedForSender = true;
     message.deletedForReceiver = true;
     message.expiresAt = null;
 
-    // Remove the original media permanently from the
-    // message representation while keeping the database
-    // message itself for the "deleted" placeholder.
     message.mediaUrl = "";
     message.messageType = "text";
 
@@ -695,10 +605,6 @@ router.patch("/:messageId/undo", async (req, res) => {
       });
     }
 
-    // ======================================
-    // ONLY SENDER CAN UNDO
-    // ======================================
-
     if (String(message.senderId) !== String(userId)) {
       return res.status(403).json({
         success: false,
@@ -719,10 +625,6 @@ router.patch("/:messageId/undo", async (req, res) => {
         message: "Message has already been undone.",
       });
     }
-
-    // ======================================
-    // UNDO
-    // ======================================
 
     message.undone = true;
     message.deletedForSender = true;
@@ -747,8 +649,22 @@ router.patch("/:messageId/undo", async (req, res) => {
 });
 
 // ==========================================
-// DELETE ENTIRE CONVERSATION FOR CURRENT USER
+// DELETE CONVERSATION
 // ==========================================
+
+router.delete("/conversation/:conversationId", async (req, res) => {
+  const { userId } = req.body;
+  try {
+    await Message.updateMany(
+      { conversationId: req.params.conversationId },
+      { $addToSet: { deletedFor: userId } }
+    );
+
+    res.json({ message: "Conversation deleted successfully." });
+  } catch (err) {
+    res.status(500).json({ message: "Server error deleting conversation." });
+  }
+});
 
 router.patch("/conversation/:conversationId/delete", async (req, res) => {
   try {
@@ -769,10 +685,6 @@ router.patch("/conversation/:conversationId/delete", async (req, res) => {
       });
     }
 
-    // ======================================
-    // FIND CONVERSATION MESSAGES
-    // ======================================
-
     const messages = await Message.find({
       conversationId,
     }).select("senderId receiverId");
@@ -784,10 +696,6 @@ router.patch("/conversation/:conversationId/delete", async (req, res) => {
         deletedCount: 0,
       });
     }
-
-    // ======================================
-    // VERIFY PARTICIPANT
-    // ======================================
 
     const participant = messages.some(
       (message) =>
@@ -802,10 +710,6 @@ router.patch("/conversation/:conversationId/delete", async (req, res) => {
       });
     }
 
-    // ======================================
-    // DELETE MESSAGES SENT BY USER
-    // ======================================
-
     const senderResult = await Message.updateMany(
       {
         conversationId,
@@ -818,10 +722,6 @@ router.patch("/conversation/:conversationId/delete", async (req, res) => {
         },
       }
     );
-
-    // ======================================
-    // DELETE MESSAGES RECEIVED BY USER
-    // ======================================
 
     const receiverResult = await Message.updateMany(
       {
@@ -856,39 +756,6 @@ router.patch("/conversation/:conversationId/delete", async (req, res) => {
     });
   }
 });
-// --- OPTIMIZED READ RECEIPTS ENDPOINT ---
-// PATCH /api/messages/read-batch
-router.patch("/read-batch", async (req, res) => {
-  try {
-    const { conversationId, messageIds } = req.body;
-    const userId = req.user.id;
-
-    if (!messageIds || !messageIds.length) {
-      return res.status(400).json({ error: "No message IDs provided" });
-    }
-
-    // Update status to 'read' for messages sent to this user
-    await Message.updateMany(
-      { _id: { $in: messageIds }, recipientId: userId, status: { $ne: "read" } },
-      { $set: { status: "read", readAt: new Date() } }
-    );
-
-    res.status(200).json({ success: true, messageIds });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to mark messages as read" });
-  }
-});
-
-// --- UNILATERAL MESSAGING CHECK (Helper inside POST /) ---
-// Add this check inside your existing POST / route before creating the message:
-/*
-  const recipient = await User.findById(recipientId);
-  if (recipient && recipient.blockedUsers?.includes(req.user.id)) {
-    // Unilateral delivery: save the message for the sender, but DO NOT emit via socket to recipient
-    const newMessage = await Message.create({ ...req.body, delivered: false });
-    return res.status(201).json({ message: newMessage, delivered: false });
-  }
-*/
 
 // ==========================================
 // MARK INCOMING MESSAGES DELIVERED
@@ -1009,7 +876,6 @@ router.patch("/:messageId/delivered", async (req, res) => {
       });
     }
 
-    // Only receiver can mark it delivered.
     if (String(message.receiverId) !== String(userId)) {
       return res.status(403).json({
         success: false,
@@ -1074,7 +940,6 @@ router.patch("/:messageId/read", async (req, res) => {
       });
     }
 
-    // Only receiver can mark it read.
     if (String(message.receiverId) !== String(userId)) {
       return res.status(403).json({
         success: false,
