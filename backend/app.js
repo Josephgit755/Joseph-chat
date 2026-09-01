@@ -4,7 +4,7 @@ const dotenv = require("dotenv");
 
 const authRoutes = require("./routes/authRoutes");
 const profileRoutes = require("./routes/profileRoutes");
-const messageRoutes = require("./routes/messageRoutes");
+const messageRoutes = require("../routes/messageRoutes");
 const userRoutes = require("./routes/userRoutes");
 const contactRoutes = require("./routes/contactRoutes");
 const translatorRoutes = require("./routes/translatorRoutes");
@@ -16,7 +16,7 @@ dotenv.config();
 const app = express();
 
 // ==========================================
-// MIDDLEWARE & PARSERS
+// MIDDLEWARE
 // ==========================================
 
 app.use(cors({
@@ -25,7 +25,6 @@ app.use(cors({
 }));
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // ==========================================
 // HEALTH CHECK
