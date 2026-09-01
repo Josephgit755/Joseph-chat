@@ -10,98 +10,61 @@ const {
   markRecentlyContacted,
   getRecentlyContacted,
   getFavoriteContacts,
-} = require("../controller/contactController");
+} = require("../controller/contacts.controller");
 
-const router =
-  express.Router();
+const router = express.Router();
 
 // ==========================================
-// CONTACTS
+// CONTACT LISTS & SPECIAL ENDPOINTS
 // ==========================================
 
 // GET /api/contacts?userId=...
-router.get(
-  "/",
-  getContacts
-);
+router.get("/", getContacts);
 
-// GET /api/contacts/recent?userId=...
-router.get(
-  "/recent",
-  getRecentlyContacted
-);
+// GET /api/contacts/recently-contacted?userId=...
+router.get("/recently-contacted", getRecentlyContacted);
+router.get("/recent", getRecentlyContacted);
 
 // GET /api/contacts/favorites?userId=...
-router.get(
-  "/favorites",
-  getFavoriteContacts
-);
+router.get("/favorites", getFavoriteContacts);
 
 // ==========================================
 // INVITATIONS
 // ==========================================
-//
-// POST /api/contacts/invitations
-//
-// {
-//   "userId": "...",
-//   "phone": "+237XXXXXXXXX"
-// }
-//
-// This records an invitation only after
-// the user intentionally chooses to invite
-// an unregistered phone number.
-//
 
-router.post(
-  "/invitations",
-  createInvitation
-);
+// Supports both POST /api/contacts/invite and /api/contacts/invitations
+router.post("/invite", createInvitation);
+router.post("/invitations", createInvitation);
 
 // ==========================================
-// ADD CONTACT
+// RECENTLY CONTACTED UPDATE
 // ==========================================
-//
+
+// Supports PATCH /api/contacts/recently-contacted (body payload)
+// and PATCH /api/contacts/:contactId/recent
+router.patch("/recently-contacted", markRecentlyContacted);
+router.patch("/:contactId/recent", markRecentlyContacted);
+
+// ==========================================
+// FAVORITE TOGGLE
+// ==========================================
+
+// Supports PATCH /api/contacts/favorite (body payload)
+// and PATCH /api/contacts/:contactId/favorite
+router.patch("/favorite", toggleFavorite);
+router.patch("/:contactId/favorite", toggleFavorite);
+
+// ==========================================
+// CRUD OPERATIONS BY CONTACT ID
+// ==========================================
+
 // POST /api/contacts
-//
-// Add by phone:
-//
-// {
-//   "userId": "...",
-//   "phone": "+237XXXXXXXXX"
-// }
-//
-// Or by existing registered user ID.
-//
-
-router.post(
-  "/",
-  addContact
-);
-
-// PATCH /api/contacts/:contactId/recent
-router.patch(
-  "/:contactId/recent",
-  markRecentlyContacted
-);
+router.post("/", addContact);
 
 // GET /api/contacts/:contactId?userId=...
-router.get(
-  "/:contactId",
-  getContactProfile
-);
+router.get("/:contactId", getContactProfile);
 
 // DELETE /api/contacts/:contactId
-router.delete(
-  "/:contactId",
-  removeContact
-);
+router.delete("/:contactId", removeContact);
 
-// PATCH /api/contacts/:contactId/favorite
-router.patch(
-  "/:contactId/favorite",
-  toggleFavorite
-);
-
-module.exports =
-  router;
+module.exports = router;

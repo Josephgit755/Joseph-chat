@@ -7,34 +7,28 @@ const mongoose = require("mongoose");
 const contactSchema = new mongoose.Schema(
   {
     // ========================================
-    // OWNER
+    // OWNER (The user adding the contact)
     // ========================================
-
     owner: {
-      type:
-        mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
       index: true,
     },
 
     // ========================================
-    // CONTACT
-    // Registered ZenvaZapp user
+    // CONTACT (Registered ZenvaZapp User)
     // ========================================
-
     contact: {
-      type:
-        mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
       index: true,
     },
 
     // ========================================
-    // OPTIONAL NICKNAME
+    // OPTIONAL METADATA
     // ========================================
-
     nickname: {
       type: String,
       trim: true,
@@ -43,18 +37,16 @@ const contactSchema = new mongoose.Schema(
     },
 
     // ========================================
-    // FAVORITE
+    // FAVORITE STATUS
     // ========================================
-
     favorite: {
       type: Boolean,
       default: false,
     },
 
     // ========================================
-    // LAST CONTACTED
+    // LAST CONTACTED TIMESTAMP
     // ========================================
-
     lastContactedAt: {
       type: Date,
       default: null,
@@ -66,9 +58,8 @@ const contactSchema = new mongoose.Schema(
 );
 
 // ==========================================
-// PREVENT DUPLICATE CONTACTS
+// PREVENT DUPLICATE CONTACTS PER USER
 // ==========================================
-
 contactSchema.index(
   {
     owner: 1,
@@ -79,12 +70,4 @@ contactSchema.index(
   }
 );
 
-// ==========================================
-// EXPORT
-// ==========================================
-
-module.exports =
-  mongoose.model(
-    "Contact",
-    contactSchema
-  );
+module.exports = mongoose.model("Contact", contactSchema);
