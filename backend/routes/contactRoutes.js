@@ -10,7 +10,7 @@ const {
   markRecentlyContacted,
   getRecentlyContacted,
   getFavoriteContacts,
-} = require("../controller/contacts.controller");
+} = require("../controller/contactsController");
 
 const router = express.Router();
 
