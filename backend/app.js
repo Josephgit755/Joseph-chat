@@ -11,6 +11,7 @@ const contactRoutes = require("./routes/contactRoutes");
 const translatorRoutes = require("./routes/translatorRoutes");
 const studentRoomRoutes = require("./routes/studentRoomRoutes");
 const studentNoteRoutes = require("./routes/studentNoteRoutes");
+const businessRoutes = require("./routes/businessRoutes");
 
 dotenv.config();
 
@@ -51,6 +52,25 @@ app.use("/api/translator", translatorRoutes);
 app.use("/api/student-rooms", studentRoomRoutes);
 app.use("/api/student-notes", studentNoteRoutes);
 
+// ==========================================
+// BUSINESS ROUTES
+// ==========================================
+//
+// GET
+// /api/business/user/:userId
+//
+// POST
+// /api/business
+//
+// PATCH
+// /api/business/:businessId
+//
+// ==========================================
+
+app.use(
+  "/api/businesses",
+  businessRoutes
+);
 // ==========================================
 // 404 HANDLER
 // ==========================================
