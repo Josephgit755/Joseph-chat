@@ -10,12 +10,12 @@ const {
   markRecentlyContacted,
   getRecentlyContacted,
   getFavoriteContacts,
-} = require("../controller/contactsController");
+} = require("../controller/contactController");
 
 const router = express.Router();
 
 // ==========================================
-// 1. INVITATIONS (Must be defined above /:contactId)
+// 1. INVITATIONS
 // ==========================================
 router.post("/invite", createInvitation);
 router.post("/invitations", createInvitation);
@@ -40,7 +40,7 @@ router.patch("/recently-contacted", markRecentlyContacted);
 router.patch("/favorite", toggleFavorite);
 
 // ==========================================
-// 5. PARAMETERIZED ROUTES (Must be last)
+// 5. PARAMETERIZED ROUTES
 // ==========================================
 router.patch("/:contactId/recent", markRecentlyContacted);
 router.patch("/:contactId/favorite", toggleFavorite);
