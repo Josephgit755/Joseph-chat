@@ -113,6 +113,14 @@ function Settings({
       description:
         "Manage your communities and community preferences.",
     },
+    {
+      id: "business",
+      icon: "🏪",
+      title: "Business",
+      description:
+       "Create and manage your business, products, customers and analytics.",
+    },
+
 
     {
       id: "storage-data",

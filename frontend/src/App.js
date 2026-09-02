@@ -12,6 +12,7 @@ import PrivateChat from "./pages/PrivateChat";
 import DisappearingMessage from "./pages/DisappearingMessage";
 import Settings from "./pages/Settings";
 import Account from "./pages/Account";
+import Business from "./pages/Business";
 
 import Tools from "./pages/Tools";
 import ZenvaBreath from "./pages/ZenvaBreath";
@@ -741,6 +742,18 @@ function App() {
 
           break;
         }
+        // -----------------------------------------------
+        // BUSINESS
+        // -----------------------------------------------
+
+        case "settings-business": {
+
+         setCurrentScreen(
+           "business"
+          );
+
+          break;
+        }
 
 
         // -----------------------------------------------
@@ -1314,6 +1327,38 @@ function AppContent({
 
         onNavigate={
           handleNavigate
+        }
+
+      />
+
+    );
+
+  }
+  // =======================================================
+  // BUSINESS
+  // =======================================================
+
+  if (
+   currentScreen ===
+   "business"
+  ) {
+
+    return (
+
+     <Business
+
+       user={
+         user
+        }
+
+       onBack={() =>
+         setCurrentScreen(
+           "settings"
+          )
+        }
+
+       onNavigate={
+         handleNavigate
         }
 
       />

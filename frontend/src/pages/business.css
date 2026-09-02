@@ -1,0 +1,1093 @@
+/* =========================================================
+   ZENVazAPP BUSINESS
+   DYNAMIC THEME VERSION
+   ========================================================= */
+
+.zenvazapp-business-page {
+  --business-primary: var(--zenvazapp-primary, #7b2cff);
+  --business-primary-light: var(
+    --zenvazapp-primary-light,
+    rgba(123, 44, 255, 0.10)
+  );
+
+  --business-secondary: var(--zenvazapp-secondary, #d62f9f);
+
+  --business-background: var(
+    --zenvazapp-background,
+    #f7f7fa
+  );
+
+  --business-surface: var(
+    --zenvazapp-surface,
+    #ffffff
+  );
+
+  --business-text: var(
+    --zenvazapp-text,
+    #1f1f2e
+  );
+
+  --business-border: var(
+    --zenvazapp-border,
+    rgba(128, 128, 128, 0.18)
+  );
+
+  --business-muted: var(
+    --zenvazapp-muted,
+    rgba(128, 128, 128, 0.07)
+  );
+
+  --business-shadow: var(
+    --zenvazapp-shadow,
+    rgba(0, 0, 0, 0.07)
+  );
+
+  min-height: 100vh;
+
+  background: var(--business-background);
+
+  color: var(--business-text);
+
+  display: flex;
+  flex-direction: column;
+
+  box-sizing: border-box;
+
+  transition:
+    background 0.25s ease,
+    color 0.25s ease;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.zenvazapp-business-header {
+  min-height: 76px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 14px 22px;
+
+  border-bottom: 1px solid var(--business-border);
+
+  background: var(--business-surface);
+
+  box-sizing: border-box;
+
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.zenvazapp-business-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.zenvazapp-business-back {
+  width: 42px;
+  height: 42px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: transparent;
+
+  color: inherit;
+
+  font-size: 25px;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.zenvazapp-business-back:hover {
+  background: var(--business-primary-light);
+}
+
+.zenvazapp-business-header h1 {
+  margin: 0;
+
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.zenvazapp-business-header p {
+  margin: 4px 0 0;
+
+  font-size: 13px;
+
+  opacity: 0.65;
+}
+
+.zenvazapp-business-brand {
+  width: 44px;
+  height: 44px;
+
+  border-radius: 13px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: linear-gradient(
+    135deg,
+    var(--business-primary),
+    var(--business-secondary)
+  );
+
+  color: white;
+
+  font-size: 16px;
+  font-weight: 900;
+
+  box-shadow:
+    0 7px 18px
+    var(--business-primary-light);
+}
+
+
+/* =========================================================
+   CONTENT
+   ========================================================= */
+
+.zenvazapp-business-content {
+  width: min(1050px, 100%);
+
+  margin: 0 auto;
+
+  padding: 30px 22px 110px;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   CREATE BUSINESS
+   ========================================================= */
+
+.zenvazapp-business-create-card {
+  max-width: 760px;
+
+  margin: 20px auto;
+
+  padding: 38px 30px;
+
+  border-radius: 24px;
+
+  text-align: center;
+
+  background: var(--business-surface);
+
+  border: 1px solid var(--business-border);
+
+  box-shadow:
+    0 12px 35px
+    var(--business-shadow);
+
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.zenvazapp-business-create-icon {
+  width: 76px;
+  height: 76px;
+
+  margin: 0 auto 20px;
+
+  border-radius: 22px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--business-primary-light);
+
+  color: var(--business-primary);
+
+  font-size: 38px;
+}
+
+.zenvazapp-business-create-card h2 {
+  margin: 0;
+
+  font-size: 27px;
+}
+
+.zenvazapp-business-create-card > p {
+  max-width: 650px;
+
+  margin: 13px auto 28px;
+
+  line-height: 1.65;
+
+  opacity: 0.72;
+}
+
+
+/* =========================================================
+   BENEFITS
+   ========================================================= */
+
+.zenvazapp-business-benefits {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, 1fr);
+
+  gap: 14px;
+
+  margin-bottom: 30px;
+}
+
+.zenvazapp-business-benefits > div {
+  padding: 18px 14px;
+
+  border-radius: 17px;
+
+  background: var(--business-muted);
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  transition:
+    background 0.25s ease;
+}
+
+.zenvazapp-business-benefits span {
+  font-size: 27px;
+
+  margin-bottom: 9px;
+}
+
+.zenvazapp-business-benefits strong {
+  font-size: 14px;
+}
+
+.zenvazapp-business-benefits small {
+  margin-top: 6px;
+
+  line-height: 1.45;
+
+  opacity: 0.62;
+}
+
+
+/* =========================================================
+   CREATE BUTTON
+   ========================================================= */
+
+.zenvazapp-business-create-button {
+  width: 100%;
+
+  max-width: 420px;
+
+  border: none;
+
+  border-radius: 13px;
+
+  padding: 14px 20px;
+
+  background: linear-gradient(
+    135deg,
+    var(--business-primary),
+    var(--business-secondary)
+  );
+
+  color: white;
+
+  font-size: 15px;
+
+  font-weight: 800;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 8px 22px
+    var(--business-primary-light);
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.zenvazapp-business-create-button:hover {
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 10px 25px
+    var(--business-primary-light);
+}
+
+.zenvazapp-business-create-button:disabled {
+  cursor: not-allowed;
+
+  opacity: 0.6;
+
+  transform: none;
+
+  box-shadow: none;
+}
+
+.zenvazapp-business-account-note {
+  display: block;
+
+  margin-top: 13px;
+
+  opacity: 0.55;
+}
+
+
+/* =========================================================
+   BUSINESS ACCOUNT
+   ========================================================= */
+
+.zenvazapp-business-account-card {
+  display: flex;
+
+  align-items: center;
+
+  gap: 18px;
+
+  padding: 24px;
+
+  border-radius: 22px;
+
+  background: var(--business-surface);
+
+  border: 1px solid var(--business-border);
+
+  box-shadow:
+    0 10px 30px
+    var(--business-shadow);
+
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.zenvazapp-business-account-icon {
+  width: 64px;
+  height: 64px;
+
+  flex-shrink: 0;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 18px;
+
+  background: var(--business-primary-light);
+
+  color: var(--business-primary);
+
+  font-size: 32px;
+}
+
+.zenvazapp-business-account-info {
+  flex: 1;
+}
+
+.zenvazapp-business-label {
+  font-size: 11px;
+
+  font-weight: 800;
+
+  letter-spacing: 1px;
+
+  opacity: 0.55;
+}
+
+.zenvazapp-business-account-info h2 {
+  margin: 4px 0;
+
+  font-size: 22px;
+}
+
+.zenvazapp-business-account-info p {
+  margin: 0;
+
+  font-size: 13px;
+
+  opacity: 0.65;
+}
+
+
+/* =========================================================
+   BUSINESS STATUS
+   ========================================================= */
+
+.zenvazapp-business-status {
+  padding: 7px 12px;
+
+  border-radius: 20px;
+
+  background: rgba(
+    46,
+    160,
+    67,
+    0.12
+  );
+
+  color: #27883b;
+
+  font-size: 12px;
+
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   BUSINESS TOOLS
+   ========================================================= */
+
+.zenvazapp-business-tools {
+  margin-top: 30px;
+}
+
+.zenvazapp-business-section-heading {
+  margin-bottom: 16px;
+}
+
+.zenvazapp-business-section-heading h2 {
+  margin: 0;
+
+  font-size: 20px;
+}
+
+.zenvazapp-business-section-heading p {
+  margin: 5px 0 0;
+
+  font-size: 13px;
+
+  opacity: 0.62;
+}
+
+.zenvazapp-business-feature-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 1fr);
+
+  gap: 14px;
+}
+
+.zenvazapp-business-feature {
+  display: flex;
+
+  align-items: center;
+
+  gap: 14px;
+
+  min-height: 105px;
+
+  padding: 18px;
+
+  border: 1px solid var(--business-border);
+
+  border-radius: 18px;
+
+  background: var(--business-surface);
+
+  color: inherit;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.zenvazapp-business-feature:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 10px 25px
+    var(--business-shadow);
+}
+
+.zenvazapp-business-feature-icon {
+  width: 50px;
+  height: 50px;
+
+  flex-shrink: 0;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 15px;
+
+  background: var(--business-primary-light);
+
+  color: var(--business-primary);
+
+  font-size: 25px;
+}
+
+.zenvazapp-business-feature-content {
+  flex: 1;
+
+  display: flex;
+
+  flex-direction: column;
+}
+
+.zenvazapp-business-feature-content strong {
+  font-size: 15px;
+}
+
+.zenvazapp-business-feature-content small {
+  margin-top: 5px;
+
+  line-height: 1.45;
+
+  opacity: 0.62;
+}
+
+.zenvazapp-business-feature-arrow {
+  font-size: 20px;
+
+  color: var(--business-primary);
+
+  opacity: 0.45;
+}
+
+
+/* =========================================================
+   GROWTH CARD
+   ========================================================= */
+
+.zenvazapp-business-growth-card {
+  margin-top: 24px;
+
+  padding: 22px;
+
+  border-radius: 20px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 16px;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--business-primary-light),
+      rgba(128, 128, 128, 0.05)
+    );
+
+  border: 1px solid
+    var(--business-primary-light);
+}
+
+.zenvazapp-business-growth-icon {
+  font-size: 32px;
+
+  color: var(--business-primary);
+}
+
+.zenvazapp-business-growth-card h2 {
+  margin: 0;
+
+  font-size: 18px;
+}
+
+.zenvazapp-business-growth-card p {
+  margin: 6px 0 0;
+
+  line-height: 1.5;
+
+  font-size: 13px;
+
+  opacity: 0.68;
+}
+
+
+/* =========================================================
+   BUSINESS ERROR / MESSAGE
+   ========================================================= */
+
+.zenvazapp-business-error,
+.zenvazapp-business-message {
+  width: min(760px, 100%);
+
+  margin: 0 auto 18px;
+
+  padding: 13px 16px;
+
+  border-radius: 13px;
+
+  box-sizing: border-box;
+
+  font-size: 13px;
+
+  font-weight: 700;
+}
+
+.zenvazapp-business-error,
+.zenvazapp-business-message.error {
+  background: rgba(
+    220,
+    53,
+    69,
+    0.10
+  );
+
+  border: 1px solid rgba(
+    220,
+    53,
+    69,
+    0.20
+  );
+
+  color: #b42318;
+}
+
+.zenvazapp-business-message.success {
+  background: rgba(
+    46,
+    160,
+    67,
+    0.10
+  );
+
+  border: 1px solid rgba(
+    46,
+    160,
+    67,
+    0.20
+  );
+
+  color: #27883b;
+}
+
+
+/* =========================================================
+   BUSINESS PLAN
+   ========================================================= */
+
+.zenvazapp-business-plan-card {
+  margin-top: 18px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding: 22px 24px;
+
+  border-radius: 20px;
+
+  background: var(--business-surface);
+
+  border: 1px solid var(--business-border);
+
+  box-shadow:
+    0 8px 25px
+    var(--business-shadow);
+}
+
+.zenvazapp-business-plan-card h2 {
+  margin: 5px 0;
+
+  font-size: 20px;
+}
+
+.zenvazapp-business-plan-card p {
+  margin: 5px 0 0;
+
+  font-size: 13px;
+
+  opacity: 0.65;
+}
+
+.zenvazapp-business-plan-badge {
+  flex-shrink: 0;
+
+  padding: 8px 13px;
+
+  border-radius: 20px;
+
+  background: var(--business-primary-light);
+
+  color: var(--business-primary);
+
+  font-size: 11px;
+
+  font-weight: 900;
+
+  letter-spacing: 0.6px;
+}
+
+
+/* =========================================================
+   BUSINESS FORM
+   ========================================================= */
+
+.zenvazapp-business-form {
+  width: 100%;
+
+  max-width: 650px;
+
+  margin: 30px auto 0;
+
+  text-align: left;
+}
+
+.zenvazapp-business-form-field {
+  display: flex;
+
+  flex-direction: column;
+
+  margin-bottom: 17px;
+}
+
+.zenvazapp-business-form-field label {
+  margin-bottom: 7px;
+
+  font-size: 13px;
+
+  font-weight: 800;
+}
+
+.zenvazapp-business-form-field input,
+.zenvazapp-business-form-field textarea,
+.zenvazapp-business-form-field select {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  border: 1px solid var(--business-border);
+
+  border-radius: 12px;
+
+  padding: 13px 14px;
+
+  background: var(--business-background);
+
+  color: var(--business-text);
+
+  font-family: inherit;
+
+  font-size: 14px;
+
+  outline: none;
+
+  transition:
+    background 0.25s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.zenvazapp-business-form-field textarea {
+  resize: vertical;
+
+  min-height: 105px;
+}
+
+.zenvazapp-business-form-field input:focus,
+.zenvazapp-business-form-field textarea:focus,
+.zenvazapp-business-form-field select:focus {
+  border-color: var(--business-primary);
+
+  box-shadow:
+    0 0 0 3px
+    var(--business-primary-light);
+}
+
+.zenvazapp-business-form-field input:disabled,
+.zenvazapp-business-form-field textarea:disabled,
+.zenvazapp-business-form-field select:disabled {
+  opacity: 0.6;
+
+  cursor: not-allowed;
+}
+
+.zenvazapp-business-form-row {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 1fr);
+
+  gap: 14px;
+}
+
+
+/* =========================================================
+   BUSINESS DETAILS
+   ========================================================= */
+
+.zenvazapp-business-details-card {
+  margin-top: 18px;
+
+  padding: 20px;
+
+  border-radius: 20px;
+
+  background: var(--business-surface);
+
+  border: 1px solid var(--business-border);
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 1fr);
+
+  gap: 16px;
+}
+
+.zenvazapp-business-details-card > div {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+.zenvazapp-business-details-card strong {
+  font-size: 11px;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.6px;
+
+  opacity: 0.55;
+}
+
+.zenvazapp-business-details-card span {
+  font-size: 14px;
+
+  font-weight: 600;
+
+  word-break: break-word;
+}
+
+
+/* =========================================================
+   BOTTOM NAVIGATION
+   ========================================================= */
+
+.zenvazapp-business-bottom-nav {
+  position: fixed;
+
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  height: 70px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-around;
+
+  width: 100%;
+
+  padding: 0 10px;
+
+  box-sizing: border-box;
+
+  background: var(--business-surface);
+
+  border-top: 1px solid var(--business-border);
+
+  z-index: 100;
+
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.zenvazapp-business-bottom-nav button {
+  flex: 1;
+
+  min-width: 0;
+
+  max-width: 120px;
+
+  border: none;
+
+  background: transparent;
+
+  color: inherit;
+
+  cursor: pointer;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 3px;
+
+  opacity: 0.62;
+
+  padding: 6px 4px;
+
+  transition:
+    color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.zenvazapp-business-bottom-nav button:hover {
+  opacity: 0.85;
+
+  color: var(--business-primary);
+}
+
+.zenvazapp-business-bottom-nav button.active {
+  opacity: 1;
+
+  color: var(--business-primary);
+
+  font-weight: 800;
+}
+
+.zenvazapp-business-bottom-nav span {
+  font-size: 20px;
+
+  line-height: 1;
+}
+
+.zenvazapp-business-bottom-nav small {
+  font-size: 11px;
+
+  line-height: 1.2;
+}
+
+
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
+.zenvazapp-dark-mode
+.zenvazapp-business-page {
+  --business-background:
+    var(
+      --zenvazapp-dark-background,
+      #111118
+    );
+
+  --business-surface:
+    var(
+      --zenvazapp-dark-surface,
+      #1a1a23
+    );
+
+  --business-text:
+    var(
+      --zenvazapp-dark-text,
+      #f2f2f5
+    );
+
+  --business-border:
+    rgba(255, 255, 255, 0.12);
+
+  --business-muted:
+    rgba(255, 255, 255, 0.06);
+
+  --business-shadow:
+    rgba(0, 0, 0, 0.25);
+
+  --business-primary-light:
+    var(
+      --zenvazapp-primary-light,
+      rgba(123, 44, 255, 0.18)
+    );
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+  .zenvazapp-business-content {
+    padding: 20px 14px 100px;
+  }
+
+  .zenvazapp-business-create-card {
+    padding: 30px 18px;
+  }
+
+  .zenvazapp-business-create-card h2 {
+    font-size: 23px;
+  }
+
+  .zenvazapp-business-benefits {
+    grid-template-columns: 1fr;
+  }
+
+  .zenvazapp-business-feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .zenvazapp-business-account-card {
+    align-items: flex-start;
+
+    flex-wrap: wrap;
+  }
+
+  .zenvazapp-business-status {
+    margin-left: 82px;
+  }
+
+  .zenvazapp-business-plan-card {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+  .zenvazapp-business-plan-badge {
+    align-self: flex-start;
+  }
+
+  .zenvazapp-business-form-row {
+    grid-template-columns: 1fr;
+
+    gap: 0;
+  }
+
+  .zenvazapp-business-details-card {
+    grid-template-columns: 1fr;
+  }
+
+  .zenvazapp-business-bottom-nav {
+    padding: 0 4px;
+  }
+
+  .zenvazapp-business-bottom-nav button {
+    max-width: none;
+  }
+}
