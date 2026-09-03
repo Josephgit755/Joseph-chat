@@ -11,6 +11,7 @@ const Subscription = require("../models/Subscription");
 const protect = require("../middleware/authMiddleware");
 
 const router = express.Router();
+const axios = require('axios');
 
 const CINETPAY_URL =
   "https://api-checkout.cinetpay.com/v2/payment";
