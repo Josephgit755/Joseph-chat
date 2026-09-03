@@ -115,6 +115,7 @@ function BusinessManagement({
 
   useEffect(() => {
     loadBusinesses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggleStatus = async (

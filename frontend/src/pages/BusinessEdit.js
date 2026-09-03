@@ -143,6 +143,7 @@ function BusinessEdit({
       };
 
     loadBusiness();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId]);
 
   const handleChange = (

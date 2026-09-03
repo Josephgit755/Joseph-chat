@@ -76,6 +76,7 @@ function BusinessAnalytics({
     if (businessId) {
       load();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId]);
 
   return (

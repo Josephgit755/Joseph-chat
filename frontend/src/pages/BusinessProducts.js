@@ -97,6 +97,7 @@ function BusinessProducts({
     if (businessId) {
       loadProducts();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId]);
 
   const change = (
