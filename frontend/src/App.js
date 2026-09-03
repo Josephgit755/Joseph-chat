@@ -13,6 +13,17 @@ import DisappearingMessage from "./pages/DisappearingMessage";
 import Settings from "./pages/Settings";
 import Account from "./pages/Account";
 import Business from "./pages/Business";
+import BusinessManagement from "./pages/BusinessManagement";
+import BusinessCreate from "./pages/BusinessCreate";
+import BusinessEdit from "./pages/BusinessEdit";
+import BusinessProducts from "./pages/BusinessProducts";
+import BusinessDiscover from "./pages/BusinessDiscover";
+import PublicBusiness from "./pages/PublicBusiness";
+import BusinessArticles from "./pages/BusinessArticles";
+import BusinessArticleManagement from "./pages/BusinessArticleManagement";
+import BusinessAnalytics from "./pages/BusinessAnalytics";
+import BusinessDiscovery from "./pages/BusinessDiscover";
+import PaymentReturn from "./pages/PaymentReturn";
 
 import Tools from "./pages/Tools";
 import ZenvaBreath from "./pages/ZenvaBreath";
@@ -164,6 +175,15 @@ function App() {
     setSelectedChat,
   ] = useState(null);
 
+  // =======================================================
+  // SELECTED BUSINESS
+  // =======================================================
+
+  const [
+   selectedBusinessId,
+   setSelectedBusinessId,
+  ] = useState(null);
+
 
   // =======================================================
   // API
@@ -176,14 +196,6 @@ function App() {
 
   // =======================================================
   // LOAD STORED USER
-  // =======================================================
-  //
-  // This allows a previously authenticated user with a
-  // completed profile to continue into ZenvaZapp.
-  //
-  // The token is also checked so we don't restore a stale
-  // local user without an authentication session.
-  //
   // =======================================================
 
   useEffect(() => {
@@ -231,14 +243,6 @@ function App() {
 
   // =======================================================
   // AFTER SPLASH
-  // =======================================================
-  //
-  // Existing authenticated users with a completed profile
-  // can go directly to ChatList.
-  //
-  // New users or users whose profile is incomplete go to
-  // Login.
-  //
   // =======================================================
 
   const handleSplashFinished =
@@ -315,7 +319,6 @@ function App() {
         authenticatedUser
       );
 
-      // Save the authenticated user locally.
       try {
 
         localStorage.setItem(
@@ -333,15 +336,6 @@ function App() {
         );
 
       }
-
-      // ---------------------------------------------------
-      // IMPORTANT
-      // ---------------------------------------------------
-      //
-      // If the user has already completed their profile,
-      // don't force them through ProfileSetup again.
-      //
-      // ---------------------------------------------------
 
       if (
         authenticatedUser.profileCompleted
@@ -571,9 +565,9 @@ function App() {
   // =======================================================
 
   const handleNavigate =
-    (section) => {
+    (screen, payload = {}) => {
 
-      switch (section) {
+      switch (screen) {
 
         // -----------------------------------------------
         // CHATS
@@ -742,19 +736,97 @@ function App() {
 
           break;
         }
+
         // -----------------------------------------------
         // BUSINESS
         // -----------------------------------------------
 
-        case "settings-business": {
+        case "business":
+         setCurrentScreen("business");
+         break;
+
+        case "business-management":
+         setCurrentScreen("business-management");
+         break;
+
+        case "business-create":
+         setCurrentScreen("business-create");
+         break;
+
+        case "business-edit":
+         if (payload?.businessId) {
+           setSelectedBusinessId(
+             payload.businessId
+            ); 
+          }
+
+          setCurrentScreen("business-edit");
+          break;
+
+        case "business-products":
+         if (payload?.businessId) {
+           setSelectedBusinessId(
+             payload.businessId
+            );
+          }
+
+          setCurrentScreen("business-products");
+          break;
+
+        case "business-discover":
+         setCurrentScreen("business-discover");
+         break;
+
+        case "public-business":
+         if (payload?.businessId) {
+           setSelectedBusinessId(
+             payload.businessId
+            );
+          }
+
+          setCurrentScreen("public-business");
+          break;
+
+        case "business-articles":
+         setCurrentScreen("business-articles");
+         break;
+
+        case "business-article-management":
+         if (payload?.businessId) {
+           setSelectedBusinessId(
+             payload.businessId
+            );
+          }
+
+          setCurrentScreen(
+            "business-article-management"
+          );
+          break;
+
+        case "business-analytics":
+         if (payload?.businessId) {
+           setSelectedBusinessId(
+             payload.businessId
+            );
+          }
 
          setCurrentScreen(
-           "business"
+           "business-analytics"
           );
+          break;
 
+        case "business-discovery": {
+          setCurrentScreen(
+            "business-discovery"
+          );
+          break;
+        }  
+        case "payment-return": {
+         setCurrentScreen(
+           "payment-return"
+          ); 
           break;
         }
-
 
         // -----------------------------------------------
         // NEW CHAT
@@ -820,7 +892,7 @@ function App() {
 
           console.log(
             "Navigation selected:",
-            section
+            screen
           );
 
         }
@@ -876,6 +948,10 @@ function App() {
 
         setSelectedChat={
           setSelectedChat
+        }
+
+        selectedBusinessId={
+          selectedBusinessId
         }
 
         handleAuthenticated={
@@ -937,6 +1013,7 @@ function AppContent({
   user,
   selectedChat,
   setSelectedChat,
+  selectedBusinessId,
 
   handleAuthenticated,
   handleProfileCompleted,
@@ -1334,31 +1411,287 @@ function AppContent({
     );
 
   }
+
   // =======================================================
-  // BUSINESS
+  // BUSINESS SCREENS
   // =======================================================
 
   if (
-   currentScreen ===
-   "business"
+    currentScreen ===
+    "business"
   ) {
 
     return (
 
-     <Business
+      <Business
 
-       user={
-         user
+        user={
+          user
         }
 
-       onBack={() =>
-         setCurrentScreen(
-           "settings"
+        onBack={() =>
+          setCurrentScreen(
+            "settings"
           )
         }
 
-       onNavigate={
-         handleNavigate
+        onNavigate={
+          handleNavigate
+        }
+
+      />
+
+    );
+
+  }
+
+  if (
+    currentScreen ===
+    "business-management"
+  ) {
+
+    return (
+
+      <BusinessManagement
+
+        user={
+          user
+        }
+
+        onBack={() =>
+          setCurrentScreen(
+            "business"
+          )
+        }
+
+        onNavigate={
+          handleNavigate
+        }
+
+      />
+
+    );
+
+  }
+
+  if (
+    currentScreen ===
+    "business-create"
+  ) {
+
+    return (
+
+      <BusinessCreate
+
+        user={
+          user
+        }
+
+        onBack={() =>
+          setCurrentScreen(
+            "business-management"
+          )
+        }
+
+        onNavigate={
+          handleNavigate
+        }
+
+      />
+
+    );
+
+  }
+
+  if (
+    currentScreen ===
+    "business-edit"
+  ) {
+
+    return (
+
+      <BusinessEdit
+
+        businessId={
+          selectedBusinessId
+        }
+
+        onBack={() =>
+          setCurrentScreen(
+            "business-management"
+          )
+        }
+
+        onNavigate={
+          handleNavigate
+        }
+
+      />
+
+    );
+
+  }
+
+  if (
+    currentScreen ===
+    "business-products"
+  ) {
+
+    return (
+
+      <BusinessProducts
+
+        businessId={
+          selectedBusinessId
+        }
+
+        onBack={() =>
+          setCurrentScreen(
+            "business-management"
+          )
+        }
+
+      />
+
+    );
+
+  }
+
+  if (
+   currentScreen ===
+   "business-discovery"
+  ) {
+    return (
+     <BusinessDiscovery
+       user={user}
+       onBack={() =>
+         setCurrentScreen(
+           "tools"
+          )
+        }
+       onOpenBusiness={(business) => {
+         setSelectedChat(
+           business
+          );
+
+         setCurrentScreen(
+           "public-business"
+          );
+        }}
+     />
+    );
+  }
+  if (
+   currentScreen ===
+   "payment-return"
+  ) {
+    return (
+     <PaymentReturn
+       onBack={() =>
+         setCurrentScreen(
+           "chatlist"
+          )
+        }
+     />
+    );
+  }
+
+  if (
+    currentScreen ===
+    "public-business"
+  ) {
+
+    return (
+
+      <PublicBusiness
+
+        businessId={
+          selectedBusinessId
+        }
+
+        user={
+          user
+        }
+
+        onBack={() =>
+          setCurrentScreen(
+            "business-discover"
+          )
+        }
+
+        onNavigate={
+          handleNavigate
+        }
+
+      />
+
+    );
+
+  }
+
+  if (
+    currentScreen ===
+    "business-articles"
+  ) {
+
+    return (
+
+      <BusinessArticles
+
+        onBack={() =>
+          setCurrentScreen(
+            "business"
+          )
+        }
+
+      />
+
+    );
+
+  }
+
+  if (
+    currentScreen ===
+    "business-article-management"
+  ) {
+
+    return (
+
+      <BusinessArticleManagement
+
+        businessId={
+          selectedBusinessId
+        }
+
+        onBack={() =>
+          setCurrentScreen(
+            "business-management"
+          )
+        }
+
+      />
+
+    );
+
+  }
+
+  if (
+    currentScreen ===
+    "business-analytics"
+  ) {
+
+    return (
+
+      <BusinessAnalytics
+
+        businessId={
+          selectedBusinessId
+        }
+
+        onBack={() =>
+          setCurrentScreen(
+            "business-management"
+          )
         }
 
       />

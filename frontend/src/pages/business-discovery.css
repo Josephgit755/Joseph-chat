@@ -1,0 +1,252 @@
+.business-discovery-page {
+  min-height: 100vh;
+  background: var(--zenvazapp-background, #f7f7fa);
+  color: var(--zenvazapp-text, #1f1f2e);
+}
+
+.business-discovery-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  padding: 16px 22px;
+
+  background: var(
+    --zenvazapp-surface,
+    #ffffff
+  );
+
+  border-bottom:
+    1px solid
+    rgba(128, 128, 128, 0.18);
+}
+
+.business-discovery-header button {
+  width: 42px;
+  height: 42px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: transparent;
+
+  font-size: 24px;
+
+  cursor: pointer;
+}
+
+.business-discovery-header h1 {
+  margin: 0;
+}
+
+.business-discovery-header p {
+  margin: 4px 0 0;
+  opacity: 0.65;
+}
+
+.business-discovery-page main {
+  width: min(
+    1200px,
+    100%
+  );
+
+  margin: auto;
+
+  padding: 24px 20px 60px;
+}
+
+.business-search {
+  display: grid;
+
+  grid-template-columns:
+    minmax(220px, 2fr)
+    minmax(140px, 1fr)
+    minmax(180px, 1fr);
+
+  gap: 12px;
+
+  margin-bottom: 24px;
+}
+
+.business-search input,
+.business-search select {
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 13px 15px;
+
+  border:
+    1px solid
+    rgba(128, 128, 128, 0.25);
+
+  border-radius: 12px;
+
+  background:
+    var(
+      --zenvazapp-surface,
+      #ffffff
+    );
+
+  color: inherit;
+
+  outline: none;
+}
+
+.business-discovery-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fill,
+      minmax(260px, 1fr)
+    );
+
+  gap: 18px;
+}
+
+.business-discovery-card {
+  overflow: hidden;
+
+  padding: 0;
+
+  border:
+    1px solid
+    rgba(128, 128, 128, 0.18);
+
+  border-radius: 20px;
+
+  background:
+    var(
+      --zenvazapp-surface,
+      #ffffff
+    );
+
+  color: inherit;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.business-discovery-card:hover {
+  transform: translateY(-3px);
+
+  box-shadow:
+    0 12px 30px
+    rgba(0, 0, 0, 0.09);
+}
+
+.business-discovery-cover {
+  height: 120px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #7b2cff,
+      #d62f9f
+    );
+}
+
+.business-discovery-cover img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+.business-discovery-body {
+  position: relative;
+
+  padding: 42px 18px 20px;
+}
+
+.business-discovery-logo {
+  position: absolute;
+
+  top: -30px;
+  left: 18px;
+
+  width: 60px;
+  height: 60px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  border:
+    4px solid
+    var(
+      --zenvazapp-surface,
+      #ffffff
+    );
+
+  border-radius: 18px;
+
+  background: #7b2cff;
+
+  color: white;
+
+  font-size: 27px;
+}
+
+.business-discovery-logo img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+.business-discovery-body h2 {
+  margin: 0 0 5px;
+
+  font-size: 18px;
+}
+
+.business-discovery-body span {
+  color: #7b2cff;
+
+  font-size: 13px;
+
+  font-weight: 700;
+}
+
+.business-discovery-body p {
+  margin: 12px 0;
+
+  line-height: 1.5;
+
+  opacity: 0.7;
+}
+
+.business-discovery-body small {
+  opacity: 0.6;
+}
+
+.business-discovery-state,
+.business-discovery-error {
+  padding: 40px;
+
+  text-align: center;
+}
+
+.business-discovery-error {
+  color: #c62828;
+}
+
+@media (
+  max-width: 720px
+) {
+  .business-search {
+    grid-template-columns: 1fr;
+  }
+}

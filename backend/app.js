@@ -12,6 +12,13 @@ const translatorRoutes = require("./routes/translatorRoutes");
 const studentRoomRoutes = require("./routes/studentRoomRoutes");
 const studentNoteRoutes = require("./routes/studentNoteRoutes");
 const businessRoutes = require("./routes/businessRoutes");
+const businessProductRoutes = require("./routes/businessProductRoutes");
+const businessPostRoutes = require("./routes/businessPostRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
+const productRoutes = require("./routes/productRoutes");
+const orderRoutes = require("./routes/orderRoutes");
+const subscriptionRoutes = require("./routes/subscriptionRoutes");
+const businessMessageRoutes = require("./routes/businessMessageRoutes");
 
 dotenv.config();
 
@@ -70,6 +77,35 @@ app.use("/api/student-notes", studentNoteRoutes);
 app.use(
   "/api/businesses",
   businessRoutes
+);
+app.use(
+  "/api/business-products",
+  businessProductRoutes
+);
+
+app.use(
+  "/api/business-posts",
+  businessPostRoutes
+);
+app.use(
+  "/api/payments",
+  paymentRoutes
+);
+app.use(
+ "/api/products",
+ productRoutes
+);
+app.use(
+ "/api/orders",
+ orderRoutes
+);
+app.use(
+ "/api/subscriptions",
+ subscriptionRoutes
+);
+app.use(
+  "/api/business-messages",
+  businessMessageRoutes
 );
 // ==========================================
 // 404 HANDLER

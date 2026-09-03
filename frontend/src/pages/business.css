@@ -887,7 +887,624 @@
 
   word-break: break-word;
 }
+/* =========================================================
+   PUBLIC BUSINESS PAGE
+   ========================================================= */
 
+.zenvazapp-business-public-preview-card {
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 22px;
+
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  background: var(--business-surface);
+  border: 1px solid var(--business-border);
+
+  box-shadow:
+    0 8px 25px
+    var(--business-shadow);
+
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.zenvazapp-business-public-preview-icon {
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 17px;
+
+  background: var(--business-primary-light);
+
+  font-size: 28px;
+}
+
+.zenvazapp-business-public-preview-content {
+  flex: 1;
+}
+
+.zenvazapp-business-public-preview-content h2 {
+  margin: 4px 0 5px;
+  font-size: 18px;
+}
+
+.zenvazapp-business-public-preview-content p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  opacity: 0.62;
+}
+
+.zenvazapp-business-view-page-button {
+  flex-shrink: 0;
+
+  border: none;
+  border-radius: 13px;
+
+  padding: 12px 16px;
+
+  background: var(--business-primary-light);
+  color: var(--business-primary);
+
+  font-size: 13px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  transition:
+    transform 0.18s ease,
+    background 0.2s ease;
+}
+
+.zenvazapp-business-view-page-button:hover {
+  transform: translateY(-1px);
+
+  background:
+    var(--business-primary-light);
+}
+
+.zenvazapp-business-view-page-button span {
+  font-size: 17px;
+}
+
+
+/* =========================================================
+   PUBLIC BUSINESS PROFILE
+   ========================================================= */
+
+.zenvazapp-public-business-profile {
+  width: 100%;
+  max-width: 850px;
+  margin: 0 auto;
+
+  background: var(--business-surface);
+
+  border: 1px solid var(--business-border);
+
+  border-radius: 26px;
+
+  overflow: hidden;
+
+  box-shadow:
+    0 15px 45px
+    var(--business-shadow);
+}
+
+
+/* =========================================================
+   PUBLIC COVER
+   ========================================================= */
+
+.zenvazapp-public-business-cover {
+  height: 190px;
+
+  position: relative;
+
+  overflow: hidden;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--business-primary),
+      var(--business-secondary)
+    );
+}
+
+.zenvazapp-public-business-cover-pattern {
+  position: absolute;
+
+  right: -30px;
+  bottom: -65px;
+
+  font-size: 190px;
+  font-weight: 900;
+
+  line-height: 1;
+
+  color: rgba(255, 255, 255, 0.12);
+
+  webkit-user-select: none;
+}
+
+
+/* =========================================================
+   BUSINESS IDENTITY
+   ========================================================= */
+
+.zenvazapp-public-business-identity {
+  display: flex;
+  align-items: center;
+
+  gap: 18px;
+
+  padding: 0 26px;
+
+  margin-top: -45px;
+
+  position: relative;
+}
+
+.zenvazapp-public-business-logo {
+  width: 92px;
+  height: 92px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 25px;
+
+  background: var(--business-surface);
+
+  border: 5px solid var(--business-surface);
+
+  box-shadow:
+    0 8px 25px
+    rgba(0, 0, 0, 0.12);
+
+  font-size: 42px;
+}
+
+.zenvazapp-public-business-title {
+  padding-top: 42px;
+  min-width: 0;
+}
+
+.zenvazapp-public-business-name-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.zenvazapp-public-business-name-row h2 {
+  margin: 0;
+
+  font-size: 25px;
+  font-weight: 850;
+
+  word-break: break-word;
+}
+
+.zenvazapp-public-business-badge {
+  padding: 5px 9px;
+
+  border-radius: 20px;
+
+  background:
+    var(--business-primary-light);
+
+  color:
+    var(--business-primary);
+
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.zenvazapp-public-business-title > p {
+  margin: 5px 0 0;
+
+  font-size: 13px;
+
+  opacity: 0.6;
+}
+
+
+/* =========================================================
+   PUBLIC DESCRIPTION
+   ========================================================= */
+
+.zenvazapp-public-business-description {
+  padding: 22px 26px 4px;
+}
+
+.zenvazapp-public-business-description p {
+  margin: 0;
+
+  font-size: 14px;
+
+  line-height: 1.7;
+
+  opacity: 0.72;
+}
+
+
+/* =========================================================
+   PUBLIC ACTION BUTTONS
+   ========================================================= */
+
+.zenvazapp-public-business-actions {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 1fr);
+
+  gap: 12px;
+
+  padding: 22px 26px;
+}
+
+.zenvazapp-public-business-actions button {
+  min-height: 48px;
+
+  border: none;
+
+  border-radius: 13px;
+
+  font-size: 14px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  transition:
+    transform 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.zenvazapp-public-business-actions button:hover {
+  transform: translateY(-1px);
+  opacity: 0.9;
+}
+
+.zenvazapp-public-business-message-button {
+  background:
+    linear-gradient(
+      135deg,
+      var(--business-primary),
+      var(--business-secondary)
+    );
+
+  color: white;
+
+  box-shadow:
+    0 8px 20px
+    var(--business-primary-light);
+}
+
+.zenvazapp-public-business-call-button {
+  background:
+    var(--business-primary-light);
+
+  color:
+    var(--business-primary);
+}
+
+
+/* =========================================================
+   PUBLIC BUSINESS SECTIONS
+   ========================================================= */
+
+.zenvazapp-public-business-section {
+  padding: 24px 26px;
+
+  border-top:
+    1px solid
+    var(--business-border);
+}
+
+.zenvazapp-public-business-section-heading {
+  margin-bottom: 16px;
+}
+
+.zenvazapp-public-business-section-heading h3 {
+  margin: 0;
+
+  font-size: 18px;
+}
+
+.zenvazapp-public-business-section-heading p {
+  margin: 5px 0 0;
+
+  font-size: 12px;
+
+  opacity: 0.58;
+}
+
+
+/* =========================================================
+   PUBLIC BUSINESS INFORMATION
+   ========================================================= */
+
+.zenvazapp-public-business-info-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 1fr);
+
+  gap: 12px;
+}
+
+.zenvazapp-public-business-info-item {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 12px;
+
+  padding: 15px;
+
+  border-radius: 15px;
+
+  background:
+    var(--business-muted);
+}
+
+.zenvazapp-public-business-info-item > span {
+  font-size: 21px;
+  flex-shrink: 0;
+}
+
+.zenvazapp-public-business-info-item strong {
+  display: block;
+
+  font-size: 12px;
+
+  margin-bottom: 4px;
+}
+
+.zenvazapp-public-business-info-item p {
+  margin: 0;
+
+  font-size: 13px;
+
+  line-height: 1.45;
+
+  opacity: 0.65;
+
+  word-break: break-word;
+}
+
+
+/* =========================================================
+   COMING SOON
+   ========================================================= */
+
+.zenvazapp-public-business-coming-soon {
+  display: flex;
+
+  align-items: center;
+
+  gap: 13px;
+
+  padding: 18px;
+
+  border-radius: 16px;
+
+  background:
+    var(--business-muted);
+
+  border:
+    1px dashed
+    var(--business-border);
+}
+
+.zenvazapp-public-business-coming-soon > span {
+  width: 44px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 13px;
+
+  background:
+    var(--business-primary-light);
+
+  font-size: 22px;
+
+  flex-shrink: 0;
+}
+
+.zenvazapp-public-business-coming-soon strong {
+  display: block;
+
+  font-size: 14px;
+}
+
+.zenvazapp-public-business-coming-soon p {
+  margin: 4px 0 0;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+
+  opacity: 0.6;
+}
+
+
+/* =========================================================
+   REVIEWS
+   ========================================================= */
+
+.zenvazapp-public-business-review-placeholder {
+  padding: 25px 20px;
+
+  border-radius: 17px;
+
+  background:
+    var(--business-muted);
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  text-align: center;
+
+  gap: 7px;
+}
+
+.zenvazapp-public-business-review-placeholder > span {
+  font-size: 30px;
+}
+
+.zenvazapp-public-business-review-placeholder strong {
+  font-size: 14px;
+}
+
+.zenvazapp-public-business-review-placeholder small {
+  max-width: 400px;
+
+  line-height: 1.5;
+
+  opacity: 0.58;
+}
+
+
+/* =========================================================
+   PRIVACY NOTICE
+   ========================================================= */
+
+.zenvazapp-public-business-privacy {
+  margin: 0 26px 26px;
+
+  padding: 15px;
+
+  border-radius: 15px;
+
+  background:
+    var(--business-primary-light);
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 10px;
+}
+
+.zenvazapp-public-business-privacy > span {
+  font-size: 18px;
+}
+
+.zenvazapp-public-business-privacy p {
+  margin: 0;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+
+  color:
+    var(--business-text);
+
+  opacity: 0.68;
+}
+
+
+/* =========================================================
+   MOBILE PUBLIC BUSINESS PAGE
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+  .zenvazapp-business-public-preview-card {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .zenvazapp-business-public-preview-content {
+    min-width: calc(100% - 80px);
+  }
+
+  .zenvazapp-business-view-page-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .zenvazapp-public-business-profile {
+    border-radius: 20px;
+  }
+
+  .zenvazapp-public-business-cover {
+    height: 145px;
+  }
+
+  .zenvazapp-public-business-identity {
+    padding: 0 18px;
+    gap: 13px;
+    margin-top: -38px;
+  }
+
+  .zenvazapp-public-business-logo {
+    width: 76px;
+    height: 76px;
+    border-radius: 21px;
+    font-size: 34px;
+  }
+
+  .zenvazapp-public-business-title {
+    padding-top: 36px;
+  }
+
+  .zenvazapp-public-business-name-row h2 {
+    font-size: 20px;
+  }
+
+  .zenvazapp-public-business-description {
+    padding: 18px 18px 2px;
+  }
+
+  .zenvazapp-public-business-actions {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .zenvazapp-public-business-section {
+    padding: 20px 18px;
+  }
+
+  .zenvazapp-public-business-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .zenvazapp-public-business-privacy {
+    margin: 0 18px 20px;
+  }
+
+}
 
 /* =========================================================
    BOTTOM NAVIGATION

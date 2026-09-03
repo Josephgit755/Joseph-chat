@@ -10,8 +10,10 @@ const businessSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true,
       index: true,
+      // IMPORTANT:
+      // Do NOT use unique:true.
+      // One user can own multiple businesses.
     },
 
     // ==========================================
@@ -29,13 +31,14 @@ const businessSchema = new mongoose.Schema(
       type: String,
       default: "",
       trim: true,
-      maxlength: 1000,
+      maxlength: 2000,
     },
 
     category: {
       type: String,
       default: "General",
       trim: true,
+      index: true,
     },
 
     phone: {
@@ -48,11 +51,25 @@ const businessSchema = new mongoose.Schema(
       type: String,
       default: "",
       trim: true,
+      lowercase: true,
     },
 
     address: {
       type: String,
       default: "",
+      trim: true,
+    },
+
+    city: {
+      type: String,
+      default: "",
+      trim: true,
+      index: true,
+    },
+
+    country: {
+      type: String,
+      default: "CM",
       trim: true,
     },
 
@@ -63,7 +80,7 @@ const businessSchema = new mongoose.Schema(
     },
 
     // ==========================================
-    // BUSINESS IMAGE
+    // BUSINESS IMAGES
     // ==========================================
 
     logo: {
@@ -94,8 +111,28 @@ const businessSchema = new mongoose.Schema(
       index: true,
     },
 
+    isVerified: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
     // ==========================================
-    // PREMIUM / PLAN
+    // OPENING HOURS
+    // ==========================================
+
+    openingHours: {
+      monday: { type: String, default: "08:00-18:00" },
+      tuesday: { type: String, default: "08:00-18:00" },
+      wednesday: { type: String, default: "08:00-18:00" },
+      thursday: { type: String, default: "08:00-18:00" },
+      friday: { type: String, default: "08:00-18:00" },
+      saturday: { type: String, default: "08:00-18:00" },
+      sunday: { type: String, default: "Closed" },
+    },
+
+    // ==========================================
+    // BUSINESS PLAN
     // ==========================================
 
     plan: {
@@ -105,7 +142,7 @@ const businessSchema = new mongoose.Schema(
         "zenva-plus",
         "zenva-business",
       ],
-      default: "zenva-business",
+      default: "free",
       index: true,
     },
 
@@ -117,11 +154,12 @@ const businessSchema = new mongoose.Schema(
         "cancelled",
         "expired",
       ],
-      default: "active",
+      default: "inactive",
+      index: true,
     },
 
     // ==========================================
-    // BUSINESS FEATURES
+    // AUTOMATIC REPLIES
     // ==========================================
 
     automaticRepliesEnabled: {
@@ -133,7 +171,24 @@ const businessSchema = new mongoose.Schema(
       type: String,
       default: "",
       trim: true,
+      maxlength: 1000,
     },
+
+    awayMessageEnabled: {
+      type: Boolean,
+      default: false,
+    },
+
+    awayMessage: {
+      type: String,
+      default: "",
+      trim: true,
+      maxlength: 1000,
+    },
+
+    // ==========================================
+    // MARKETING
+    // ==========================================
 
     marketingEnabled: {
       type: Boolean,
@@ -158,11 +213,106 @@ const businessSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+
+    orderCount: {
+      type: Number,
+      default: 0,
+    },
+
+    // ==========================================
+    // FINANCIAL SUMMARY
+    // ==========================================
+
+    totalSales: {
+      type: Number,
+      default: 0,
+    },
+
+    totalCommission: {
+      type: Number,
+      default: 0,
+    },
+
+    availableBalance: {
+      type: Number,
+      default: 0,
+    },
+
+    pendingBalance: {
+      type: Number,
+      default: 0,
+    },
+
+    withdrawnBalance: {
+      type: Number,
+      default: 0,
+    },
+
+    // ==========================================
+    // PAYOUT INFORMATION
+    // ==========================================
+
+    payoutMethod: {
+      type: String,
+      enum: [
+        "",
+        "mobile-money",
+        "bank",
+      ],
+      default: "",
+    },
+
+    payoutPhone: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    payoutProvider: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    payoutAccountName: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    payoutBankName: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    payoutAccountNumber: {
+      type: String,
+      default: "",
+      trim: true,
+    },
   },
   {
     timestamps: true,
   }
 );
+
+// ==========================================
+// INDEXES
+// ==========================================
+
+businessSchema.index({
+  businessName: "text",
+  description: "text",
+  category: "text",
+  city: "text",
+});
+
+businessSchema.index({
+  isPublic: 1,
+  isActive: 1,
+  createdAt: -1,
+});
 
 module.exports = mongoose.model(
   "Business",
