@@ -16,7 +16,7 @@ import Business from "./pages/Business";
 import BusinessManagement from "./pages/BusinessManagement";
 import BusinessCreate from "./pages/BusinessCreate";
 import BusinessEdit from "./pages/BusinessEdit";
-import BusinessProducts from "./pages/BusinessProducts";
+import BusinessProduct from "./pages/BusinessProduct";
 import BusinessDiscover from "./pages/BusinessDiscover";
 import PublicBusiness from "./pages/PublicBusiness";
 import BusinessArticles from "./pages/BusinessArticles";
@@ -763,7 +763,7 @@ function App() {
           setCurrentScreen("business-edit");
           break;
 
-        case "business-products":
+        case "business-product":
          if (payload?.businessId) {
            setSelectedBusinessId(
              payload.businessId
@@ -815,12 +815,7 @@ function App() {
           );
           break;
 
-        case "business-discovery": {
-          setCurrentScreen(
-            "business-discovery"
-          );
-          break;
-        }  
+       
         case "payment-return": {
          setCurrentScreen(
            "payment-return"

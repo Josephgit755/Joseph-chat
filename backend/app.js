@@ -15,7 +15,6 @@ const businessRoutes = require("./routes/businessRoutes");
 const businessProductRoutes = require("./routes/businessProductRoutes");
 const businessPostRoutes = require("./routes/businessPostRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
-const productRoutes = require("./routes/productRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const businessMessageRoutes = require("./routes/businessMessageRoutes");
@@ -90,10 +89,6 @@ app.use(
 app.use(
   "/api/payments",
   paymentRoutes
-);
-app.use(
- "/api/products",
- productRoutes
 );
 app.use(
  "/api/orders",
