@@ -1,0 +1,194 @@
+/* Container & Base Styles */
+.zenvazapp-premium-page {
+  min-height: 100vh;
+  background-color: #ffffff;
+  color: #1f2937;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Header */
+.premium-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.premium-header button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #7c3aed;
+  cursor: pointer;
+}
+
+.premium-header h1 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.premium-header p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Main Content & Hero */
+.premium-content {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 32px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.premium-hero {
+  text-align: center;
+}
+
+.premium-badge {
+  background-color: #f5f3ff;
+  color: #7c3aed;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 12px;
+  letter-spacing: 0.5px;
+}
+
+.premium-hero h2 {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 12px 0 8px 0;
+  color: #111827;
+}
+
+.premium-hero p {
+  color: #6b7280;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Toggle Switch */
+.premium-toggle {
+  display: flex;
+  background-color: #f3f4f6;
+  padding: 4px;
+  border-radius: 10px;
+  width: 100%;
+}
+
+.premium-toggle button {
+  flex: 1;
+  border: none;
+  background: none;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.premium-toggle button.active {
+  background-color: #ffffff;
+  color: #7c3aed;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Pricing Card */
+.premium-price-card {
+  width: 100%;
+  border: 2px solid #7c3aed;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  background-color: #faf5ff;
+}
+
+.premium-price-card span {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.premium-price-card strong {
+  font-size: 32px;
+  color: #7c3aed;
+  margin: 8px 0 2px 0;
+}
+
+.premium-price-card small {
+  color: #6b7280;
+  margin-bottom: 20px;
+}
+
+.premium-price-card button {
+  width: 100%;
+  background-color: #7c3aed;
+  color: #ffffff;
+  border: none;
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.premium-price-card button:hover:not(:disabled) {
+  background-color: #6d28d9;
+}
+
+/* Feature List */
+.premium-features {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.premium-features div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.premium-features strong {
+  color: #111827;
+  font-size: 14px;
+}
+
+.premium-features span {
+  color: #6b7280;
+  font-size: 13px;
+  padding-left: 18px;
+}
+
+/* Current Status & Error */
+.premium-current {
+  width: 100%;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.premium-error {
+  color: #dc2626;
+  background-color: #fef2f2;
+  padding: 12px;
+  border-radius: 8px;
+  width: 100%;
+  text-align: center;
+  font-size: 14px;
+}

@@ -19,12 +19,9 @@ const subscriptionSchema = new mongoose.Schema(
     plan: {
       type: String,
       enum: [
-        "free",
-        "zenva-plus",
-        "zenva-business",
+        "zenva-premium",
       ],
       required: true,
-      index: true,
     },
 
     billingCycle: {
@@ -33,19 +30,31 @@ const subscriptionSchema = new mongoose.Schema(
         "monthly",
         "yearly",
       ],
-      default: "monthly",
+      required: true,
     },
 
     amount: {
       type: Number,
       required: true,
-      min: 0,
     },
 
     currency: {
       type: String,
       default: "XAF",
-      uppercase: true,
+    },
+
+    paymentProvider: {
+      type: String,
+      enum: [
+        "cinetpay",
+      ],
+      default: "cinetpay",
+    },
+
+    paymentTransactionId: {
+      type: String,
+      default: "",
+      index: true,
     },
 
     status: {
@@ -53,17 +62,11 @@ const subscriptionSchema = new mongoose.Schema(
       enum: [
         "pending",
         "active",
-        "cancelled",
         "expired",
+        "cancelled",
         "failed",
       ],
       default: "pending",
-      index: true,
-    },
-
-    paymentTransactionId: {
-      type: String,
-      default: "",
       index: true,
     },
 
@@ -75,11 +78,6 @@ const subscriptionSchema = new mongoose.Schema(
     endDate: {
       type: Date,
       default: null,
-    },
-
-    autoRenew: {
-      type: Boolean,
-      default: false,
     },
   },
   {

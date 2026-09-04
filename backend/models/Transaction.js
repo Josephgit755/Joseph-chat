@@ -11,13 +11,12 @@ const transactionSchema = new mongoose.Schema(
 
     provider: {
       type: String,
-      enum: [
-        "cinetpay",
-        "internal",
-        "manual",
-      ],
       default: "cinetpay",
-      index: true,
+    },
+
+    providerTransactionId: {
+      type: String,
+      default: "",
     },
 
     type: {
@@ -25,9 +24,7 @@ const transactionSchema = new mongoose.Schema(
       enum: [
         "product-payment",
         "subscription",
-        "promotion",
         "refund",
-        "commission",
         "payout",
       ],
       required: true,
@@ -37,7 +34,7 @@ const transactionSchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      default: null,
+      required: true,
       index: true,
     },
 
@@ -58,25 +55,21 @@ const transactionSchema = new mongoose.Schema(
     amount: {
       type: Number,
       required: true,
-      min: 0,
     },
 
     commission: {
       type: Number,
       default: 0,
-      min: 0,
     },
 
     sellerAmount: {
       type: Number,
       default: 0,
-      min: 0,
     },
 
     currency: {
       type: String,
       default: "XAF",
-      uppercase: true,
     },
 
     status: {
@@ -86,7 +79,6 @@ const transactionSchema = new mongoose.Schema(
         "waiting",
         "successful",
         "failed",
-        "cancelled",
         "refunded",
       ],
       default: "pending",
@@ -98,45 +90,25 @@ const transactionSchema = new mongoose.Schema(
       default: "",
     },
 
-    providerTransactionId: {
-      type: String,
-      default: "",
-    },
-
-    providerResponseCode: {
-      type: String,
-      default: "",
+    paidAt: {
+      type: Date,
+      default: null,
     },
 
     providerResponse: {
       type: mongoose.Schema.Types.Mixed,
-      default: null,
+      default: {},
     },
 
     metadata: {
       type: mongoose.Schema.Types.Mixed,
       default: {},
     },
-
-    paidAt: {
-      type: Date,
-      default: null,
-    },
   },
   {
     timestamps: true,
   }
 );
-
-transactionSchema.index({
-  businessId: 1,
-  createdAt: -1,
-});
-
-transactionSchema.index({
-  userId: 1,
-  createdAt: -1,
-});
 
 module.exports = mongoose.model(
   "Transaction",

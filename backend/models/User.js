@@ -2,9 +2,9 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
   {
-    // ==========================================
+    // =========================================================
     // ACCOUNT
-    // ==========================================
+    // =========================================================
 
     fullName: {
       type: String,
@@ -44,9 +44,9 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
-    // ==========================================
+    // =========================================================
     // PROFILE
-    // ==========================================
+    // =========================================================
 
     profileCompleted: {
       type: Boolean,
@@ -84,9 +84,55 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
-    // ==========================================
+    // =========================================================
+    // ZENVA PREMIUM
+    // =========================================================
+
+    plan: {
+      type: String,
+      enum: [
+        "free",
+        "zenva-premium",
+      ],
+      default: "free",
+      index: true,
+    },
+
+    premiumStatus: {
+      type: String,
+      enum: [
+        "inactive",
+        "active",
+        "expired",
+        "cancelled",
+      ],
+      default: "inactive",
+      index: true,
+    },
+
+    premiumBillingCycle: {
+      type: String,
+      enum: [
+        "monthly",
+        "yearly",
+        "",
+      ],
+      default: "",
+    },
+
+    premiumStartDate: {
+      type: Date,
+      default: null,
+    },
+
+    premiumEndDate: {
+      type: Date,
+      default: null,
+    },
+
+    // =========================================================
     // LOGIN OTP
-    // ==========================================
+    // =========================================================
 
     loginOTP: {
       type: String,
@@ -113,14 +159,12 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
   },
-
   {
     timestamps: true,
   }
 );
 
-module.exports =
-  mongoose.model(
-    "User",
-    userSchema
-  );
+module.exports = mongoose.model(
+  "User",
+  userSchema
+);

@@ -11,7 +11,6 @@ const Subscription = require("../models/Subscription");
 const protect = require("../middleware/authMiddleware");
 
 const router = express.Router();
-const axios = require('axios');
 
 const CINETPAY_URL =
   "https://api-checkout.cinetpay.com/v2/payment";
@@ -32,11 +31,7 @@ const BACKEND_URL =
   process.env.BACKEND_URL ||
   "https://joseph-backend.onrender.com";
 
-// =========================================================
-// HELPER
-// =========================================================
-
-const getCinetPayConfig = () => {
+const getConfig = () => {
   if (
     !process.env.CINETPAY_API_KEY ||
     !process.env.CINETPAY_SITE_ID
@@ -49,162 +44,14 @@ const getCinetPayConfig = () => {
   return {
     apikey:
       process.env.CINETPAY_API_KEY,
+
     site_id:
       process.env.CINETPAY_SITE_ID,
   };
 };
-//=======================================================
-//subcription 
-//====================================================================
-router.post(
-  "/subscription",
-  protect,
-  async (req, res) => {
-    try {
-      const {
-        transactionId,
-      } = req.body;
-
-      const transaction =
-        await Transaction.findOne({
-          transactionId,
-          userId: req.user.id,
-          type: "subscription",
-          status: "pending",
-        });
-
-      if (!transaction) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "Subscription transaction not found.",
-        });
-      }
-
-      const user =
-        await User.findById(
-          req.user.id
-        );
-
-      const config =
-        getCinetPayConfig();
-
-      const response =
-        await fetch(
-          CINETPAY_URL,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type":
-                "application/json",
-              "User-Agent":
-                "ZenvaZapp/1.0",
-            },
-            body: JSON.stringify({
-              apikey:
-                config.apikey,
-
-              site_id:
-                config.site_id,
-
-              transaction_id:
-                transactionId,
-
-              amount:
-                transaction.amount,
-
-              currency:
-                "XAF",
-
-              description:
-                `ZenvaZapp ${transaction.metadata?.plan || "Premium"} Subscription`,
-
-              customer_id:
-                String(req.user.id),
-
-              customer_name:
-                user?.fullName ||
-                "ZenvaZapp User",
-
-              customer_surname:
-                user?.username ||
-                "User",
-
-              customer_email:
-                user?.email ||
-                "",
-
-              customer_phone_number:
-                user?.phone ||
-                "",
-
-              customer_country:
-                "CM",
-
-              notify_url:
-                `${BACKEND_URL}/api/payments/cinetpay/notify`,
-
-              return_url:
-                `${FRONTEND_URL}/payment-return`,
-
-              channels:
-                "ALL",
-
-              lang:
-                "en",
-
-              metadata:
-                transactionId,
-            }),
-          }
-        );
-
-      const data =
-        await response.json();
-
-      if (
-        !response.ok ||
-        data?.code !== "201"
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            data?.description ||
-            data?.message ||
-            "Subscription payment initialization failed.",
-        });
-      }
-
-      transaction.providerResponse =
-        data;
-
-      await transaction.save();
-
-      res.json({
-        success: true,
-        transactionId,
-        paymentUrl:
-          data?.data?.payment_url,
-        paymentToken:
-          data?.data?.payment_token,
-      });
-    } catch (error) {
-      console.error(
-        "Subscription payment error:",
-        error
-      );
-
-      res.status(500).json({
-        success: false,
-        message:
-          "Unable to initialize subscription payment.",
-      });
-    }
-  }
-);
 
 // =========================================================
-// INITIALIZE PRODUCT PAYMENT
+// PRODUCT PAYMENT
 // =========================================================
 
 router.post(
@@ -243,12 +90,13 @@ router.post(
       }
 
       if (
-        order.paymentStatus === "paid"
+        order.paymentStatus ===
+        "paid"
       ) {
         return res.status(400).json({
           success: false,
           message:
-            "This order is already paid.",
+            "Order is already paid.",
         });
       }
 
@@ -273,22 +121,31 @@ router.post(
       const transaction =
         await Transaction.create({
           transactionId,
+
           provider:
             "cinetpay",
+
           type:
             "product-payment",
+
           userId:
             req.user.id,
+
           businessId:
             order.businessId._id,
+
           orderId:
             order._id,
+
           amount:
             order.totalAmount,
+
           currency:
             "XAF",
+
           status:
             "pending",
+
           metadata: {
             orderNumber:
               order.orderNumber,
@@ -301,19 +158,22 @@ router.post(
         );
 
       const config =
-        getCinetPayConfig();
+        getConfig();
 
       const response =
         await fetch(
           CINETPAY_URL,
           {
             method: "POST",
+
             headers: {
               "Content-Type":
                 "application/json",
+
               "User-Agent":
                 "ZenvaZapp/1.0",
             },
+
             body: JSON.stringify({
               apikey:
                 config.apikey,
@@ -334,7 +194,9 @@ router.post(
                 `ZenvaZapp Order ${order.orderNumber}`,
 
               customer_id:
-                String(req.user.id),
+                String(
+                  req.user.id
+                ),
 
               customer_name:
                 user?.fullName ||
@@ -369,7 +231,7 @@ router.post(
                 "en",
 
               metadata:
-                order.orderNumber,
+                transactionId,
             }),
           }
         );
@@ -379,7 +241,8 @@ router.post(
 
       if (
         !response.ok ||
-        data?.code !== "201"
+        String(data?.code) !==
+          "201"
       ) {
         transaction.status =
           "failed";
@@ -394,9 +257,7 @@ router.post(
           message:
             data?.description ||
             data?.message ||
-            "CinetPay payment initialization failed.",
-          provider:
-            data,
+            "Payment initialization failed.",
         });
       }
 
@@ -410,21 +271,24 @@ router.post(
 
       await order.save();
 
-      res.json({
+      return res.json({
         success: true,
+
         transactionId,
+
         paymentUrl:
           data?.data?.payment_url,
+
         paymentToken:
           data?.data?.payment_token,
       });
     } catch (error) {
       console.error(
-        "CinetPay product payment error:",
+        "Product payment error:",
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message:
           "Unable to initialize payment.",
@@ -434,7 +298,7 @@ router.post(
 );
 
 // =========================================================
-// CINETPAY NOTIFICATION
+// CINETPAY WEBHOOK
 // =========================================================
 
 router.post(
@@ -457,10 +321,8 @@ router.post(
         transactionId
       );
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
-        message:
-          "Notification received.",
       });
     } catch (error) {
       console.error(
@@ -468,17 +330,16 @@ router.post(
         error
       );
 
-      res.status(200).json({
+      // Always acknowledge webhook.
+      return res.status(200).json({
         success: false,
-        message:
-          "Notification received.",
       });
     }
   }
 );
 
 // =========================================================
-// VERIFY PAYMENT
+// VERIFY
 // =========================================================
 
 router.get(
@@ -486,13 +347,15 @@ router.get(
   protect,
   async (req, res) => {
     try {
-      const transactionId =
-        req.params.transactionId;
+      const {
+        transactionId,
+      } = req.params;
 
       const transaction =
         await Transaction.findOne({
           transactionId,
-          userId: req.user.id,
+          userId:
+            req.user.id,
         });
 
       if (!transaction) {
@@ -508,18 +371,18 @@ router.get(
           transactionId
         );
 
-      res.json({
+      return res.json({
         success: true,
         transaction:
           result,
       });
     } catch (error) {
       console.error(
-        "Payment verification error:",
+        "Verify transaction error:",
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message:
           "Unable to verify payment.",
@@ -529,26 +392,29 @@ router.get(
 );
 
 // =========================================================
-// ACTUAL CINETPAY VERIFICATION
+// ACTUAL CINETPAY CHECK
 // =========================================================
 
 async function verifyAndProcessTransaction(
   transactionId
 ) {
   const config =
-    getCinetPayConfig();
+    getConfig();
 
   const response =
     await fetch(
       CINETPAY_CHECK_URL,
       {
         method: "POST",
+
         headers: {
           "Content-Type":
             "application/json",
+
           "User-Agent":
             "ZenvaZapp/1.0",
         },
+
         body: JSON.stringify({
           apikey:
             config.apikey,
@@ -580,17 +446,14 @@ async function verifyAndProcessTransaction(
     data;
 
   const code =
-    String(data?.code || "");
+    String(
+      data?.code || ""
+    );
 
   const status =
     String(
-      data?.data?.status ||
-      ""
+      data?.data?.status || ""
     ).toUpperCase();
-
-  // =======================================================
-  // SUCCESS
-  // =======================================================
 
   if (
     code === "00" ||
@@ -608,16 +471,11 @@ async function verifyAndProcessTransaction(
 
       transaction.providerTransactionId =
         data?.data?.operator_id ||
-        data?.data?.payment_method ||
         "";
 
       transaction.paymentMethod =
         data?.data?.payment_method ||
         "";
-
-      // -----------------------------------------------
-      // PRODUCT PAYMENT
-      // -----------------------------------------------
 
       if (
         transaction.type ===
@@ -628,10 +486,6 @@ async function verifyAndProcessTransaction(
         );
       }
 
-      // -----------------------------------------------
-      // SUBSCRIPTION
-      // -----------------------------------------------
-
       if (
         transaction.type ===
         "subscription"
@@ -641,8 +495,6 @@ async function verifyAndProcessTransaction(
         );
       }
     }
-
-    await transaction.save();
   } else if (
     [
       "600",
@@ -655,34 +507,53 @@ async function verifyAndProcessTransaction(
     transaction.status =
       "failed";
 
-    await transaction.save();
-
-    await Order.updateOne(
-      {
-        _id:
-          transaction.orderId,
-      },
-      {
-        $set: {
-          paymentStatus:
-            "failed",
-          status:
-            "cancelled",
+    if (
+      transaction.type ===
+      "product-payment"
+    ) {
+      await Order.updateOne(
+        {
+          _id:
+            transaction.orderId,
         },
-      }
-    );
+        {
+          $set: {
+            paymentStatus:
+              "failed",
+          },
+        }
+      );
+    }
+
+    if (
+      transaction.type ===
+      "subscription"
+    ) {
+      await Subscription.updateOne(
+        {
+          paymentTransactionId:
+            transactionId,
+        },
+        {
+          $set: {
+            status:
+              "failed",
+          },
+        }
+      );
+    }
   } else {
     transaction.status =
       "waiting";
-
-    await transaction.save();
   }
+
+  await transaction.save();
 
   return transaction;
 }
 
 // =========================================================
-// PROCESS SUCCESSFUL ORDER
+// SUCCESSFUL PRODUCT PAYMENT
 // =========================================================
 
 async function processSuccessfulOrder(
@@ -694,9 +565,12 @@ async function processSuccessfulOrder(
     );
 
   if (!order) {
-    return;
+    throw new Error(
+      "Order not found."
+    );
   }
 
+  // Idempotency protection.
   if (
     order.paymentStatus ===
     "paid"
@@ -704,13 +578,16 @@ async function processSuccessfulOrder(
     return;
   }
 
-  order.paymentStatus =
-    "paid";
+  const business =
+    await Business.findById(
+      transaction.businessId
+    );
 
-  order.status =
-    "paid";
-
-  await order.save();
+  if (!business) {
+    throw new Error(
+      "Business not found."
+    );
+  }
 
   const commission =
     Math.round(
@@ -728,39 +605,35 @@ async function processSuccessfulOrder(
   transaction.sellerAmount =
     sellerAmount;
 
-  await transaction.save();
+  order.paymentStatus =
+    "paid";
 
-  const business =
-    await Business.findById(
-      transaction.businessId
-    );
+  order.status =
+    "paid";
 
-  if (!business) {
-    return;
-  }
+  await order.save();
 
-  business.totalSales +=
-    transaction.amount;
+  business.totalSales =
+    Number(
+      business.totalSales || 0
+    ) + transaction.amount;
 
-  business.totalCommission +=
-    commission;
+  business.totalCommission =
+    Number(
+      business.totalCommission || 0
+    ) + commission;
 
-  business.availableBalance +=
-    sellerAmount;
+  business.availableBalance =
+    Number(
+      business.availableBalance || 0
+    ) + sellerAmount;
 
-  business.customerCount =
-    Math.max(
-      business.customerCount,
-      1
-    );
-
-  business.orderCount += 1;
+  business.orderCount =
+    Number(
+      business.orderCount || 0
+    ) + 1;
 
   await business.save();
-
-  // -----------------------------------------------
-  // REDUCE STOCK
-  // -----------------------------------------------
 
   for (
     const item of order.items
@@ -785,22 +658,32 @@ async function processSuccessfulOrder(
         );
 
       if (
-        product.stock === 0
+        product.stock ===
+        0
       ) {
         product.isAvailable =
           false;
       }
     }
 
-    product.salesCount +=
-      item.quantity;
+    product.salesCount =
+      Number(
+        product.salesCount || 0
+      ) + item.quantity;
 
     await product.save();
   }
+
+  transaction.metadata = {
+    ...transaction.metadata,
+    commissionRate:
+      COMMISSION_RATE,
+    sellerAmount,
+  };
 }
 
 // =========================================================
-// PROCESS SUCCESSFUL SUBSCRIPTION
+// SUCCESSFUL PREMIUM
 // =========================================================
 
 async function processSuccessfulSubscription(
@@ -813,10 +696,20 @@ async function processSuccessfulSubscription(
     });
 
   if (!subscription) {
+    throw new Error(
+      "Subscription not found."
+    );
+  }
+
+  if (
+    subscription.status ===
+    "active"
+  ) {
     return;
   }
 
-  const now = new Date();
+  const now =
+    new Date();
 
   const end =
     new Date(now);
@@ -853,7 +746,19 @@ async function processSuccessfulSubscription(
     {
       $set: {
         plan:
-          subscription.plan,
+          "zenva-premium",
+
+        premiumStatus:
+          "active",
+
+        premiumBillingCycle:
+          subscription.billingCycle,
+
+        premiumStartDate:
+          now,
+
+        premiumEndDate:
+          end,
       },
     }
   );
@@ -869,7 +774,8 @@ async function processSuccessfulSubscription(
       {
         $set: {
           plan:
-            subscription.plan,
+            "zenva-premium",
+
           subscriptionStatus:
             "active",
         },
@@ -878,4 +784,5 @@ async function processSuccessfulSubscription(
   }
 }
 
-module.exports = router;
+module.exports =
+  router;

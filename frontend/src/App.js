@@ -10,8 +10,10 @@ import ChatList from "./pages/ChatList";
 import Contacts from "./pages/Contacts";
 import PrivateChat from "./pages/PrivateChat";
 import DisappearingMessage from "./pages/DisappearingMessage";
+
 import Settings from "./pages/Settings";
 import Account from "./pages/Account";
+
 import Business from "./pages/Business";
 import BusinessManagement from "./pages/BusinessManagement";
 import BusinessCreate from "./pages/BusinessCreate";
@@ -21,8 +23,12 @@ import PublicBusiness from "./pages/PublicBusiness";
 import BusinessArticles from "./pages/BusinessArticles";
 import BusinessArticleManagement from "./pages/BusinessArticleManagement";
 import BusinessAnalytics from "./pages/BusinessAnalytics";
-import BusinessDiscovery from "./pages/BusinessDiscover";
+import BusinessDiscovery from "./pages/BusinessDiscovery";
+
 import PaymentReturn from "./pages/PaymentReturn";
+import BusinessStore from "./pages/BusinessStore";
+import BusinessCheckout from "./pages/BusinessCheckout";
+import Premium from "./pages/Premium";
 
 import Tools from "./pages/Tools";
 import ZenvaBreath from "./pages/ZenvaBreath";
@@ -58,9 +64,10 @@ import "./styles/globalTheme.css";
 // CallScreen / IncomingCall
 //
 // Contacts and PrivateChat only request calls.
-// They do NOT manage WebRTC themselves.
 //
-// GLOBAL THEME ARCHITECTURE
+// =========================================================
+//
+// GLOBAL THEME
 //
 // App
 //   ↓
@@ -70,7 +77,9 @@ import "./styles/globalTheme.css";
 //   ↓
 // Entire ZenvaZapp application
 //
-// PROFILE ARCHITECTURE
+// =========================================================
+//
+// PROFILE
 //
 // Login + OTP
 //   ↓
@@ -82,12 +91,32 @@ import "./styles/globalTheme.css";
 // Complete   → ChatList
 //
 // =========================================================
+//
+// BUSINESS
+//
+// Business
+//   ↓
+// Business Management
+//   ↓
+// Products / Articles / Analytics / Orders
+//   ↓
+// Public Business
+//   ↓
+// Business Store
+//   ↓
+// Checkout
+//   ↓
+// CinetPay
+//   ↓
+// Payment Return
+//
+// =========================================================
 
 
 function App() {
 
   // =======================================================
-  // GLOBAL ZENVazAPP APPEARANCE
+  // GLOBAL THEME
   // =======================================================
 
   const [theme, setTheme] = useState(() => {
@@ -146,7 +175,7 @@ function App() {
 
 
   // =======================================================
-  // SCREEN
+  // CURRENT SCREEN
   // =======================================================
 
   const [
@@ -174,13 +203,38 @@ function App() {
     setSelectedChat,
   ] = useState(null);
 
+
   // =======================================================
   // SELECTED BUSINESS
   // =======================================================
 
   const [
-   selectedBusinessId,
-   setSelectedBusinessId,
+    selectedBusinessId,
+    setSelectedBusinessId,
+  ] = useState(null);
+
+
+  // =======================================================
+  // BUSINESS STORE STATE
+  // =======================================================
+  //
+  // This is intentionally declared here.
+  // NEVER put useState inside handleNavigate/switch.
+  //
+
+  const [
+    businessStore,
+    setBusinessStore,
+  ] = useState(null);
+
+
+  // =======================================================
+  // BUSINESS CHECKOUT STATE
+  // =======================================================
+
+  const [
+    businessCheckout,
+    setBusinessCheckout,
   ] = useState(null);
 
 
@@ -209,7 +263,10 @@ function App() {
         "zenvazapp_user"
       );
 
-    if (!storedToken || !storedUser) {
+    if (
+      !storedToken ||
+      !storedUser
+    ) {
       return;
     }
 
@@ -304,7 +361,7 @@ function App() {
 
 
   // =======================================================
-  // AFTER LOGIN + OTP VERIFICATION
+  // AFTER LOGIN + OTP
   // =======================================================
 
   const handleAuthenticated =
@@ -356,7 +413,7 @@ function App() {
 
 
   // =======================================================
-  // AFTER PROFILE IS COMPLETED
+  // AFTER PROFILE COMPLETED
   // =======================================================
 
   const handleProfileCompleted =
@@ -417,9 +474,7 @@ function App() {
         !currentUserId ||
         !contactUserId
       ) {
-
         return;
-
       }
 
       try {
@@ -568,9 +623,9 @@ function App() {
 
       switch (screen) {
 
-        // -----------------------------------------------
+        // =================================================
         // CHATS
-        // -----------------------------------------------
+        // =================================================
 
         case "chats":
         case "chatlist": {
@@ -583,9 +638,9 @@ function App() {
         }
 
 
-        // -----------------------------------------------
+        // =================================================
         // CONTACTS
-        // -----------------------------------------------
+        // =================================================
 
         case "contacts": {
 
@@ -597,9 +652,9 @@ function App() {
         }
 
 
-        // -----------------------------------------------
+        // =================================================
         // TOOLS
-        // -----------------------------------------------
+        // =================================================
 
         case "tools": {
 
@@ -611,9 +666,9 @@ function App() {
         }
 
 
-        // -----------------------------------------------
+        // =================================================
         // ZENVA BREATH
-        // -----------------------------------------------
+        // =================================================
 
         case "breath": {
 
@@ -625,9 +680,9 @@ function App() {
         }
 
 
-        // -----------------------------------------------
+        // =================================================
         // TRANSLATOR
-        // -----------------------------------------------
+        // =================================================
 
         case "translator": {
 
@@ -639,9 +694,9 @@ function App() {
         }
 
 
-        // -----------------------------------------------
+        // =================================================
         // STUDENT MODE
-        // -----------------------------------------------
+        // =================================================
 
         case "student": {
 
@@ -653,9 +708,9 @@ function App() {
         }
 
 
-        // -----------------------------------------------
+        // =================================================
         // SMART FILES
-        // -----------------------------------------------
+        // =================================================
 
         case "files": {
 
@@ -667,9 +722,9 @@ function App() {
         }
 
 
-        // -----------------------------------------------
+        // =================================================
         // MARKETING STATUS
-        // -----------------------------------------------
+        // =================================================
 
         case "marketing": {
 
@@ -681,9 +736,9 @@ function App() {
         }
 
 
-        // -----------------------------------------------
+        // =================================================
         // ZENVA AI
-        // -----------------------------------------------
+        // =================================================
 
         case "ai": {
 
@@ -695,9 +750,9 @@ function App() {
         }
 
 
-        // -----------------------------------------------
+        // =================================================
         // PROFILE
-        // -----------------------------------------------
+        // =================================================
 
         case "profile": {
 
@@ -709,9 +764,9 @@ function App() {
         }
 
 
-        // -----------------------------------------------
+        // =================================================
         // SETTINGS
-        // -----------------------------------------------
+        // =================================================
 
         case "settings": {
 
@@ -723,9 +778,9 @@ function App() {
         }
 
 
-        // -----------------------------------------------
+        // =================================================
         // ACCOUNT
-        // -----------------------------------------------
+        // =================================================
 
         case "settings-account": {
 
@@ -736,95 +791,309 @@ function App() {
           break;
         }
 
-        // -----------------------------------------------
-        // BUSINESS
-        // -----------------------------------------------
 
-        case "business":
-         setCurrentScreen("business");
-         break;
+        // =================================================
+        // BUSINESS HOME
+        // =================================================
 
-        case "business-management":
-         setCurrentScreen("business-management");
-         break;
+        case "business": {
 
-        case "business-create":
-         setCurrentScreen("business-create");
-         break;
+          setCurrentScreen(
+            "business"
+          );
 
-        case "business-edit":
-         if (payload?.businessId) {
-           setSelectedBusinessId(
-             payload.businessId
-            ); 
+          break;
+        }
+
+
+        // =================================================
+        // BUSINESS MANAGEMENT
+        // =================================================
+
+        case "business-management": {
+
+          setCurrentScreen(
+            "business-management"
+          );
+
+          break;
+        }
+
+
+        // =================================================
+        // CREATE BUSINESS
+        // =================================================
+
+        case "business-create": {
+
+          setCurrentScreen(
+            "business-create"
+          );
+
+          break;
+        }
+
+
+        // =================================================
+        // EDIT BUSINESS
+        // =================================================
+
+        case "business-edit": {
+
+          if (
+            payload?.businessId
+          ) {
+
+            setSelectedBusinessId(
+              payload.businessId
+            );
+
           }
 
-          setCurrentScreen("business-edit");
+          setCurrentScreen(
+            "business-edit"
+          );
+
           break;
+        }
+
+
+        // =================================================
+        // BUSINESS PRODUCTS
+        // =================================================
 
         case "business-product":
-         if (payload?.businessId) {
-           setSelectedBusinessId(
-             payload.businessId
+        case "business-products": {
+
+          if (
+            payload?.businessId
+          ) {
+
+            setSelectedBusinessId(
+              payload.businessId
             );
+
           }
 
-          setCurrentScreen("business-products");
+          setCurrentScreen(
+            "business-products"
+          );
+
           break;
+        }
+
+
+        // =================================================
+        // BUSINESS DISCOVERY
+        // =================================================
 
         case "business-discovery":
-         setCurrentScreen("business-discovery");
-         break;
+        case "business-discover": {
 
-        case "public-business":
-         if (payload?.businessId) {
-           setSelectedBusinessId(
-             payload.businessId
+          setCurrentScreen(
+            "business-discovery"
+          );
+
+          break;
+        }
+
+
+        // =================================================
+        // PUBLIC BUSINESS
+        // =================================================
+
+        case "public-business": {
+
+          if (
+            payload?.businessId
+          ) {
+
+            setSelectedBusinessId(
+              payload.businessId
             );
+
           }
 
-          setCurrentScreen("public-business");
+          setCurrentScreen(
+            "public-business"
+          );
+
           break;
+        }
 
-        case "business-articles":
-         setCurrentScreen("business-articles");
-         break;
 
-        case "business-article-management":
-         if (payload?.businessId) {
-           setSelectedBusinessId(
-             payload.businessId
+        // =================================================
+        // BUSINESS ARTICLES
+        // =================================================
+
+        case "business-articles": {
+
+          if (
+            payload?.businessId
+          ) {
+
+            setSelectedBusinessId(
+              payload.businessId
             );
+
+          }
+
+          setCurrentScreen(
+            "business-articles"
+          );
+
+          break;
+        }
+
+
+        // =================================================
+        // ARTICLE MANAGEMENT
+        // =================================================
+
+        case "business-article-management": {
+
+          if (
+            payload?.businessId
+          ) {
+
+            setSelectedBusinessId(
+              payload.businessId
+            );
+
           }
 
           setCurrentScreen(
             "business-article-management"
           );
-          break;
 
-        case "business-analytics":
-         if (payload?.businessId) {
-           setSelectedBusinessId(
-             payload.businessId
-            );
-          }
-
-         setCurrentScreen(
-           "business-analytics"
-          );
-          break;
-
-       
-        case "payment-return": {
-         setCurrentScreen(
-           "payment-return"
-          ); 
           break;
         }
 
-        // -----------------------------------------------
+
+        // =================================================
+        // BUSINESS ANALYTICS
+        // =================================================
+
+        case "business-analytics": {
+
+          if (
+            payload?.businessId
+          ) {
+
+            setSelectedBusinessId(
+              payload.businessId
+            );
+
+          }
+
+          setCurrentScreen(
+            "business-analytics"
+          );
+
+          break;
+        }
+
+
+        // =================================================
+        // BUSINESS STORE
+        // =================================================
+
+        case "business-store": {
+
+          const businessId =
+            payload?.businessId ||
+            payload?.business?._id ||
+            payload?.business?.id ||
+            selectedBusinessId;
+
+          if (
+            businessId
+          ) {
+
+            setSelectedBusinessId(
+              businessId
+            );
+
+          }
+
+          setBusinessStore(
+            payload?.business ||
+            null
+          );
+
+          setCurrentScreen(
+            "business-store"
+          );
+
+          break;
+        }
+
+
+        // =================================================
+        // BUSINESS CHECKOUT
+        // =================================================
+
+        case "business-checkout": {
+
+          const checkoutBusinessId =
+            payload?.businessId ||
+            payload?.business?._id ||
+            selectedBusinessId;
+
+          if (
+            checkoutBusinessId
+          ) {
+
+            setSelectedBusinessId(
+              checkoutBusinessId
+            );
+
+          }
+
+          setBusinessCheckout(
+            payload
+          );
+
+          setCurrentScreen(
+            "business-checkout"
+          );
+
+          break;
+        }
+
+
+        // =================================================
+        // PREMIUM
+        // =================================================
+
+        case "premium":
+        case "zenva-premium": {
+
+          setCurrentScreen(
+            "premium"
+          );
+
+          break;
+        }
+
+
+        // =================================================
+        // PAYMENT RETURN
+        // =================================================
+
+        case "payment-return": {
+
+          setCurrentScreen(
+            "payment-return"
+          );
+
+          break;
+        }
+
+
+        // =================================================
         // NEW CHAT
-        // -----------------------------------------------
+        // =================================================
 
         case "new-chat": {
 
@@ -836,9 +1105,9 @@ function App() {
         }
 
 
-        // -----------------------------------------------
+        // =================================================
         // NEW GROUP
-        // -----------------------------------------------
+        // =================================================
 
         case "new-group": {
 
@@ -850,9 +1119,9 @@ function App() {
         }
 
 
-        // -----------------------------------------------
+        // =================================================
         // NEW CONTACT
-        // -----------------------------------------------
+        // =================================================
 
         case "new-contact": {
 
@@ -864,9 +1133,9 @@ function App() {
         }
 
 
-        // -----------------------------------------------
+        // =================================================
         // COMMUNITY
-        // -----------------------------------------------
+        // =================================================
 
         case "community": {
 
@@ -878,9 +1147,9 @@ function App() {
         }
 
 
-        // -----------------------------------------------
+        // =================================================
         // DEFAULT
-        // -----------------------------------------------
+        // =================================================
 
         default: {
 
@@ -948,6 +1217,14 @@ function App() {
           selectedBusinessId
         }
 
+        businessStore={
+          businessStore
+        }
+
+        businessCheckout={
+          businessCheckout
+        }
+
         handleAuthenticated={
           handleAuthenticated
         }
@@ -1009,6 +1286,9 @@ function AppContent({
   setSelectedChat,
   selectedBusinessId,
 
+  businessStore,
+  businessCheckout,
+
   handleAuthenticated,
   handleProfileCompleted,
   handleContactOpened,
@@ -1031,7 +1311,7 @@ function AppContent({
 
 
   // =======================================================
-  // DIRECT AUDIO CALL
+  // VOICE CALL
   // =======================================================
 
   const handleVoiceCall =
@@ -1055,7 +1335,7 @@ function AppContent({
 
 
   // =======================================================
-  // DIRECT VIDEO CALL
+  // VIDEO CALL
   // =======================================================
 
   const handleVideoCall =
@@ -1134,6 +1414,7 @@ function AppContent({
     return (
 
       <ProfileSetup
+
         user={
           user
         }
@@ -1141,6 +1422,7 @@ function AppContent({
         onProfileCompleted={
           handleProfileCompleted
         }
+
       />
 
     );
@@ -1160,6 +1442,7 @@ function AppContent({
     return (
 
       <ChatList
+
         user={
           user
         }
@@ -1171,6 +1454,7 @@ function AppContent({
         onNavigate={
           handleNavigate
         }
+
       />
 
     );
@@ -1190,6 +1474,7 @@ function AppContent({
     return (
 
       <Contacts
+
         user={
           user
         }
@@ -1209,6 +1494,7 @@ function AppContent({
         onNavigate={
           handleNavigate
         }
+
       />
 
     );
@@ -1228,6 +1514,7 @@ function AppContent({
     return (
 
       <PrivateChat
+
         user={
           user
         }
@@ -1288,7 +1575,7 @@ function AppContent({
 
 
   // =======================================================
-  // DISAPPEARING MESSAGE SETTINGS
+  // DISAPPEARING MESSAGE
   // =======================================================
 
   if (
@@ -1406,8 +1693,9 @@ function AppContent({
 
   }
 
+
   // =======================================================
-  // BUSINESS SCREENS
+  // BUSINESS HOME
   // =======================================================
 
   if (
@@ -1439,6 +1727,11 @@ function AppContent({
 
   }
 
+
+  // =======================================================
+  // BUSINESS MANAGEMENT
+  // =======================================================
+
   if (
     currentScreen ===
     "business-management"
@@ -1467,6 +1760,11 @@ function AppContent({
     );
 
   }
+
+
+  // =======================================================
+  // BUSINESS CREATE
+  // =======================================================
 
   if (
     currentScreen ===
@@ -1497,6 +1795,11 @@ function AppContent({
 
   }
 
+
+  // =======================================================
+  // BUSINESS EDIT
+  // =======================================================
+
   if (
     currentScreen ===
     "business-edit"
@@ -1508,6 +1811,10 @@ function AppContent({
 
         businessId={
           selectedBusinessId
+        }
+
+        user={
+          user
         }
 
         onBack={() =>
@@ -1526,6 +1833,11 @@ function AppContent({
 
   }
 
+
+  // =======================================================
+  // BUSINESS PRODUCTS
+  // =======================================================
+
   if (
     currentScreen ===
     "business-products"
@@ -1539,10 +1851,18 @@ function AppContent({
           selectedBusinessId
         }
 
+        user={
+          user
+        }
+
         onBack={() =>
           setCurrentScreen(
             "business-management"
           )
+        }
+
+        onNavigate={
+          handleNavigate
         }
 
       />
@@ -1551,44 +1871,64 @@ function AppContent({
 
   }
 
+
+  // =======================================================
+  // BUSINESS DISCOVERY
+  // =======================================================
+
   if (
-   currentScreen ===
-   "business-discovery"
+    currentScreen ===
+    "business-discovery"
   ) {
+
     return (
-     <BusinessDiscovery
-       user={user}
-       onBack={() =>
-         setCurrentScreen(
-           "tools"
+
+      <BusinessDiscovery
+
+        user={
+          user
+        }
+
+        onBack={() =>
+          setCurrentScreen(
+            "tools"
           )
         }
-       onOpenBusiness={(business) => {
-         setSelectedChat(
-           business
+
+        onOpenBusiness={(business) => {
+
+          const businessId =
+            business?._id ||
+            business?.id;
+
+          if (!businessId) {
+            return;
+          }
+
+          setSelectedBusinessId(
+            businessId
           );
 
-         setCurrentScreen(
-           "public-business"
+          setCurrentScreen(
+            "public-business"
           );
+
         }}
-     />
-    );
-  }
-  if (
-   currentScreen ===
-   "payment-return"
-  ) {
-    return (
-     <PaymentReturn
-       onBack={() =>
-         setCurrentScreen(
-           "chatlist"
-          )
+
+        onNavigate={
+          handleNavigate
         }
-     />
+
+      />
+
     );
+
   }
+
+
+  // =======================================================
+  // PUBLIC BUSINESS
+  // =======================================================
 
   if (
     currentScreen ===
@@ -1609,7 +1949,7 @@ function AppContent({
 
         onBack={() =>
           setCurrentScreen(
-            "business-discover"
+            "business-discovery"
           )
         }
 
@@ -1623,6 +1963,131 @@ function AppContent({
 
   }
 
+
+  // =======================================================
+  // BUSINESS STORE
+  // =======================================================
+
+  if (
+    currentScreen ===
+    "business-store"
+  ) {
+
+    return (
+
+      <BusinessStore
+
+        businessId={
+          selectedBusinessId
+        }
+
+        business={
+          businessStore
+        }
+
+        user={
+          user
+        }
+
+        onBack={() =>
+          setCurrentScreen(
+            "public-business"
+          )
+        }
+
+        onNavigate={
+          handleNavigate
+        }
+
+        onCheckout={(checkoutData) => {
+
+          setBusinessCheckout(
+            checkoutData
+          );
+
+          if (
+            checkoutData?.businessId
+          ) {
+
+            setSelectedBusinessId(
+              checkoutData.businessId
+            );
+
+          }
+
+          setCurrentScreen(
+            "business-checkout"
+          );
+
+        }}
+
+      />
+
+    );
+
+  }
+
+
+  // =======================================================
+  // BUSINESS CHECKOUT
+  // =======================================================
+
+  if (
+    currentScreen ===
+    "business-checkout"
+  ) {
+
+    return (
+
+      <BusinessCheckout
+
+        businessId={
+          businessCheckout?.businessId ||
+          selectedBusinessId
+        }
+
+        business={
+          businessCheckout?.business ||
+          businessStore
+        }
+
+        items={
+          businessCheckout?.items ||
+          businessCheckout?.cart ||
+          []
+        }
+
+        cart={
+          businessCheckout?.cart ||
+          businessCheckout?.items ||
+          []
+        }
+
+        user={
+          user
+        }
+
+        onBack={() =>
+          setCurrentScreen(
+            "business-store"
+          )
+        }
+
+        onNavigate={
+          handleNavigate
+        }
+
+      />
+
+    );
+
+  }
+
+
+  // =======================================================
+  // BUSINESS ARTICLES
+  // =======================================================
+
   if (
     currentScreen ===
     "business-articles"
@@ -1632,10 +2097,22 @@ function AppContent({
 
       <BusinessArticles
 
+        businessId={
+          selectedBusinessId
+        }
+
+        user={
+          user
+        }
+
         onBack={() =>
           setCurrentScreen(
             "business"
           )
+        }
+
+        onNavigate={
+          handleNavigate
         }
 
       />
@@ -1643,6 +2120,11 @@ function AppContent({
     );
 
   }
+
+
+  // =======================================================
+  // BUSINESS ARTICLE MANAGEMENT
+  // =======================================================
 
   if (
     currentScreen ===
@@ -1657,10 +2139,18 @@ function AppContent({
           selectedBusinessId
         }
 
+        user={
+          user
+        }
+
         onBack={() =>
           setCurrentScreen(
             "business-management"
           )
+        }
+
+        onNavigate={
+          handleNavigate
         }
 
       />
@@ -1668,6 +2158,11 @@ function AppContent({
     );
 
   }
+
+
+  // =======================================================
+  // BUSINESS ANALYTICS
+  // =======================================================
 
   if (
     currentScreen ===
@@ -1682,10 +2177,86 @@ function AppContent({
           selectedBusinessId
         }
 
+        user={
+          user
+        }
+
         onBack={() =>
           setCurrentScreen(
             "business-management"
           )
+        }
+
+        onNavigate={
+          handleNavigate
+        }
+
+      />
+
+    );
+
+  }
+
+
+  // =======================================================
+  // PREMIUM
+  // =======================================================
+
+  if (
+    currentScreen ===
+    "premium"
+  ) {
+
+    return (
+
+      <Premium
+
+        user={
+          user
+        }
+
+        onBack={() =>
+          setCurrentScreen(
+            "settings"
+          )
+        }
+
+        onNavigate={
+          handleNavigate
+        }
+
+      />
+
+    );
+
+  }
+
+
+  // =======================================================
+  // PAYMENT RETURN
+  // =======================================================
+
+  if (
+    currentScreen ===
+    "payment-return"
+  ) {
+
+    return (
+
+      <PaymentReturn
+
+        user={
+          user
+        }
+
+        onBack={() =>
+          setCurrentScreen(
+            "chatlist"
+          )
+        }
+
+        onNavigate={
+          handleNavigate
         }
 
       />
@@ -1707,6 +2278,7 @@ function AppContent({
     return (
 
       <Tools
+
         user={
           user
         }
@@ -1734,6 +2306,7 @@ function AppContent({
     return (
 
       <ZenvaBreath
+
         onBack={() =>
           setCurrentScreen(
             "tools"
@@ -1759,6 +2332,7 @@ function AppContent({
     return (
 
       <Translator
+
         onBack={() =>
           setCurrentScreen(
             "tools"
